@@ -756,6 +756,7 @@ class AudioPlayerService with ChangeNotifier {
 
   /// Request notification permission on supported platforms for RMN.
   Future<void> _requestNotificationPermission() async {
+    if (kIsWeb) return;
     try {
       final status = await Permission.notification.request();
       if (status.isDenied ||
