@@ -1,0 +1,45 @@
+name: etherly
+description: "A Dutch Material 3 radio app"
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  provider: ^6.1.5
+  dynamic_system_colors: ^1.8.0
+  just_audio: ^0.10.5
+  audio_service: ^0.18.12
+  audio_session: ^0.2.2
+  permission_handler: ^12.0.1
+  http: ^1.5.0
+  shared_preferences: ^2.5.3
+  cached_network_image: ^3.4.1
+  url_launcher: ^6.3.2
+  speech_to_text: ^7.3.0
+  flutter_chrome_cast: ^1.2.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - localization/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/legacy_icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/adaptive_icon_foreground.png"
+  adaptive_icon_monochrome: "assets/icon/adaptive_icon_monochrome.png"
