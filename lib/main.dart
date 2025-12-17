@@ -364,6 +364,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           child: Row(
             children: [
+              Icon(
+                Icons.search,
+                color: Theme.of(context).hintColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: GestureDetector(
                   onTap: () => Navigator.of(context).push(
