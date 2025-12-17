@@ -37,7 +37,7 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
         final isPlaying = service.isPlaying;
 
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+          padding: const EdgeInsets.fromLTRB(20, 32, 20, 16),
           child: Row(
             children: [
               IgnorePointer(

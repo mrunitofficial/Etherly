@@ -133,7 +133,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
                 child: Align(
                   alignment: Alignment.bottomRight,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 0, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(0, 0, 20, 20),
                     child: PlayButton(
                       service: service,
                       countdown: countdown,
