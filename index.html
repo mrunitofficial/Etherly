@@ -27,12 +27,55 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/svg+xml" href="assets/icon_base.svg"/>
 
   <title>etherly</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      margin: 0;
+      background-color: #e7e2e2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: 'Roboto', sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #1c1b1f;
+      }
+    }
+    #loading {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 24px;
+    }
+    #loading img {
+      width: 96px;
+      height: 96px;
+      border-radius: 20px;
+    }
+    #loading h1 {
+      margin: 0;
+      margin-top: 24px;
+      font-size: 56px;
+      font-weight: 400;
+      color: #1c1b1f;
+    }
+    @media (prefers-color-scheme: dark) {
+      #loading h1 {
+        color: #e7e2e2;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div id="loading">
+    <img src="assets/icon_base.svg" alt="Etherly">
+    <h1>Etherly</h1>
+  </div>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
