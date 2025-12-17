@@ -222,8 +222,9 @@ class _StationsScreenState extends State<StationsScreen> {
     EdgeInsets padding,
     bool isLargeScreen,
   ) {
+    
+    // Small screen: single-column layout
     if (!isLargeScreen) {
-      // Small screen: single-column layout
       return SliverPadding(
         padding: padding,
         sliver: SliverList.builder(

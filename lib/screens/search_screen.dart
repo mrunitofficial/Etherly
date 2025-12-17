@@ -157,21 +157,28 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     } else {
       bodyContent = ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0),
         itemCount: filtered.length,
         itemBuilder: (context, index) {
           final station = filtered[index];
-          return StationCardItem(
-            station: station,
-            isFavorite: station.isFavorite,
-            onTap: () async {
-              audioPlayerService.playMediaItem(station);
-              audioPlayerService.radioPlayerShouldClose.value = true;
-              Navigator.of(context).pop();
-              await Future.delayed(const Duration(milliseconds: 350));
-            },
-            onFavorite: () {
-              audioPlayerService.toggleFavorite(station);
-            },
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: SizedBox(
+              height: 80.0,
+              child: StationCardItem(
+                station: station,
+                isFavorite: station.isFavorite,
+                onTap: () async {
+                  audioPlayerService.playMediaItem(station);
+                  audioPlayerService.radioPlayerShouldClose.value = true;
+                  Navigator.of(context).pop();
+                  await Future.delayed(const Duration(milliseconds: 350));
+                },
+                onFavorite: () {
+                  audioPlayerService.toggleFavorite(station);
+                },
+              ),
+            ),
           );
         },
       );
