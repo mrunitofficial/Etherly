@@ -89,11 +89,11 @@ class _RadioPlayerState extends State<RadioPlayer> {
   Widget build(BuildContext context) {
     final isSidePanel = widget.screenType == ScreenType.largeScreen;
 
-    // Tablet/Web: persistent left side panel with the full player.
+    // Tablet/Web: persistent right side panel with the full player.
     if (isSidePanel) {
       return Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: Theme.of(context).colorScheme.surfaceContainer,
         ),
         child: SafeArea(
           child: Align(
@@ -183,7 +183,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
                   decoration: BoxDecoration(
                     color: Theme.of(
                       context,
-                    ).colorScheme.surfaceContainerHighest,
+                    ).colorScheme.surfaceContainer,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(32),
                       topRight: Radius.circular(32),

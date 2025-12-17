@@ -42,7 +42,7 @@ class StationGridItem extends StatelessWidget {
             icon: Icon(
               isFavorite ? Icons.favorite : Icons.favorite_border,
               color: isFavorite
-                  ? Theme.of(context).colorScheme.primary
+                  ? Theme.of(context).colorScheme.onSurface
                   : Theme.of(context).colorScheme.onSurface,
             ),
             onPressed: onFavorite,

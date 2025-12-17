@@ -179,7 +179,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {

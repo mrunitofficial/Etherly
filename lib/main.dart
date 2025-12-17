@@ -158,22 +158,22 @@ class _MyAppState extends State<MyApp> {
               theme: ThemeData(
                 useMaterial3: true,
                 colorScheme: lightColorScheme,
-                scaffoldBackgroundColor: lightColorScheme.surfaceContainerHighest,
+                scaffoldBackgroundColor: lightColorScheme.surfaceContainer,
                 appBarTheme: AppBarTheme(
-                  toolbarHeight: 72,
+                  toolbarHeight: 80,
                   titleSpacing: 0.0,
-                  surfaceTintColor: lightColorScheme.surfaceContainerLowest,
+                  surfaceTintColor: lightColorScheme.surfaceContainer,
                   shadowColor: Colors.black,
                   backgroundColor: kIsWeb
-                      ? lightColorScheme.surfaceContainerHighest
+                      ? lightColorScheme.surfaceContainer
                       : null,
                   scrolledUnderElevation: kIsWeb ? 0 : null,
                 ),
                 navigationBarTheme: NavigationBarThemeData(
-                  backgroundColor: lightColorScheme.surfaceContainerHighest,
+                  backgroundColor: lightColorScheme.surfaceContainer,
                 ),
                 navigationRailTheme: NavigationRailThemeData(
-                  backgroundColor: lightColorScheme.surfaceContainerHighest,
+                  backgroundColor: lightColorScheme.surfaceContainer,
                 ),
               ),
 
@@ -181,22 +181,22 @@ class _MyAppState extends State<MyApp> {
               darkTheme: ThemeData(
                 useMaterial3: true,
                 colorScheme: darkColorScheme,
-                scaffoldBackgroundColor: darkColorScheme.surfaceContainerHighest,
+                scaffoldBackgroundColor: darkColorScheme.surfaceContainer,
                 appBarTheme: AppBarTheme(
                   toolbarHeight: 80,
                   titleSpacing: 0.0,
-                  surfaceTintColor: darkColorScheme.surfaceContainerHighest,
-                  shadowColor: Colors.black,
+                  surfaceTintColor: darkColorScheme.surfaceContainer,
+                  shadowColor: Colors.white,
                   backgroundColor: kIsWeb
-                      ? darkColorScheme.surfaceContainerHighest
+                      ? darkColorScheme.surfaceContainer
                       : null,
                   scrolledUnderElevation: kIsWeb ? 0 : null,
                 ),
                 navigationBarTheme: NavigationBarThemeData(
-                  backgroundColor: darkColorScheme.surfaceContainerHighest,
+                  backgroundColor: darkColorScheme.surfaceContainer,
                 ),
                 navigationRailTheme: NavigationRailThemeData(
-                  backgroundColor: darkColorScheme.surfaceContainerHighest,
+                  backgroundColor: darkColorScheme.surfaceContainer,
                 ),
               ),
 
@@ -342,8 +342,8 @@ class _MyHomePageState extends State<MyHomePage> {
         leading: IconButton(
           icon: Image.asset(
             'assets/app_icon.png',
-            width: screenType == ScreenType.largeScreen ? 48 : 24,
-            height: screenType == ScreenType.largeScreen ? 48 : 24,
+            width: screenType == ScreenType.largeScreen ? 32 : 24,
+            height: screenType == ScreenType.largeScreen ? 32 : 24,
           ),
           tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
           onPressed: () {
@@ -360,9 +360,7 @@ class _MyHomePageState extends State<MyHomePage> {
           padding: const EdgeInsets.only(left: 16, right: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
-            color: kIsWeb
-                ? Theme.of(context).colorScheme.surfaceContainerHigh
-                : Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
           child: Row(
             children: [
@@ -432,7 +430,10 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: Icon(
+              Icons.settings,
+              size: kIsWeb ? 32 : 24,
+            ),
             tooltip:
                 AppLocalizations.of(
                   context,
@@ -551,7 +552,6 @@ class _MyHomePageState extends State<MyHomePage> {
       bottomNavigationBar: screenType == ScreenType.largeScreen
           ? Container(
               height: 16,
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
             )
           : NavigationBar(
               selectedIndex: _selectedIndex,

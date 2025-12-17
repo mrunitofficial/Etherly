@@ -108,7 +108,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.translate('settingsTitle')),
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
       body: Stack(
         children: [
