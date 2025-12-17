@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'models/device.dart';
 import 'localization/app_localizations.dart';
 import 'services/radio_player_service.dart';
@@ -340,8 +341,8 @@ class _MyHomePageState extends State<MyHomePage> {
             ? _navigationRailWidth
             : null,
         leading: IconButton(
-          icon: Image.asset(
-            'assets/app_icon.png',
+          icon: SvgPicture.asset(
+            'assets/icon_base.svg',
             width: screenType == ScreenType.largeScreen ? 32 : 24,
             height: screenType == ScreenType.largeScreen ? 32 : 24,
           ),

@@ -23,6 +23,7 @@ dependencies:
   url_launcher: ^6.3.2
   speech_to_text: ^7.3.0
   flutter_chrome_cast: ^1.2.5
+  flutter_svg: ^2.0.10
 
 dev_dependencies:
   flutter_test:
