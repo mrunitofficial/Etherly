@@ -282,7 +282,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final size = MediaQuery.of(context).size;
     final orientation = MediaQuery.of(context).orientation;
 
-    final isTablet = size.shortestSide >= 700;
+    final isTablet = size.shortestSide >= 750;
     if (isTablet && orientation == Orientation.landscape) {
       return ScreenType.largeScreen;
     }
