@@ -107,8 +107,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
         title: Text(loc.translate('settingsTitle')),
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
       body: Stack(
         children: [
@@ -129,29 +129,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
-          if (!kIsWeb)
-            Positioned(
-              right: 24,
-              bottom: 48,
-              child: FloatingActionButton.extended(
-                icon: const Icon(Icons.feedback_outlined),
-                label: Text(loc.translate('settingsSendFeedback')),
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                onPressed: () async {
-                  const email = 'info@etherly.nl';
-                  final subject = loc.translate('settingsFeedbackEmailSubject');
-                  final mailtoLink =
-                      'mailto:$email?subject=${Uri.encodeComponent(subject)}';
-                  if (await canLaunchUrlString(mailtoLink)) {
-                    await launchUrlString(mailtoLink);
-                  } else {}
-                },
+          Positioned(
+            right: 24,
+            bottom: 48,
+            child: FloatingActionButton.extended(
+              icon: const Icon(Icons.feedback_outlined),
+              label: Text(loc.translate('settingsSendFeedback')),
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
+              onPressed: () async {
+                const email = 'info@etherly.nl';
+                final subject = loc.translate('settingsFeedbackEmailSubject');
+                final mailtoLink =
+                    'mailto:$email?subject=${Uri.encodeComponent(subject)}';
+                if (await canLaunchUrlString(mailtoLink)) {
+                  await launchUrlString(mailtoLink);
+                } else {}
+              },
             ),
+          ),
         ],
       ),
     );

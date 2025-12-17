@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'models/device.dart';
 import 'localization/app_localizations.dart';
 import 'services/radio_player_service.dart';
@@ -158,22 +159,22 @@ class _MyAppState extends State<MyApp> {
               theme: ThemeData(
                 useMaterial3: true,
                 colorScheme: lightColorScheme,
-                scaffoldBackgroundColor: lightColorScheme.surfaceContainerHighest,
+                scaffoldBackgroundColor: lightColorScheme.surfaceContainer,
                 appBarTheme: AppBarTheme(
-                  toolbarHeight: 72,
+                  toolbarHeight: 80,
                   titleSpacing: 0.0,
-                  surfaceTintColor: lightColorScheme.surfaceContainerLowest,
-                  shadowColor: Colors.black,
+                  surfaceTintColor: lightColorScheme.surfaceContainer,
+                  shadowColor: lightColorScheme.surfaceContainerLowest,
                   backgroundColor: kIsWeb
-                      ? lightColorScheme.surfaceContainerHighest
+                      ? lightColorScheme.surfaceContainer
                       : null,
                   scrolledUnderElevation: kIsWeb ? 0 : null,
                 ),
                 navigationBarTheme: NavigationBarThemeData(
-                  backgroundColor: lightColorScheme.surfaceContainerHighest,
+                  backgroundColor: lightColorScheme.surfaceContainer,
                 ),
                 navigationRailTheme: NavigationRailThemeData(
-                  backgroundColor: lightColorScheme.surfaceContainerHighest,
+                  backgroundColor: lightColorScheme.surfaceContainer,
                 ),
               ),
 
@@ -181,22 +182,22 @@ class _MyAppState extends State<MyApp> {
               darkTheme: ThemeData(
                 useMaterial3: true,
                 colorScheme: darkColorScheme,
-                scaffoldBackgroundColor: darkColorScheme.surfaceContainerHighest,
+                scaffoldBackgroundColor: darkColorScheme.surfaceContainer,
                 appBarTheme: AppBarTheme(
                   toolbarHeight: 80,
                   titleSpacing: 0.0,
-                  surfaceTintColor: darkColorScheme.surfaceContainerHighest,
-                  shadowColor: Colors.black,
+                  surfaceTintColor: darkColorScheme.surfaceContainer,
+                  shadowColor: darkColorScheme.surfaceContainerLowest,
                   backgroundColor: kIsWeb
-                      ? darkColorScheme.surfaceContainerHighest
+                      ? darkColorScheme.surfaceContainer
                       : null,
                   scrolledUnderElevation: kIsWeb ? 0 : null,
                 ),
                 navigationBarTheme: NavigationBarThemeData(
-                  backgroundColor: darkColorScheme.surfaceContainerHighest,
+                  backgroundColor: darkColorScheme.surfaceContainer,
                 ),
                 navigationRailTheme: NavigationRailThemeData(
-                  backgroundColor: darkColorScheme.surfaceContainerHighest,
+                  backgroundColor: darkColorScheme.surfaceContainer,
                 ),
               ),
 
@@ -282,7 +283,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final size = MediaQuery.of(context).size;
     final orientation = MediaQuery.of(context).orientation;
 
-    final isTablet = size.shortestSide >= 700;
+    final isTablet = size.shortestSide >= 750;
     if (isTablet && orientation == Orientation.landscape) {
       return ScreenType.largeScreen;
     }
@@ -340,10 +341,10 @@ class _MyHomePageState extends State<MyHomePage> {
             ? _navigationRailWidth
             : null,
         leading: IconButton(
-          icon: Image.asset(
-            'assets/app_icon.png',
-            width: screenType == ScreenType.largeScreen ? 48 : 24,
-            height: screenType == ScreenType.largeScreen ? 48 : 24,
+          icon: SvgPicture.asset(
+            'assets/icon_base.svg',
+            width: screenType == ScreenType.largeScreen ? 32 : 24,
+            height: screenType == ScreenType.largeScreen ? 32 : 24,
           ),
           tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
           onPressed: () {
@@ -360,12 +361,16 @@ class _MyHomePageState extends State<MyHomePage> {
           padding: const EdgeInsets.only(left: 16, right: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
-            color: kIsWeb
-                ? Theme.of(context).colorScheme.surfaceContainerHigh
-                : Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
           child: Row(
             children: [
+              Icon(
+                Icons.search,
+                color: Theme.of(context).hintColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: GestureDetector(
                   onTap: () => Navigator.of(context).push(
@@ -432,7 +437,10 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: Icon(
+              Icons.settings,
+              size: kIsWeb ? 32 : 24,
+            ),
             tooltip:
                 AppLocalizations.of(
                   context,
@@ -551,7 +559,6 @@ class _MyHomePageState extends State<MyHomePage> {
       bottomNavigationBar: screenType == ScreenType.largeScreen
           ? Container(
               height: 16,
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
             )
           : NavigationBar(
               selectedIndex: _selectedIndex,

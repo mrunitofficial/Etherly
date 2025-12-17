@@ -27,7 +27,7 @@ class CategoryRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 4.0),
+          padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 4.0),
           child: Text(
             title,
             style: Theme.of(
@@ -76,7 +76,7 @@ class CategoryRow extends StatelessWidget {
             height: itemWidth,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
               itemCount: stations.length,
               itemExtent: itemWidth + 8.0,
               cacheExtent: (itemWidth * 3),

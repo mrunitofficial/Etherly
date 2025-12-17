@@ -237,7 +237,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   FadeTransition(opacity: animation, child: child),
               child: Padding(
                 key: ValueKey(station.id),
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
                 child: SizedBox(
                   height: 80.0,
                   child: StationCardItem(
@@ -269,7 +269,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               : null;
 
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: SizedBox(
               height: 80.0,
               child: Row(
@@ -291,6 +291,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     ),
                   ),
                   if (rightStation != null) ...[
+                    const SizedBox(width: 8.0),
                     Expanded(
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 200),

@@ -42,7 +42,7 @@ class StationArt extends StatelessWidget {
       final colorScheme = Theme.of(context).colorScheme;
 
       Widget fallback({required bool loading}) {
-        final fallbackBackgroundColor = colorScheme.surfaceContainerHigh;
+        final fallbackBackgroundColor = colorScheme.surfaceContainerHighest;
         final fallbackContentColor = colorScheme.onSurfaceVariant;
         final indicatorSize = resolvedSize * 0.30;
         final indicatorStrokeWidth = indicatorSize * 0.12;

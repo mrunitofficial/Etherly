@@ -222,8 +222,9 @@ class _StationsScreenState extends State<StationsScreen> {
     EdgeInsets padding,
     bool isLargeScreen,
   ) {
+    
+    // Small screen: single-column layout
     if (!isLargeScreen) {
-      // Small screen: single-column layout
       return SliverPadding(
         padding: padding,
         sliver: SliverList.builder(
@@ -232,7 +233,7 @@ class _StationsScreenState extends State<StationsScreen> {
             final item = items[index];
             if (item is String) {
               return Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 0.0),
+                padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0.0),
                 child: Text(
                   item,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -244,7 +245,7 @@ class _StationsScreenState extends State<StationsScreen> {
             if (item is Station) {
               return Padding(
                 key: ValueKey(item.id),
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
                 child: SizedBox(
                   height: 80.0,
                   child: StationCardItem(
@@ -271,7 +272,7 @@ class _StationsScreenState extends State<StationsScreen> {
           final item = items[index];
           if (item is String) {
             return Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 0.0),
+              padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0.0),
               child: Text(
                 item,
                 style: Theme.of(
@@ -297,7 +298,7 @@ class _StationsScreenState extends State<StationsScreen> {
             }
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
               child: SizedBox(
                 height: 80.0,
                 child: Row(
@@ -311,7 +312,8 @@ class _StationsScreenState extends State<StationsScreen> {
                         onFavorite: () => service.toggleFavorite(item),
                       ),
                     ),
-                    if (nextStation != null)
+                    if (nextStation != null) ...[    
+                      const SizedBox(width: 8.0),
                       Expanded(
                         child: StationCardItem(
                           key: ValueKey(nextStation.id),
@@ -321,8 +323,8 @@ class _StationsScreenState extends State<StationsScreen> {
                           onFavorite: () =>
                               service.toggleFavorite(nextStation!),
                         ),
-                      )
-                    else
+                      ),
+                    ] else
                       const Expanded(child: SizedBox.shrink()),
                   ],
                 ),
@@ -342,7 +344,7 @@ class _StationsScreenState extends State<StationsScreen> {
     EdgeInsets padding,
   ) {
     return SliverPadding(
-      padding: padding.copyWith(left: 8.0, right: 8.0, top: 4.0),
+      padding: padding.copyWith(left: 12.0, right: 12.0, top: 4.0),
       sliver: SliverGrid.builder(
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 128.0,
