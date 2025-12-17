@@ -13,7 +13,7 @@ class ScreenHeader extends StatelessWidget {
     return SizedBox(
       height: _headerHeight,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(8.0, 16.0, 8.0, 8.0),
+        padding: const EdgeInsets.fromLTRB(12.0, 16.0, 12.0, 8.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,

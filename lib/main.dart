@@ -163,7 +163,7 @@ class _MyAppState extends State<MyApp> {
                   toolbarHeight: 80,
                   titleSpacing: 0.0,
                   surfaceTintColor: lightColorScheme.surfaceContainer,
-                  shadowColor: Colors.black,
+                  shadowColor: lightColorScheme.surfaceContainerLowest,
                   backgroundColor: kIsWeb
                       ? lightColorScheme.surfaceContainer
                       : null,
@@ -186,7 +186,7 @@ class _MyAppState extends State<MyApp> {
                   toolbarHeight: 80,
                   titleSpacing: 0.0,
                   surfaceTintColor: darkColorScheme.surfaceContainer,
-                  shadowColor: Colors.white,
+                  shadowColor: darkColorScheme.surfaceContainerLowest,
                   backgroundColor: kIsWeb
                       ? darkColorScheme.surfaceContainer
                       : null,

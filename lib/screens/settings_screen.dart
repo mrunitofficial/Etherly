@@ -107,6 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
         title: Text(loc.translate('settingsTitle')),
       ),
       body: Stack(

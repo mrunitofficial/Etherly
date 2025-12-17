@@ -19,7 +19,8 @@ class StationCardItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Card.filled(
+      margin: EdgeInsets.zero,
       color: Theme.of(context).colorScheme.surfaceContainerHigh,
       child: InkWell(
         borderRadius: BorderRadius.circular(12.0),
