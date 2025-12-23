@@ -4,7 +4,7 @@ import 'package:etherly/localization/app_localizations.dart';
 
 /// A dialog widget for selecting the streaming quality of a radio station.
 class QualitySetting extends StatelessWidget {
-  final Station station;
+  final Station? station;
   final String selectedQuality;
   final void Function(String) onQualitySelected;
 
@@ -22,14 +22,14 @@ class QualitySetting extends StatelessWidget {
       {
         'key': 'mp3',
         'label': loc?.translate('settingsStreamingQualityHigh') ?? 'High (MP3)',
-        'enabled': station.streamMP3.isNotEmpty,
+        'enabled': station != null && station!.streamMP3.isNotEmpty,
       },
       {
         'key': 'aac',
         'label':
             loc?.translate('settingsStreamingQualityHighest') ??
             'Highest (AAC)',
-        'enabled': station.streamAAC.isNotEmpty,
+        'enabled': station != null && station!.streamAAC.isNotEmpty,
       },
     ];
 

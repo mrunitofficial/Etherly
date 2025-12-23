@@ -3,10 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/models/device.dart';
+import 'package:etherly/models/station.dart';
 import 'package:etherly/services/radio_player_service.dart';
 import 'package:etherly/widgets/full_player.dart';
 import 'package:etherly/widgets/small_player.dart';
 import 'package:etherly/widgets/play_button.dart';
+import 'package:etherly/widgets/sleep_timer.dart';
+import 'package:etherly/widgets/quality_setting.dart';
 
 /// Radio player widget with draggable sheet for small screens.
 class RadioPlayer extends StatefulWidget {
@@ -134,20 +137,99 @@ class _RadioPlayerState extends State<RadioPlayer> {
                   alignment: Alignment.bottomRight,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(0, 0, 20, 20),
-                    child: PlayButton(
-                      service: service,
-                      countdown: countdown,
-                      processingState: service.playbackState.processingState,
-                      isPlaying: service.isPlaying,
-                      isCastLoading: service.isCastLoading,
-                      small: true,
-                      heroTag: 'mini_player_fab_landscape',
-                      elevation: 6,
-                      tooltip:
-                          AppLocalizations.of(
-                            context,
-                          )?.translate('playerPlay') ??
-                          'Play',
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        ValueListenableBuilder<bool>(
+                          valueListenable: service.sleepTimerActive,
+                          builder: (context, isSleepTimerSet, _) => FloatingActionButton.small(
+                            heroTag: 'mini_timer_fab',
+                            backgroundColor: isSleepTimerSet
+                                ? Theme.of(context).colorScheme.primaryContainer
+                                : Theme.of(context).colorScheme.secondaryContainer,
+                            onPressed: isSleepTimerSet
+                                ? () => service.cancelSleepTimer()
+                                : () async {
+                                    final selected = await showDialog<Duration>(
+                                      context: context,
+                                      builder: (context) => SleepTimer(
+                                        onTimerSelected: (duration) =>
+                                            Navigator.of(context).pop(duration),
+                                      ),
+                                    );
+                                    if (selected != null) service.setSleepTimer(selected);
+                                  },
+                            tooltip: isSleepTimerSet
+                                ? (AppLocalizations.of(context)?.translate('playerCancelSleepTimer') ??
+                                    'Cancel sleep timer')
+                                : (AppLocalizations.of(context)?.translate('playerSleepTimer') ?? 'Sleep timer'),
+                            child: Icon(
+                              isSleepTimerSet ? Icons.timer : Icons.timer_outlined,
+                              color: isSleepTimerSet
+                                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                                  : Theme.of(context).colorScheme.onSecondaryContainer,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FloatingActionButton.small(
+                          heroTag: 'mini_quality_fab',
+                          backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                          onPressed: () async {
+                            final mediaItem = service.mediaItem;
+                            Station? station;
+                            
+                            if (mediaItem != null && service.stations.isNotEmpty) {
+                              station = service.stations.firstWhere(
+                                (s) => s.id == mediaItem.id,
+                                orElse: () => service.stations.first,
+                              );
+                            }
+
+                            final prefQuality = service.prefs.getString('streamQuality') ?? 'mp3';
+                            final selectedQuality = station != null && prefQuality == 'aac'
+                                ? (station.streamAAC.isNotEmpty ? 'aac' : 'mp3')
+                                : 'mp3';
+
+                            final newQuality = await showDialog<String>(
+                              context: context,
+                              builder: (context) => QualitySetting(
+                                station: station,
+                                selectedQuality: selectedQuality,
+                                onQualitySelected: (q) => Navigator.of(context).pop(q),
+                              ),
+                            );
+                            
+                            if (newQuality != null && station != null && newQuality != selectedQuality) {
+                              service.prefs.setString('streamQuality', newQuality);
+                              service.stop();
+                              service.playMediaItem(station);
+                            }
+                          },
+                          tooltip: AppLocalizations.of(context)?.translate('playerStreamQuality') ?? 'Stream quality',
+                          child: Icon(
+                            Icons.high_quality_outlined,
+                            color: Theme.of(context).colorScheme.onSecondaryContainer,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        PlayButton(
+                          service: service,
+                          countdown: countdown,
+                          processingState: service.playbackState.processingState,
+                          isPlaying: service.isPlaying,
+                          isCastLoading: service.isCastLoading,
+                          small: true,
+                          heroTag: 'mini_player_fab_landscape',
+                          elevation: 6,
+                          tooltip:
+                              AppLocalizations.of(
+                                context,
+                              )?.translate('playerPlay') ??
+                              'Play',
+                        ),
+                      ],
                     ),
                   ),
                 ),
