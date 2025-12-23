@@ -245,14 +245,11 @@ class _StationsScreenState extends State<StationsScreen> {
               return Padding(
                 key: ValueKey(item.id),
                 padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-                child: SizedBox(
-                  height: 80.0,
-                  child: StationCardItem(
-                    station: item,
-                    isFavorite: item.isFavorite,
-                    onTap: () => service.playMediaItem(item),
-                    onFavorite: () => service.toggleFavorite(item),
-                  ),
+                child: StationCardItem(
+                  station: item,
+                  isFavorite: item.isFavorite,
+                  onTap: () => service.playMediaItem(item),
+                  onFavorite: () => service.toggleFavorite(item),
                 ),
               );
             }

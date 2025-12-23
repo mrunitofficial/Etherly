@@ -33,7 +33,7 @@ class StationCardItem extends StatelessWidget {
                 artUrl: station.artURL,
                 borderRadius: BorderRadius.circular(8.0),
               ),
-              const SizedBox(width: 16.0),
+              const SizedBox(width: 8.0),
               Expanded(
                 child: Text(
                   station.name,
@@ -44,8 +44,9 @@ class StationCardItem extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 16.0),
               IconButton(
+                padding: const EdgeInsets.all(8.0),
+                constraints: const BoxConstraints(),
                 icon: Icon(
                   isFavorite ? Icons.favorite : Icons.favorite_border,
                   color: Theme.of(context).colorScheme.onSurface,

@@ -237,14 +237,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: Padding(
                 key: ValueKey(station.id),
                 padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-                child: SizedBox(
-                  height: 80.0,
-                  child: StationCardItem(
-                    station: station,
-                    isFavorite: station.isFavorite,
-                    onTap: () => service.playMediaItem(station),
-                    onFavorite: () => service.toggleFavorite(station),
-                  ),
+                child: StationCardItem(
+                  station: station,
+                  isFavorite: station.isFavorite,
+                  onTap: () => service.playMediaItem(station),
+                  onFavorite: () => service.toggleFavorite(station),
                 ),
               ),
             );
