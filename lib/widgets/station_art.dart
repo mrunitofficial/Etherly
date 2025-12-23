@@ -23,7 +23,7 @@ String getSafeArtUrl(MediaItem? mediaItem) {
 }
 
 /// A compact build that resolves size once and uses local closures for placeholders/error.
-class StationArt extends StatelessWidget {
+class StationArt extends StatefulWidget {
   const StationArt({
     super.key,
     required this.artUrl,
@@ -37,9 +37,26 @@ class StationArt extends StatelessWidget {
   static const _defaultSize = 56.0;
 
   @override
+  State<StationArt> createState() => _StationArtState();
+}
+
+class _StationArtState extends State<StationArt> {
+  bool _showPlaceholder = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() => _showPlaceholder = true);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     Widget buildForSize(double resolvedSize) {
-      final effectiveBorderRadius = borderRadius ?? BorderRadius.circular(12.0);
+      final effectiveBorderRadius = widget.borderRadius ?? BorderRadius.circular(12.0);
       final colorScheme = Theme.of(context).colorScheme;
 
       Widget fallback({required bool loading}) {
@@ -56,7 +73,7 @@ class StationArt extends StatelessWidget {
             borderRadius: effectiveBorderRadius,
           ),
           child: Center(
-            child: loading
+            child: (loading && !_showPlaceholder)
                 ? SizedBox(
                     width: indicatorSize,
                     height: indicatorSize,
@@ -81,7 +98,7 @@ class StationArt extends StatelessWidget {
       return ClipRRect(
         borderRadius: effectiveBorderRadius,
         child: CachedNetworkImage(
-          imageUrl: artUrl,
+          imageUrl: widget.artUrl,
           height: resolvedSize,
           width: resolvedSize,
           fit: BoxFit.cover,
@@ -106,16 +123,16 @@ class StationArt extends StatelessWidget {
       );
     }
 
-    if (size.isInfinite) {
+    if (widget.size.isInfinite) {
       return LayoutBuilder(
         builder: (context, constraints) {
           final shortest = constraints.biggest.shortestSide;
-          final resolved = shortest.isFinite ? shortest : _defaultSize;
+          final resolved = shortest.isFinite ? shortest : StationArt._defaultSize;
           return buildForSize(resolved);
         },
       );
     } else {
-      return buildForSize(size);
+      return buildForSize(widget.size);
     }
   }
 }
