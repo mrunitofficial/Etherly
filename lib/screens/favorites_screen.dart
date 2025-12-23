@@ -129,9 +129,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     }
 
     final loc = AppLocalizations.of(context);
-    final isLargeScreen = widget.screenType != ScreenType.smallScreenVertical;
+    final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = EdgeInsets.only(
-      bottom: isLargeScreen ? 8.0 : (_miniPlayerHeight + 8.0),
+      bottom: widget.screenType == ScreenType.largeScreen && screenWidth >= 1400 ? 8.0 : (_miniPlayerHeight + 8.0),
     );
 
     return AnimatedSwitcher(
@@ -174,7 +174,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       favoriteStations,
                       audioPlayerService,
                       bottomPadding,
-                      isLargeScreen,
                     ),
                   ],
                 )
@@ -219,9 +218,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     List<dynamic> stations,
     AudioPlayerService service,
     EdgeInsets padding,
-    bool isLargeScreen,
   ) {
-    if (!isLargeScreen) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    if (widget.screenType != ScreenType.largeScreen || screenWidth < 1400) {
       // Small screen: single-column layout
       return SliverPadding(
         padding: padding,

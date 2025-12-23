@@ -279,12 +279,12 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  /// Determines the screen type based on device size and orientation.
   ScreenType _getScreenType(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final orientation = MediaQuery.of(context).orientation;
 
-    final isTablet = size.shortestSide >= 780;
-    if (isTablet && orientation == Orientation.landscape) {
+    if (size.height >= 800 && size.width >= 800) {
       return ScreenType.largeScreen;
     }
 
@@ -295,6 +295,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return ScreenType.smallScreenVertical;
   }
 
+  /// Builds the appropriate screen widget based on the selected index.
   Widget _buildScreen(int index, ScreenType screenType) {
     switch (index) {
       case 0:
@@ -314,6 +315,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  /// Builds the main Scaffold with AppBar, body, and NavigationBar.
   @override
   Widget build(BuildContext context) {
     final screenType = _getScreenType(context);
