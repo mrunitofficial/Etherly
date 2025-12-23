@@ -1,6 +1,7 @@
 import 'package:etherly/widgets/station_art.dart';
 import 'package:flutter/material.dart';
 import '../models/station.dart';
+import '../models/device.dart';
 
 /// A card item widget representing a radio station with artwork and favorite button.
 class StationCardItem extends StatelessWidget {
@@ -10,12 +11,14 @@ class StationCardItem extends StatelessWidget {
     required this.onTap,
     required this.onFavorite,
     required this.isFavorite,
+    required this.screenType,
   });
 
   final Station station;
   final VoidCallback onTap;
   final VoidCallback onFavorite;
   final bool isFavorite;
+  final ScreenType screenType;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +34,7 @@ class StationCardItem extends StatelessWidget {
             children: [
               StationArt(
                 artUrl: station.artURL,
+                size: screenType == ScreenType.largeScreen ? 84.0 : 56.0,
                 borderRadius: BorderRadius.circular(8.0),
               ),
               const SizedBox(width: 16.0),
@@ -44,8 +48,9 @@ class StationCardItem extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 16.0),
               IconButton(
+                padding: const EdgeInsets.all(8.0),
+                constraints: const BoxConstraints(),
                 icon: Icon(
                   isFavorite ? Icons.favorite : Icons.favorite_border,
                   color: Theme.of(context).colorScheme.onSurface,

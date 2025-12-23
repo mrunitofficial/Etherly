@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
 
@@ -22,7 +23,7 @@ String getSafeArtUrl(MediaItem? mediaItem) {
 }
 
 /// A compact build that resolves size once and uses local closures for placeholders/error.
-class StationArt extends StatelessWidget {
+class StationArt extends StatefulWidget {
   const StationArt({
     super.key,
     required this.artUrl,
@@ -36,9 +37,26 @@ class StationArt extends StatelessWidget {
   static const _defaultSize = 56.0;
 
   @override
+  State<StationArt> createState() => _StationArtState();
+}
+
+class _StationArtState extends State<StationArt> {
+  bool _showPlaceholder = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() => _showPlaceholder = true);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     Widget buildForSize(double resolvedSize) {
-      final effectiveBorderRadius = borderRadius ?? BorderRadius.circular(12.0);
+      final effectiveBorderRadius = widget.borderRadius ?? BorderRadius.circular(12.0);
       final colorScheme = Theme.of(context).colorScheme;
 
       Widget fallback({required bool loading}) {
@@ -55,7 +73,7 @@ class StationArt extends StatelessWidget {
             borderRadius: effectiveBorderRadius,
           ),
           child: Center(
-            child: loading
+            child: (loading && !_showPlaceholder)
                 ? SizedBox(
                     width: indicatorSize,
                     height: indicatorSize,
@@ -80,12 +98,16 @@ class StationArt extends StatelessWidget {
       return ClipRRect(
         borderRadius: effectiveBorderRadius,
         child: CachedNetworkImage(
-          imageUrl: artUrl,
+          imageUrl: widget.artUrl,
           height: resolvedSize,
           width: resolvedSize,
           fit: BoxFit.cover,
           memCacheWidth: cacheDimension,
           memCacheHeight: cacheDimension,
+          maxWidthDiskCache: cacheDimension,
+          maxHeightDiskCache: cacheDimension,
+          fadeInDuration: kIsWeb ? Duration.zero : const Duration(milliseconds: 500),
+          fadeOutDuration: Duration.zero,
           imageBuilder: (_, image) => DecoratedBox(
             decoration: BoxDecoration(
               image: DecorationImage(image: image, fit: BoxFit.cover),
@@ -101,16 +123,16 @@ class StationArt extends StatelessWidget {
       );
     }
 
-    if (size.isInfinite) {
+    if (widget.size.isInfinite) {
       return LayoutBuilder(
         builder: (context, constraints) {
           final shortest = constraints.biggest.shortestSide;
-          final resolved = shortest.isFinite ? shortest : _defaultSize;
+          final resolved = shortest.isFinite ? shortest : StationArt._defaultSize;
           return buildForSize(resolved);
         },
       );
     } else {
-      return buildForSize(size);
+      return buildForSize(widget.size);
     }
   }
 }

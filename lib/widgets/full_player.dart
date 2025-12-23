@@ -267,35 +267,37 @@ class FullPlayerControls extends StatelessWidget {
 }
 
 /// Helper function to handle stream quality changes.
-void handleStreamQuality(BuildContext context) {
+void handleStreamQuality(BuildContext context) async {
   final service = Provider.of<AudioPlayerService>(context, listen: false);
   final mediaItem = service.mediaItem;
-  if (mediaItem == null || service.stations.isEmpty) return;
-
-  final station = service.stations.firstWhere(
-    (s) => s.id == mediaItem.id,
-    orElse: () => service.stations.first,
-  );
+  Station? station;
+  
+  if (mediaItem != null && service.stations.isNotEmpty) {
+    station = service.stations.firstWhere(
+      (s) => s.id == mediaItem.id,
+      orElse: () => service.stations.first,
+    );
+  }
 
   final prefQuality = service.prefs.getString('streamQuality') ?? 'mp3';
-  final selectedQuality = prefQuality == 'aac'
+  final selectedQuality = station != null && prefQuality == 'aac'
       ? (station.streamAAC.isNotEmpty ? 'aac' : 'mp3')
-      : (station.streamMP3.isNotEmpty ? 'mp3' : 'aac');
+      : 'mp3';
 
-  showDialog<String>(
+  final newQuality = await showDialog<String>(
     context: context,
     builder: (context) => QualitySetting(
       station: station,
       selectedQuality: selectedQuality,
       onQualitySelected: (q) => Navigator.of(context).pop(q),
     ),
-  ).then((newQuality) {
-    if (newQuality != null && newQuality != selectedQuality) {
-      service.prefs.setString('streamQuality', newQuality);
-      service.stop();
-      service.playMediaItem(station);
-    }
-  });
+  );
+  
+  if (newQuality != null && station != null && newQuality != selectedQuality) {
+    service.prefs.setString('streamQuality', newQuality);
+    service.stop();
+    service.playMediaItem(station);
+  }
 }
 
 /// Quality button in the full player header (web only).
