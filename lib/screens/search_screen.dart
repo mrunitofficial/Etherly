@@ -12,7 +12,10 @@ import 'package:permission_handler/permission_handler.dart';
 class SearchScreen extends StatefulWidget {
   final bool startListening;
 
-  const SearchScreen({super.key, this.startListening = false});
+  const SearchScreen({
+    super.key, 
+    this.startListening = false,
+  });
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -23,6 +26,17 @@ class _SearchScreenState extends State<SearchScreen> {
   String _query = '';
   late stt.SpeechToText _speech;
   bool _isListening = false;
+
+  ScreenType _getScreenType(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    if (size.width >= 600) {
+      return ScreenType.largeScreen;
+    }
+    if (size.width > size.height) {
+      return ScreenType.smallScreenHorizontal;
+    }
+    return ScreenType.smallScreenVertical;
+  }
 
   /// Initializes and disposes resources.
   @override
@@ -114,6 +128,8 @@ class _SearchScreenState extends State<SearchScreen> {
     final audioPlayerService = Provider.of<AudioPlayerService>(context);
     final stations = audioPlayerService.stations;
     final loc = AppLocalizations.of(context);
+    final screenType = _getScreenType(context);
+    final screenWidth = MediaQuery.of(context).size.width;
 
     final filtered = _query.isEmpty
         ? <Station>[]
@@ -157,30 +173,93 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
       );
     } else {
-      bodyContent = ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0),
-        itemCount: filtered.length,
-        itemBuilder: (context, index) {
-          final station = filtered[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0),
-            child: StationCardItem(
-              station: station,
-              isFavorite: station.isFavorite,
-              screenType: ScreenType.smallScreenVertical,
-              onTap: () async {
-                audioPlayerService.playMediaItem(station);
-                audioPlayerService.radioPlayerShouldClose.value = true;
-                Navigator.of(context).pop();
-                await Future.delayed(const Duration(milliseconds: 350));
-              },
-              onFavorite: () {
-                audioPlayerService.toggleFavorite(station);
-              },
-            ),
-          );
-        },
-      );
+      
+      // Small screen: single-column layout
+      if (screenType != ScreenType.largeScreen || screenWidth < 1400) {
+        bodyContent = ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          itemCount: filtered.length,
+          itemBuilder: (context, index) {
+            final station = filtered[index];
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: StationCardItem(
+                station: station,
+                isFavorite: station.isFavorite,
+                screenType: screenType,
+                onTap: () async {
+                  audioPlayerService.playMediaItem(station);
+                  audioPlayerService.radioPlayerShouldClose.value = true;
+                  Navigator.of(context).pop();
+                  await Future.delayed(const Duration(milliseconds: 350));
+                },
+                onFavorite: () {
+                  audioPlayerService.toggleFavorite(station);
+                },
+              ),
+            );
+          },
+        );
+      } else {
+        // Large screen: 2-column layout
+        final rowCount = (filtered.length / 2).ceil();
+        bodyContent = ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          itemCount: rowCount,
+          itemBuilder: (context, rowIndex) {
+            final leftIndex = rowIndex * 2;
+            final rightIndex = leftIndex + 1;
+            final leftStation = filtered[leftIndex];
+            final rightStation = rightIndex < filtered.length
+                ? filtered[rightIndex]
+                : null;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: StationCardItem(
+                      station: leftStation,
+                      isFavorite: leftStation.isFavorite,
+                      screenType: screenType,
+                      onTap: () async {
+                        audioPlayerService.playMediaItem(leftStation);
+                        audioPlayerService.radioPlayerShouldClose.value = true;
+                        Navigator.of(context).pop();
+                        await Future.delayed(const Duration(milliseconds: 350));
+                      },
+                      onFavorite: () {
+                        audioPlayerService.toggleFavorite(leftStation);
+                      },
+                    ),
+                  ),
+                  if (rightStation != null) ...[
+                    const SizedBox(width: 8.0),
+                    Expanded(
+                      child: StationCardItem(
+                        station: rightStation,
+                        isFavorite: rightStation.isFavorite,
+                        screenType: screenType,
+                        onTap: () async {
+                          audioPlayerService.playMediaItem(rightStation);
+                          audioPlayerService.radioPlayerShouldClose.value = true;
+                          Navigator.of(context).pop();
+                          await Future.delayed(const Duration(milliseconds: 350));
+                        },
+                        onFavorite: () {
+                          audioPlayerService.toggleFavorite(rightStation);
+                        },
+                      ),
+                    ),
+                  ] else
+                    const Expanded(child: SizedBox.shrink()),
+                ],
+              ),
+            );
+          },
+        );
+      }
     }
 
     return Scaffold(
