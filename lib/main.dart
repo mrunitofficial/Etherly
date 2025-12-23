@@ -351,8 +351,8 @@ class _MyHomePageState extends State<MyHomePage> {
         leading: IconButton(
           icon: SvgPicture.asset(
             'assets/icon_base.svg',
-            width: screenType == ScreenType.largeScreen ? 32 : 24,
-            height: screenType == ScreenType.largeScreen ? 32 : 24,
+            width: screenType == ScreenType.largeScreen ? 36 : 24,
+            height: screenType == ScreenType.largeScreen ? 36 : 24,
           ),
           tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
           onPressed: () {
@@ -365,7 +365,6 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         title: Container(
           height: 56,
-          margin: const EdgeInsets.symmetric(horizontal: 0),
           padding: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
@@ -457,7 +456,7 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             icon: Icon(
               Icons.settings,
-              size: kIsWeb ? 32 : 24,
+              size: screenType == ScreenType.largeScreen ? 32 : 24,
             ),
             tooltip:
                 AppLocalizations.of(
