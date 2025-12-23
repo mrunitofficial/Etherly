@@ -27,6 +27,10 @@ const _navigationRailWidth = 96.0;
 /// Entry point of the application.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  PaintingBinding.instance.imageCache.maximumSize = 200;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 100 << 20;
+  
   final prefs = await SharedPreferences.getInstance();
   final themeString = prefs.getString('theme');
   final theme = (ThemeMode.values.firstWhere(
@@ -176,6 +180,9 @@ class _MyAppState extends State<MyApp> {
                 navigationRailTheme: NavigationRailThemeData(
                   backgroundColor: lightColorScheme.surfaceContainer,
                 ),
+                tooltipTheme: const TooltipThemeData(
+                  waitDuration: Duration(milliseconds: 500),
+                ),
               ),
 
               /// Dark theme data
@@ -198,6 +205,9 @@ class _MyAppState extends State<MyApp> {
                 ),
                 navigationRailTheme: NavigationRailThemeData(
                   backgroundColor: darkColorScheme.surfaceContainer,
+                ),
+                tooltipTheme: const TooltipThemeData(
+                  waitDuration: Duration(seconds: 1),
                 ),
               ),
 
@@ -265,26 +275,26 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     _selectedIndex = widget.startingTab;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       final service = context.read<AudioPlayerService>();
       if (service.stations.isNotEmpty) {
-        await service.precacheAllStationArt(context);
+        service.precacheAllStationArt(context);
       } else {
-        service.isReady.addListener(() async {
+        service.isReady.addListener(() {
           if (service.isReady.value) {
-            await service.precacheAllStationArt(context);
+            service.precacheAllStationArt(context);
           }
         });
       }
     });
   }
 
+  /// Determines the screen type based on device size and orientation.
   ScreenType _getScreenType(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final orientation = MediaQuery.of(context).orientation;
 
-    final isTablet = size.shortestSide >= 750;
-    if (isTablet && orientation == Orientation.landscape) {
+    if (size.height >= 800 && size.width >= 800) {
       return ScreenType.largeScreen;
     }
 
@@ -295,6 +305,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return ScreenType.smallScreenVertical;
   }
 
+  /// Builds the appropriate screen widget based on the selected index.
   Widget _buildScreen(int index, ScreenType screenType) {
     switch (index) {
       case 0:
@@ -314,6 +325,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  /// Builds the main Scaffold with AppBar, body, and NavigationBar.
   @override
   Widget build(BuildContext context) {
     final screenType = _getScreenType(context);
@@ -343,8 +355,8 @@ class _MyHomePageState extends State<MyHomePage> {
         leading: IconButton(
           icon: SvgPicture.asset(
             'assets/icon_base.svg',
-            width: screenType == ScreenType.largeScreen ? 32 : 24,
-            height: screenType == ScreenType.largeScreen ? 32 : 24,
+            width: screenType == ScreenType.largeScreen ? 36 : 24,
+            height: screenType == ScreenType.largeScreen ? 36 : 24,
           ),
           tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
           onPressed: () {
@@ -357,20 +369,29 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         title: Container(
           height: 56,
-          margin: const EdgeInsets.symmetric(horizontal: 0),
-          padding: const EdgeInsets.only(left: 16, right: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.search,
-                color: Theme.of(context).hintColor,
-                size: 24,
+              IconButton(
+                padding: EdgeInsets.zero,
+                icon: Icon(
+                  Icons.search,
+                  color: Theme.of(context).hintColor,
+                  size: 24,
+                ),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ChangeNotifierProvider.value(
+                      value: context.read<AudioPlayerService>(),
+                      child: const SearchScreen(),
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(width: 12),
               Expanded(
                 child: GestureDetector(
                   onTap: () => Navigator.of(context).push(
@@ -439,7 +460,7 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             icon: Icon(
               Icons.settings,
-              size: kIsWeb ? 32 : 24,
+              size: screenType == ScreenType.largeScreen ? 32 : 24,
             ),
             tooltip:
                 AppLocalizations.of(

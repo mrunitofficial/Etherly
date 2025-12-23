@@ -22,7 +22,8 @@ class CategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double itemWidth = 128.0;
+    const double itemWidth = 128.0;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -36,40 +37,50 @@ class CategoryRow extends StatelessWidget {
           ),
         ),
         if (kIsWeb)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-            child: Wrap(
-              spacing: 8.0,
-              runSpacing: 8.0,
-              children: stations.map((station) {
-                return Selector<AudioPlayerService, Station?>(
-                  selector: (context, service) => service.stations.firstWhere(
-                    (s) => s.id == station.id,
-                    orElse: () => station,
-                  ),
-                  shouldRebuild: (prev, next) =>
-                      prev?.isFavorite != next?.isFavorite,
-                  builder: (context, updatedStation, _) {
-                    if (updatedStation == null) return const SizedBox.shrink();
-                    return SizedBox(
-                      width: itemWidth,
-                      height: itemWidth,
-                      child: RepaintBoundary(
-                        child: StationGridItem(
-                          station: updatedStation,
-                          isFavorite: updatedStation.isFavorite,
-                          onTap: () =>
-                              audioPlayerService.playMediaItem(updatedStation),
-                          onFavorite: () =>
-                              audioPlayerService.toggleFavorite(updatedStation),
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final double availableWidth = constraints.maxWidth - 24.0;
+              final int crossAxisCount = (availableWidth / itemWidth).floor().clamp(2, 12);
+              final double spacing = 8.0;
+              final double totalSpacing = spacing * (crossAxisCount - 1);
+              final double responsiveItemWidth = (availableWidth - totalSpacing) / crossAxisCount;
+              
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                child: Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: stations.map((station) {
+                    return Selector<AudioPlayerService, Station?>(
+                      selector: (context, service) => service.stations.firstWhere(
+                        (s) => s.id == station.id,
+                        orElse: () => station,
                       ),
+                      shouldRebuild: (prev, next) =>
+                          prev?.isFavorite != next?.isFavorite,
+                      builder: (context, updatedStation, _) {
+                        if (updatedStation == null) return const SizedBox.shrink();
+                        return SizedBox(
+                          width: responsiveItemWidth,
+                          height: responsiveItemWidth,
+                          child: RepaintBoundary(
+                            child: StationGridItem(
+                              station: updatedStation,
+                              isFavorite: updatedStation.isFavorite,
+                              onTap: () =>
+                                  audioPlayerService.playMediaItem(updatedStation),
+                              onFavorite: () =>
+                                  audioPlayerService.toggleFavorite(updatedStation),
+                              borderRadius: BorderRadius.circular(12.0),
+                            ),
+                          ),
+                        );
+                      },
                     );
-                  },
-                );
-              }).toList(),
-            ),
+                  }).toList(),
+                ),
+              );
+            },
           )
         else
           SizedBox(

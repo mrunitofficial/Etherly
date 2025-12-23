@@ -401,6 +401,7 @@ class AudioPlayerService with ChangeNotifier {
   static const String _lastStationIdKey = 'last_station_id';
   static const String _favoriteStationIdsKey = 'favorite_station_ids';
   static const String _recentStationIdsKey = 'recent_station_ids';
+  static const String _volumeKey = 'volume';
   static const int _maxRecentStations = 10;
   static const int _autoPlayCountdownStart = 3;
 
@@ -453,6 +454,7 @@ class AudioPlayerService with ChangeNotifier {
   void setVolume(double value) {
     if (kIsWeb) {
       _audioHandler.setVolume(value);
+      _prefs.setDouble(_volumeKey, value);
       notifyListeners();
     }
   }
@@ -493,6 +495,11 @@ class AudioPlayerService with ChangeNotifier {
     icyService.addListener(notifyListeners);
     _audioHandler.setIcyService(icyService);
     _audioHandler.setPrefs(_prefs);
+
+    if (kIsWeb) {
+      final savedVolume = _prefs.getDouble(_volumeKey) ?? 1.0;
+      _audioHandler.setVolume(savedVolume);
+    }
 
     await _loadStations();
     await _checkAutoplay();
