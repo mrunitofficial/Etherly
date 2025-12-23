@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
 
@@ -86,6 +87,10 @@ class StationArt extends StatelessWidget {
           fit: BoxFit.cover,
           memCacheWidth: cacheDimension,
           memCacheHeight: cacheDimension,
+          maxWidthDiskCache: cacheDimension,
+          maxHeightDiskCache: cacheDimension,
+          fadeInDuration: kIsWeb ? Duration.zero : const Duration(milliseconds: 500),
+          fadeOutDuration: Duration.zero,
           imageBuilder: (_, image) => DecoratedBox(
             decoration: BoxDecoration(
               image: DecorationImage(image: image, fit: BoxFit.cover),
