@@ -27,6 +27,10 @@ const _navigationRailWidth = 96.0;
 /// Entry point of the application.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  PaintingBinding.instance.imageCache.maximumSize = 200;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 100 << 20;
+  
   final prefs = await SharedPreferences.getInstance();
   final themeString = prefs.getString('theme');
   final theme = (ThemeMode.values.firstWhere(
@@ -271,14 +275,14 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     _selectedIndex = widget.startingTab;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       final service = context.read<AudioPlayerService>();
       if (service.stations.isNotEmpty) {
-        await service.precacheAllStationArt(context);
+        service.precacheAllStationArt(context);
       } else {
-        service.isReady.addListener(() async {
+        service.isReady.addListener(() {
           if (service.isReady.value) {
-            await service.precacheAllStationArt(context);
+            service.precacheAllStationArt(context);
           }
         });
       }
