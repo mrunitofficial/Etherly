@@ -242,6 +242,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   isFavorite: station.isFavorite,
                   onTap: () => service.playMediaItem(station),
                   onFavorite: () => service.toggleFavorite(station),
+                  screenType: widget.screenType,
                 ),
               ),
             );
@@ -265,11 +266,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               : null;
 
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-            child: SizedBox(
-              height: 80.0,
-              child: Row(
-                children: [
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+            child: Row(
+              children: [
                   Expanded(
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 200),
@@ -283,6 +282,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         isFavorite: leftStation.isFavorite,
                         onTap: () => service.playMediaItem(leftStation),
                         onFavorite: () => service.toggleFavorite(leftStation),
+                        screenType: widget.screenType,
                       ),
                     ),
                   ),
@@ -302,6 +302,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           onTap: () => service.playMediaItem(rightStation),
                           onFavorite: () =>
                               service.toggleFavorite(rightStation),
+                          screenType: widget.screenType,
                         ),
                       ),
                     ),
@@ -309,7 +310,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     const Expanded(child: SizedBox.shrink()),
                 ],
               ),
-            ),
           );
         },
       ),

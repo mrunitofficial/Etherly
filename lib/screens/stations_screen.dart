@@ -250,6 +250,7 @@ class _StationsScreenState extends State<StationsScreen> {
                   isFavorite: item.isFavorite,
                   onTap: () => service.playMediaItem(item),
                   onFavorite: () => service.toggleFavorite(item),
+                  screenType: widget.screenType,
                 ),
               );
             }
@@ -294,11 +295,9 @@ class _StationsScreenState extends State<StationsScreen> {
             }
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: SizedBox(
-                height: 80.0,
-                child: Row(
-                  children: [
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+              child: Row(
+                children: [
                     Expanded(
                       child: StationCardItem(
                         key: ValueKey(item.id),
@@ -306,6 +305,7 @@ class _StationsScreenState extends State<StationsScreen> {
                         isFavorite: item.isFavorite,
                         onTap: () => service.playMediaItem(item),
                         onFavorite: () => service.toggleFavorite(item),
+                        screenType: widget.screenType,
                       ),
                     ),
                     if (nextStation != null) ...[    
@@ -318,15 +318,15 @@ class _StationsScreenState extends State<StationsScreen> {
                           onTap: () => service.playMediaItem(nextStation!),
                           onFavorite: () =>
                               service.toggleFavorite(nextStation!),
+                          screenType: widget.screenType,
                         ),
                       ),
                     ] else
                       const Expanded(child: SizedBox.shrink()),
                   ],
                 ),
-              ),
-            );
-          }
+              );
+            }
           return const SizedBox.shrink();
         },
       ),

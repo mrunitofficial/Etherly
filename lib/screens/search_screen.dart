@@ -1,4 +1,5 @@
 import 'package:etherly/models/station.dart';
+import 'package:etherly/models/device.dart';
 import 'package:etherly/services/radio_player_service.dart';
 import 'package:etherly/widgets/station_card_item.dart';
 import 'package:flutter/material.dart';
@@ -163,21 +164,19 @@ class _SearchScreenState extends State<SearchScreen> {
           final station = filtered[index];
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 4.0),
-            child: SizedBox(
-              height: 80.0,
-              child: StationCardItem(
-                station: station,
-                isFavorite: station.isFavorite,
-                onTap: () async {
-                  audioPlayerService.playMediaItem(station);
-                  audioPlayerService.radioPlayerShouldClose.value = true;
-                  Navigator.of(context).pop();
-                  await Future.delayed(const Duration(milliseconds: 350));
-                },
-                onFavorite: () {
-                  audioPlayerService.toggleFavorite(station);
-                },
-              ),
+            child: StationCardItem(
+              station: station,
+              isFavorite: station.isFavorite,
+              screenType: ScreenType.smallScreenVertical,
+              onTap: () async {
+                audioPlayerService.playMediaItem(station);
+                audioPlayerService.radioPlayerShouldClose.value = true;
+                Navigator.of(context).pop();
+                await Future.delayed(const Duration(milliseconds: 350));
+              },
+              onFavorite: () {
+                audioPlayerService.toggleFavorite(station);
+              },
             ),
           );
         },
