@@ -1,7 +1,7 @@
 name: etherly
 description: "A Dutch Material 3 radio app"
 publish_to: "none"
-version: 0.1.0
+version: 0.2.0
 
 environment:
   sdk: ^3.9.0
