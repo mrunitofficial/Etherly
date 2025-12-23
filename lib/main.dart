@@ -176,6 +176,9 @@ class _MyAppState extends State<MyApp> {
                 navigationRailTheme: NavigationRailThemeData(
                   backgroundColor: lightColorScheme.surfaceContainer,
                 ),
+                tooltipTheme: const TooltipThemeData(
+                  waitDuration: Duration(milliseconds: 500),
+                ),
               ),
 
               /// Dark theme data
@@ -198,6 +201,9 @@ class _MyAppState extends State<MyApp> {
                 ),
                 navigationRailTheme: NavigationRailThemeData(
                   backgroundColor: darkColorScheme.surfaceContainer,
+                ),
+                tooltipTheme: const TooltipThemeData(
+                  waitDuration: Duration(seconds: 1),
                 ),
               ),
 
