@@ -2,137 +2,120 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
-/// Safely extracts a valid art URL from a MediaItem
-/// Returns empty string if the URL is invalid or not HTTP/HTTPS
-String getSafeArtUrl(MediaItem? mediaItem) {
-  final uri = mediaItem?.artUri;
-  if (uri == null) return '';
-
-  final uriString = uri.toString();
-  if (uriString.isEmpty) return '';
-
-  final parsedUri = Uri.tryParse(uriString);
-
-  if (parsedUri != null &&
-      (parsedUri.scheme == 'http' || parsedUri.scheme == 'https')) {
-    return uriString;
-  }
-
-  return '';
+/// Extracts a valid HTTP/HTTPS URL from a MediaItem.
+String getSafeArtUrl(MediaItem? item) {
+  final uri = Uri.tryParse(item?.artUri.toString() ?? '');
+  return uri != null && uri.scheme.startsWith('http') ? uri.toString() : '';
 }
 
-/// A compact build that resolves size once and uses local closures for placeholders/error.
-class StationArt extends StatefulWidget {
+/// Widget to display station artwork with caching and error handling.
+class StationArt extends StatelessWidget {
   const StationArt({
     super.key,
     required this.artUrl,
-    this.size = _defaultSize,
+    this.size = 56.0,
     this.borderRadius,
   });
 
   final String artUrl;
   final double size;
   final BorderRadius? borderRadius;
-  static const _defaultSize = 56.0;
-
-  @override
-  State<StationArt> createState() => _StationArtState();
-}
-
-class _StationArtState extends State<StationArt> {
-  bool _showPlaceholder = false;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() => _showPlaceholder = true);
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
-    Widget buildForSize(double resolvedSize) {
-      final effectiveBorderRadius = widget.borderRadius ?? BorderRadius.circular(12.0);
-      final colorScheme = Theme.of(context).colorScheme;
+    if (size.isInfinite) {
+      return LayoutBuilder(builder: (context, constraints) {
+        final shortestSide = constraints.biggest.shortestSide;
+        return _buildImage(context, shortestSide.isFinite ? shortestSide : 56.0);
+      });
+    }
+    return _buildImage(context, size);
+  }
 
-      Widget fallback({required bool loading}) {
-        final fallbackBackgroundColor = colorScheme.surfaceContainerHighest;
-        final fallbackContentColor = colorScheme.onSurfaceVariant;
-        final indicatorSize = resolvedSize * 0.30;
-        final indicatorStrokeWidth = indicatorSize * 0.12;
+  Widget _buildImage(BuildContext context, double size) {
+    final radius = borderRadius ?? BorderRadius.circular(12.0);
+    final cacheSize = (size * MediaQuery.of(context).devicePixelRatio).round();
 
-        return Container(
-          width: resolvedSize,
-          height: resolvedSize,
-          decoration: BoxDecoration(
-            color: fallbackBackgroundColor,
-            borderRadius: effectiveBorderRadius,
-          ),
-          child: Center(
-            child: (loading && !_showPlaceholder)
-                ? SizedBox(
-                    width: indicatorSize,
-                    height: indicatorSize,
-                    child: CircularProgressIndicator(
-                      color: fallbackContentColor,
-                      strokeWidth: indicatorStrokeWidth,
-                    ),
-                  )
-                : Icon(
-                    Icons.radio_rounded,
-                    color: fallbackContentColor,
-                    size: resolvedSize * 0.30,
-                  ),
-          ),
-        );
-      }
-
-      final devicePixelRatio =
-          MediaQuery.maybeOf(context)?.devicePixelRatio ?? 1.0;
-      final cacheDimension = (resolvedSize * devicePixelRatio).round();
-
+    // WEB: Use native Image.network for stability and browser-level caching.
+    if (kIsWeb) {
       return ClipRRect(
-        borderRadius: effectiveBorderRadius,
-        child: CachedNetworkImage(
-          imageUrl: widget.artUrl,
-          height: resolvedSize,
-          width: resolvedSize,
+        borderRadius: radius,
+        child: Image.network(
+          artUrl,
+          width: size,
+          height: size,
           fit: BoxFit.cover,
-          memCacheWidth: cacheDimension,
-          memCacheHeight: cacheDimension,
-          maxWidthDiskCache: cacheDimension,
-          maxHeightDiskCache: cacheDimension,
-          fadeInDuration: kIsWeb ? Duration.zero : const Duration(milliseconds: 500),
-          fadeOutDuration: Duration.zero,
-          imageBuilder: (_, image) => DecoratedBox(
-            decoration: BoxDecoration(
-              image: DecorationImage(image: image, fit: BoxFit.cover),
-            ),
-          ),
-
-          placeholder: (_, _) => Material(
-            color: Colors.transparent,
-            child: fallback(loading: true),
-          ),
-          errorWidget: (_, _, _) => fallback(loading: false),
+          cacheWidth: cacheSize,
+          frameBuilder: (context, child, frame, wasSync) {
+            if (wasSync) return child;
+            return AnimatedOpacity(
+              opacity: frame == null ? 0 : 1,
+              duration: const Duration(milliseconds: 300),
+              child: child,
+            );
+          },
+          loadingBuilder: (context, child, progress) =>
+              progress == null ? child : _buildPlaceholder(context, size, radius, true),
+          errorBuilder: (context, error, stack) =>
+              _buildPlaceholder(context, size, radius, false),
         ),
       );
     }
 
-    if (widget.size.isInfinite) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final shortest = constraints.biggest.shortestSide;
-          final resolved = shortest.isFinite ? shortest : StationArt._defaultSize;
-          return buildForSize(resolved);
-        },
-      );
-    } else {
-      return buildForSize(widget.size);
-    }
+    // MOBILE: Use CachedNetworkImage for strict memory and disk management.
+    return ClipRRect(
+      borderRadius: radius,
+      child: CachedNetworkImage(
+        imageUrl: artUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        cacheManager: StationCacheManager.instance,
+        memCacheWidth: cacheSize,
+        memCacheHeight: cacheSize,
+        maxWidthDiskCache: cacheSize,
+        maxHeightDiskCache: cacheSize,
+        fadeInDuration: const Duration(milliseconds: 300),
+        useOldImageOnUrlChange: true,
+        imageBuilder: (context, image) => DecoratedBox(
+          decoration: BoxDecoration(image: DecorationImage(image: image, fit: BoxFit.cover)),
+        ),
+        placeholder: (context, url) => _buildPlaceholder(context, size, radius, true),
+        errorWidget: (context, url, error) => _buildPlaceholder(context, size, radius, false),
+      ),
+    );
   }
+
+  Widget _buildPlaceholder(BuildContext context, double size, BorderRadius radius, bool isLoading) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: colors.surfaceContainerHighest, borderRadius: radius),
+      child: Center(
+        child: isLoading
+            ? SizedBox(
+                width: size * 0.4,
+                height: size * 0.4,
+                child: CircularProgressIndicator(strokeWidth: size * 0.1, color: colors.onSurfaceVariant),
+              )
+            : Icon(Icons.radio_rounded, color: colors.onSurfaceVariant, size: size * 0.5),
+      ),
+    );
+  }
+}
+
+/// Custom CacheManager to isolate station art requests and manage storage.
+class StationCacheManager {
+  static final instance = kIsWeb
+      ? DefaultCacheManager()
+      : CacheManager(
+          Config(
+            'station_art_cache',
+            stalePeriod: const Duration(days: 7),
+            maxNrOfCacheObjects: 200,
+          ),
+        );
 }
