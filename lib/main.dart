@@ -28,8 +28,8 @@ const _navigationRailWidth = 96.0;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  PaintingBinding.instance.imageCache.maximumSize = 200;
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 100 << 20;
+  PaintingBinding.instance.imageCache.maximumSize = 4000;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 1000 << 20;
   
   final prefs = await SharedPreferences.getInstance();
   final themeString = prefs.getString('theme');

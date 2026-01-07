@@ -144,6 +144,7 @@ class _StationsScreenState extends State<StationsScreen> {
         child: SafeArea(
           child: _viewType == ViewType.list
               ? CustomScrollView(
+                  cacheExtent: 4000.0,
                   slivers: [
                     SliverToBoxAdapter(
                       child: ScreenHeader(
@@ -177,6 +178,7 @@ class _StationsScreenState extends State<StationsScreen> {
                   ],
                 )
               : CustomScrollView(
+                cacheExtent: 4000.0,
                   slivers: [
                     SliverToBoxAdapter(
                       child: ScreenHeader(

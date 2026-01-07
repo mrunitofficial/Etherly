@@ -146,6 +146,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         child: SafeArea(
           child: _viewType == ViewType.list
               ? CustomScrollView(
+                  cacheExtent: 4000.0,
                   slivers: [
                     SliverToBoxAdapter(
                       child: ScreenHeader(
@@ -178,6 +179,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   ],
                 )
               : CustomScrollView(
+                  cacheExtent: 4000.0,
                   slivers: [
                     SliverToBoxAdapter(
                       child: ScreenHeader(
