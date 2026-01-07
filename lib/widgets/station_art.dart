@@ -25,7 +25,7 @@ class StationArt extends StatelessWidget {
     if (size.isInfinite) {
       return LayoutBuilder(builder: (context, constraints) {
         final shortestSide = constraints.biggest.shortestSide;
-        return _buildImage(context, shortestSide.isFinite ? shortestSide : 56.0);
+        return _buildImage(context, shortestSide.isFinite ? shortestSide : size);
       });
     }
     return _buildImage(context, size);
