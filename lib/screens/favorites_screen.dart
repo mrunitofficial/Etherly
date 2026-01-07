@@ -29,12 +29,15 @@ class FavoritesScreen extends StatefulWidget {
   State<FavoritesScreen> createState() => _FavoritesScreenState();
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> {
+class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAliveClientMixin {
   late final Future<ViewType> _viewTypeFuture;
   ViewType _viewType = ViewType.list;
 
   bool _showLoading = false;
   Timer? _loadingTimer;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -75,6 +78,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return FutureBuilder<ViewType>(
       future: _viewTypeFuture,
       builder: (context, snapshot) {

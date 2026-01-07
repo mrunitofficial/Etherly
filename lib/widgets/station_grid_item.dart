@@ -21,37 +21,39 @@ class StationGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: station.name,
-      waitDuration: const Duration(milliseconds: 400),
-      child: Stack(
-        children: [
-          StationArt(
-            artUrl: station.artURL,
-            size: double.infinity,
-            borderRadius: borderRadius,
-          ),
-          Positioned.fill(
-            child: Material(
+    return RepaintBoundary(
+      child: Tooltip(
+        message: station.name,
+        waitDuration: const Duration(milliseconds: 400),
+        child: Stack(
+          children: [
+            StationArt(
+              artUrl: station.artURL,
+              size: double.infinity,
               borderRadius: borderRadius,
-              color: Colors.transparent,
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(onTap: onTap),
             ),
-          ),
-          Align(
-            alignment: Alignment.topRight,
-            child: IconButton(
-              icon: Icon(
-                isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: isFavorite
-                    ? Theme.of(context).colorScheme.onSurface
-                    : Theme.of(context).colorScheme.onSurface,
+            Positioned.fill(
+              child: Material(
+                borderRadius: borderRadius,
+                color: Colors.transparent,
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(onTap: onTap),
               ),
-              onPressed: onFavorite,
             ),
-          ),
-        ],
+            Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                icon: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorite
+                      ? Theme.of(context).colorScheme.onSurface
+                      : Theme.of(context).colorScheme.onSurface,
+                ),
+                onPressed: onFavorite,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

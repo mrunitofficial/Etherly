@@ -490,14 +490,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 : BorderRadius.zero,
             child: Container(
               color: Theme.of(context).colorScheme.surface,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                switchInCurve: Curves.easeIn,
-                switchOutCurve: Curves.easeOut,
-                child: KeyedSubtree(
-                  key: ValueKey(_selectedIndex),
-                  child: _buildScreen(_selectedIndex, screenType),
-                ),
+              child: IndexedStack(
+                index: _selectedIndex,
+                sizing: StackFit.expand,
+                children: [
+                  _buildScreen(0, screenType),
+                  _buildScreen(1, screenType),
+                  _buildScreen(2, screenType),
+                ],
               ),
             ),
           ),
