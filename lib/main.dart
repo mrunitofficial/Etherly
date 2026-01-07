@@ -465,7 +465,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                 children: [
                   const Icon(Icons.cast_rounded),
 
-                  // BETA ICON
+                  // BETA ICON CAST
                   Positioned(
                     right: -2,
                     top: -2,
@@ -485,7 +485,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                       ),
                     ),
                   ),
-                  // END BETA ICON
+                  // END BETA ICON CAST
 
                 ],
               ),
