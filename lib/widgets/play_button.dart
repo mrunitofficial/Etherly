@@ -55,9 +55,19 @@ class PlayButton extends StatelessWidget {
       );
     }
 
-    if (isCastLoading ||
+    // Show spinner when: 
+    // 1. Actively loading/buffering
+    // 2. Ready but not yet playing (the brief gap that causes the flash)
+    final showSpinner = isCastLoading ||
         processingState == AudioProcessingState.loading ||
-        processingState == AudioProcessingState.buffering) {
+        processingState == AudioProcessingState.buffering;
+    
+    // Also show spinner in the transition gap: ready state but not playing yet
+    final inTransitionGap = !isPlaying && 
+        processingState == AudioProcessingState.ready &&
+        service.mediaItem != null;  // There's a station loaded
+    
+    if (showSpinner || inTransitionGap) {
       return SizedBox.square(
         dimension: small ? 24.0 : 40.0,
         child: CircularProgressIndicator(
