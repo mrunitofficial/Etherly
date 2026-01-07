@@ -299,23 +299,39 @@ class MyAudioHandler extends BaseAudioHandler {
           )
         : null;
 
-    final String? urlString = station != null
-        ? ((quality == 'aac'
-                  ? <String?>[station.streamAAC, station.streamMP3]
-                  : <String?>[station.streamMP3, station.streamAAC])
-              .firstWhere((u) => u != null && u.isNotEmpty, orElse: () => null))
-        : item.extras?['url'] as String?;
+    final List<String?> urlPriority = station != null
+        ? (quality == 'aac'
+            ? <String?>[station.streamAAC, station.streamMP3]
+            : <String?>[station.streamMP3, station.streamAAC])
+        : [item.extras?['url'] as String?];
 
-    if (urlString == null || urlString.isEmpty) {
+    final List<String> validUrls = urlPriority
+        .where((u) => u != null && u.isNotEmpty)
+        .cast<String>()
+        .toList();
+
+    if (validUrls.isEmpty) {
       throw Exception("No valid stream URL found for station");
     }
 
-    final sourceUrl = Uri.parse(urlString);
-    try {
-      await _player.setAudioSource(AudioSource.uri(sourceUrl, tag: item));
-      await _player.setVolume(_volume);
-    } on PlayerInterruptedException {
-      return;
+    for (int i = 0; i < validUrls.length; i++) {
+      final urlString = validUrls[i];
+      final sourceUrl = Uri.parse(urlString);
+      
+      try {
+        await _player.setAudioSource(AudioSource.uri(sourceUrl, tag: item));
+        await _player.setVolume(_volume);
+        return;
+      } on PlayerInterruptedException {
+        return;
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error setting audio source (${quality == 'aac' && i == 0 ? 'AAC' : quality == 'mp3' && i == 0 ? 'MP3' : i == 1 ? 'fallback' : 'unknown'}): $e');
+        }
+        if (i == validUrls.length - 1) {
+          return;
+        }
+      }
     }
   }
 

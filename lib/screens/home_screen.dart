@@ -19,9 +19,12 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
   bool _showLoading = false;
   Timer? _loadingTimer;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -43,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final bool stationsAreEmpty = context.select(
       (AudioPlayerService s) => s.stations.isEmpty,
     );

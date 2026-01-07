@@ -51,7 +51,7 @@ final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
 ## Development Conventions
 
 ### Code Style
-- **No comments**: Do not add comments when generating code. Code should be self-documenting with clear variable and function names.
+- **sparse comments**: Do add sparse comments when generating code. Code should be self-documenting with clear variable and function names.
 - **Clean code**: Focus on readable, idiomatic Dart/Flutter code without explanatory comments.
 
 ```yaml

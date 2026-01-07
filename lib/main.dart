@@ -28,8 +28,8 @@ const _navigationRailWidth = 96.0;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  PaintingBinding.instance.imageCache.maximumSize = 200;
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 100 << 20;
+  PaintingBinding.instance.imageCache.maximumSize = 4000;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 1000 << 20;
   
   final prefs = await SharedPreferences.getInstance();
   final themeString = prefs.getString('theme');
@@ -268,13 +268,26 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
   late int _selectedIndex;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.startingTab;
+    
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInOut,
+    );
+    _fadeController.forward();
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final service = context.read<AudioPlayerService>();
       if (service.stations.isNotEmpty) {
@@ -287,6 +300,19 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  void _onTabSelected(int index) {
+    if (_selectedIndex != index) {
+      _fadeController.forward(from: 0.0);
+      setState(() => _selectedIndex = index);
+    }
   }
 
   /// Determines the screen type based on device size and orientation.
@@ -360,9 +386,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
           onPressed: () {
-            setState(() {
-              _selectedIndex = 0;
-            });
+            _onTabSelected(0);
             context.read<AudioPlayerService>().radioPlayerShouldClose.value =
                 true;
           },
@@ -436,7 +460,35 @@ class _MyHomePageState extends State<MyHomePage> {
         actions: [
           if (context.read<ChromeCastService>().isCastSupported())
             IconButton(
-              icon: const Icon(Icons.cast_rounded),
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.cast_rounded),
+
+                  // BETA ICON
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'BETA',
+                        style: TextStyle(
+                          fontSize: 7,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // END BETA ICON
+
+                ],
+              ),
               tooltip:
                   AppLocalizations.of(context)?.translate('mainTooltipCast') ??
                   'Cast to device',
@@ -490,13 +542,16 @@ class _MyHomePageState extends State<MyHomePage> {
                 : BorderRadius.zero,
             child: Container(
               color: Theme.of(context).colorScheme.surface,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                switchInCurve: Curves.easeIn,
-                switchOutCurve: Curves.easeOut,
-                child: KeyedSubtree(
-                  key: ValueKey(_selectedIndex),
-                  child: _buildScreen(_selectedIndex, screenType),
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: IndexedStack(
+                  index: _selectedIndex,
+                  sizing: StackFit.expand,
+                  children: [
+                    _buildScreen(0, screenType),
+                    _buildScreen(1, screenType),
+                    _buildScreen(2, screenType),
+                  ],
                 ),
               ),
             ),
@@ -514,7 +569,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       minWidth: _navigationRailWidth,
                       selectedIndex: _selectedIndex,
                       onDestinationSelected: (index) {
-                        setState(() => _selectedIndex = index);
+                        _onTabSelected(index);
                         context
                                 .read<AudioPlayerService>()
                                 .radioPlayerShouldClose
@@ -584,7 +639,7 @@ class _MyHomePageState extends State<MyHomePage> {
           : NavigationBar(
               selectedIndex: _selectedIndex,
               onDestinationSelected: (index) {
-                setState(() => _selectedIndex = index);
+                _onTabSelected(index);
                 context
                         .read<AudioPlayerService>()
                         .radioPlayerShouldClose
