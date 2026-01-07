@@ -460,7 +460,35 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         actions: [
           if (context.read<ChromeCastService>().isCastSupported())
             IconButton(
-              icon: const Icon(Icons.cast_rounded),
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.cast_rounded),
+
+                  // BETA ICON
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'BETA',
+                        style: TextStyle(
+                          fontSize: 7,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // END BETA ICON
+
+                ],
+              ),
               tooltip:
                   AppLocalizations.of(context)?.translate('mainTooltipCast') ??
                   'Cast to device',
