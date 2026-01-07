@@ -145,9 +145,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
                           valueListenable: service.sleepTimerActive,
                           builder: (context, isSleepTimerSet, _) => FloatingActionButton.small(
                             heroTag: 'mini_timer_fab',
-                            backgroundColor: isSleepTimerSet
-                                ? Theme.of(context).colorScheme.primaryContainer
-                                : Theme.of(context).colorScheme.secondaryContainer,
+                            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
                             onPressed: isSleepTimerSet
                                 ? () => service.cancelSleepTimer()
                                 : () async {
