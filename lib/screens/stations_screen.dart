@@ -31,12 +31,15 @@ class StationsScreen extends StatefulWidget {
   State<StationsScreen> createState() => _StationsScreenState();
 }
 
-class _StationsScreenState extends State<StationsScreen> {
+class _StationsScreenState extends State<StationsScreen> with AutomaticKeepAliveClientMixin {
   late final Future<ViewType> _viewTypeFuture;
   ViewType _viewType = ViewType.list;
 
   bool _showLoading = false;
   Timer? _loadingTimer;
+
+  @override
+  bool get wantKeepAlive => true;
 
   /// Initializes and disposes resources.
   @override
@@ -96,6 +99,7 @@ class _StationsScreenState extends State<StationsScreen> {
   /// Builds the station screen UI.
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return FutureBuilder<ViewType>(
       future: _viewTypeFuture,
       builder: (context, snapshot) {
@@ -144,6 +148,7 @@ class _StationsScreenState extends State<StationsScreen> {
         child: SafeArea(
           child: _viewType == ViewType.list
               ? CustomScrollView(
+                  cacheExtent: 4000.0,
                   slivers: [
                     SliverToBoxAdapter(
                       child: ScreenHeader(
@@ -177,6 +182,7 @@ class _StationsScreenState extends State<StationsScreen> {
                   ],
                 )
               : CustomScrollView(
+                cacheExtent: 4000.0,
                   slivers: [
                     SliverToBoxAdapter(
                       child: ScreenHeader(

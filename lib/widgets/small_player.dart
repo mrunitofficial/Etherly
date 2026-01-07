@@ -43,7 +43,8 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
               IgnorePointer(
                 ignoring: true,
                 child: StationArt(
-                  artUrl: artUrl,
+                  artUrl: artUrl, 
+                  size: 56.0,
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
