@@ -23,6 +23,9 @@
         ];
         manager = "flutter";
       };
+      android = {
+        manager = "flutter";
+      };
     };
   };
 }
