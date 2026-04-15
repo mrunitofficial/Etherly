@@ -27,10 +27,10 @@ const _navigationRailWidth = 96.0;
 /// Entry point of the application.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   PaintingBinding.instance.imageCache.maximumSize = 4000;
   PaintingBinding.instance.imageCache.maximumSizeBytes = 1000 << 20;
-  
+
   final prefs = await SharedPreferences.getInstance();
   final themeString = prefs.getString('theme');
   final theme = (ThemeMode.values.firstWhere(
@@ -268,7 +268,8 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   late int _selectedIndex;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -277,7 +278,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _selectedIndex = widget.startingTab;
-    
+
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -287,7 +288,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       curve: Curves.easeInOut,
     );
     _fadeController.forward();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final service = context.read<AudioPlayerService>();
       if (service.stations.isNotEmpty) {
@@ -470,7 +471,10 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                     right: -2,
                     top: -2,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 3,
+                        vertical: 1,
+                      ),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(4),
@@ -480,13 +484,15 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                         style: TextStyle(
                           fontSize: 7,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ),
                   ),
-                  // END BETA ICON
 
+                  // END BETA ICON
                 ],
               ),
               tooltip:
@@ -633,9 +639,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
       // Bottom navigation bar for small screens or border for large screens
       bottomNavigationBar: screenType == ScreenType.largeScreen
-          ? Container(
-              height: 16,
-            )
+          ? Container(height: 16)
           : NavigationBar(
               selectedIndex: _selectedIndex,
               onDestinationSelected: (index) {
