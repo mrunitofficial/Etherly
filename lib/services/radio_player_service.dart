@@ -32,9 +32,8 @@ Future<MyAudioHandler> initAudioService({
 class MyAudioHandler extends BaseAudioHandler {
   bool _stopRequested = false;
   SharedPreferences? _prefs;
-  final AudioPlayer _player = AudioPlayer(handleInterruptions: false);
+  final AudioPlayer _player = AudioPlayer();
   List<Station> _stations = [];
-  bool _wasPlayingBeforeInterrupt = false;
   AudioSession? _audioSession;
   double _volume = 1.0;
 
@@ -61,44 +60,10 @@ class MyAudioHandler extends BaseAudioHandler {
     _initAudioSession();
   }
 
-  /// Initialize audio session and handle interruptions.
+  /// Initialize audio session to let Android/OS handle interruptions natively.
   Future<void> _initAudioSession() async {
     final session = await AudioSession.instance;
     _audioSession = session;
-    session.becomingNoisyEventStream.listen((_) async {
-      await stop();
-    });
-    session.devicesChangedEventStream.listen((event) async {
-      bool btChanged =
-          event.devicesAdded.any(
-            (d) =>
-                d.isOutput &&
-                (d.type == AudioDeviceType.bluetoothA2dp ||
-                    d.type == AudioDeviceType.bluetoothLe ||
-                    d.type == AudioDeviceType.bluetoothSco),
-          ) ||
-          event.devicesRemoved.any(
-            (d) =>
-                d.isOutput &&
-                (d.type == AudioDeviceType.bluetoothA2dp ||
-                    d.type == AudioDeviceType.bluetoothLe ||
-                    d.type == AudioDeviceType.bluetoothSco),
-          );
-      if (btChanged) await stop();
-    });
-    session.interruptionEventStream.listen((event) async {
-      if (event.begin) {
-        _wasPlayingBeforeInterrupt = _player.playing;
-        if (_wasPlayingBeforeInterrupt) {
-          await pause();
-        }
-      } else {
-        if (_wasPlayingBeforeInterrupt) {
-          _wasPlayingBeforeInterrupt = false;
-          await play();
-        }
-      }
-    });
   }
 
   /// Set the ICY service for metadata updates.
@@ -301,8 +266,8 @@ class MyAudioHandler extends BaseAudioHandler {
 
     final List<String?> urlPriority = station != null
         ? (quality == 'aac'
-            ? <String?>[station.streamAAC, station.streamMP3]
-            : <String?>[station.streamMP3, station.streamAAC])
+              ? <String?>[station.streamAAC, station.streamMP3]
+              : <String?>[station.streamMP3, station.streamAAC])
         : [item.extras?['url'] as String?];
 
     final List<String> validUrls = urlPriority
@@ -317,7 +282,7 @@ class MyAudioHandler extends BaseAudioHandler {
     for (int i = 0; i < validUrls.length; i++) {
       final urlString = validUrls[i];
       final sourceUrl = Uri.parse(urlString);
-      
+
       try {
         await _player.setAudioSource(AudioSource.uri(sourceUrl, tag: item));
         await _player.setVolume(_volume);
@@ -326,7 +291,15 @@ class MyAudioHandler extends BaseAudioHandler {
         return;
       } catch (e) {
         if (kDebugMode) {
-          print('Error setting audio source (${quality == 'aac' && i == 0 ? 'AAC' : quality == 'mp3' && i == 0 ? 'MP3' : i == 1 ? 'fallback' : 'unknown'}): $e');
+          print(
+            'Error setting audio source (${quality == 'aac' && i == 0
+                ? 'AAC'
+                : quality == 'mp3' && i == 0
+                ? 'MP3'
+                : i == 1
+                ? 'fallback'
+                : 'unknown'}): $e',
+          );
         }
         if (i == validUrls.length - 1) {
           return;
