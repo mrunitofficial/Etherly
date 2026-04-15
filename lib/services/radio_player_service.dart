@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:audio_session/audio_session.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
 
@@ -470,7 +469,6 @@ class AudioPlayerService with ChangeNotifier {
   /// Initialize service: load preferences, stations, and set up listeners.
   Future<void> _init() async {
     _prefs = await SharedPreferences.getInstance();
-    await _requestNotificationPermission();
 
     _audioHandler.playbackState.listen((_) => notifyListeners());
     _audioHandler.mediaItem.listen((mediaItem) {
@@ -748,19 +746,6 @@ class AudioPlayerService with ChangeNotifier {
 
     _autoplayInProgress = false;
     autoplayCountdownNotifier.value = 0;
-  }
-
-  /// Request notification permission on supported platforms for RMN.
-  Future<void> _requestNotificationPermission() async {
-    if (kIsWeb) return;
-    try {
-      final status = await Permission.notification.request();
-      if (status.isDenied ||
-          status.isPermanentlyDenied ||
-          status.isRestricted) {}
-    } catch (e) {
-      // Handle any exceptions if necessary.
-    }
   }
 }
 
