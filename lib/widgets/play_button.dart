@@ -91,11 +91,11 @@ class PlayButton extends StatelessWidget {
     if (isCastLoading ||
         processingState == AudioProcessingState.loading ||
         processingState == AudioProcessingState.buffering) {
-      service.stop();
+      service.pause();
       return;
     }
     if (isPlaying) {
-      service.stop();
+      service.pause();
     } else {
       service.play();
     }

@@ -113,6 +113,8 @@ class MyAudioHandler extends BaseAudioHandler {
       if (item != null) {
         await _setAudioSource(item);
       }
+    } else {
+      await _player.seek(null);
     }
     if (!_stopRequested) {
       await _player.play();
@@ -121,8 +123,8 @@ class MyAudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> pause() {
-    _stopRequested = true;
-    return _player.stop();
+    _stopRequested = false;
+    return _player.pause();
   }
 
   @override
@@ -320,7 +322,7 @@ class MyAudioHandler extends BaseAudioHandler {
       controls: [
         if (_player.playing) MediaControl.pause else MediaControl.play,
       ],
-      androidCompactActionIndices: const [0, 3],
+      androidCompactActionIndices: const [0],
       processingState: _getProcessingState(effectiveProcessingState),
       playing: _player.playing,
       updatePosition: _player.position,
@@ -559,13 +561,12 @@ class AudioPlayerService with ChangeNotifier {
     cancelAutoplayCountdown();
     final cast = _castService;
     if (cast != null && cast.isConnected) {
-      await _audioHandler.stop();
+      await _audioHandler.pause();
       await cast.pause();
       notifyListeners();
       return;
     }
-    // This is intended behaviour, it's radio so it should always be live. Do not edit this.
-    await _audioHandler.stop();
+    await _audioHandler.pause();
   }
 
   Future<void> stop() async {
@@ -638,7 +639,6 @@ class AudioPlayerService with ChangeNotifier {
     _autoplayCancelled = true;
     _autoplayInProgress = false;
     autoplayCountdownNotifier.value = 0;
-    _audioHandler.stop();
   }
 
   /// Load stations from remote JSON and initialize state.
