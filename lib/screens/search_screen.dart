@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:permission_handler/permission_handler.dart';
+
 
 /// A screen that allows users to search for radio stations by typing or voice input.
 class SearchScreen extends StatefulWidget {
@@ -84,13 +84,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _toggleListening() async {
     if (!_isListening) {
-      final micStatus = await Permission.microphone.request();
-      if (!mounted) return;
-
-      if (!micStatus.isGranted) {
-        return;
-      }
-
       final available = await _speech.initialize(
         onStatus: _onSpeechStatus,
         onError: _onSpeechError,
