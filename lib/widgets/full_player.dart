@@ -16,11 +16,11 @@ import 'package:etherly/widgets/play_button.dart';
 class FullPlayerContent extends StatefulWidget {
   const FullPlayerContent({
     super.key,
-    required this.scrollController,
+    this.scrollController,
     this.onClose,
   });
 
-  final ScrollController scrollController;
+  final ScrollController? scrollController;
   final VoidCallback? onClose;
 
   @override
@@ -32,89 +32,94 @@ class _FullPlayerContentState extends State<FullPlayerContent> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      controller: widget.scrollController,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 32),
-        child: Consumer<AudioPlayerService>(
-          builder: (context, service, _) {
-            final mediaItem = service.mediaItem;
-            if (mediaItem?.id != _lastStationId) _lastStationId = mediaItem?.id;
+    Widget content = Padding(
+      padding: const EdgeInsets.only(bottom: 32),
+      child: Consumer<AudioPlayerService>(
+        builder: (context, service, _) {
+          final mediaItem = service.mediaItem;
+          if (mediaItem?.id != _lastStationId) _lastStationId = mediaItem?.id;
 
-            final loc = AppLocalizations.of(context);
-            final theme = Theme.of(context);
+          final loc = AppLocalizations.of(context);
+          final theme = Theme.of(context);
 
-            return Column(
-              children: [
-                FullPlayerHeader(
-                  onClose: widget.onClose,
-                  slogan: mediaItem?.album ?? '',
+          return Column(
+            children: [
+              FullPlayerHeader(
+                onClose: widget.onClose,
+                slogan: mediaItem?.album ?? '',
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: StationArt(
+                  artUrl: getSafeArtUrl(mediaItem),
+                  size: 280,
                 ),
-                const SizedBox(height: 8),
-                Center(
-                  child: StationArt(
-                    artUrl: getSafeArtUrl(mediaItem),
-                    size: 280,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Column(
-                    children: [
-                      MarqueeText(
-                        text:
-                            mediaItem?.title ??
-                            (loc?.translate('playerLoadingStation') ??
-                                'Select a station...'),
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        centerWhenFits: true,
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  children: [
+                    MarqueeText(
+                      text:
+                          mediaItem?.title ??
+                          (loc?.translate('playerLoadingStation') ??
+                              'Select a station...'),
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
                       ),
-                      if (!kIsWeb)
-                        SizedBox(
-                          height: 28,
-                          child: service.isCasting
-                              ? const SizedBox.shrink()
-                              : () {
-                                  final icy = service.icyService;
-                                  final text = icy.isLoading
-                                      ? (loc?.translate('playerLoadingSong') ??
-                                            'Loading song...')
-                                      : (icy.text?.isNotEmpty == true
-                                            ? icy.text!
-                                            : null);
-                                  return text == null
-                                      ? const SizedBox.shrink()
-                                      : MarqueeText(
-                                          text: text,
-                                          style: theme.textTheme.titleMedium
-                                              ?.copyWith(
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                          centerWhenFits: true,
-                                        );
-                                }(),
-                        ),
-                    ],
-                  ),
+                      centerWhenFits: true,
+                    ),
+                    if (!kIsWeb)
+                      SizedBox(
+                        height: 28,
+                        child: service.isCasting
+                            ? const SizedBox.shrink()
+                            : () {
+                                final icy = service.icyService;
+                                final text = icy.isLoading
+                                    ? (loc?.translate('playerLoadingSong') ??
+                                          'Loading song...')
+                                    : (icy.text?.isNotEmpty == true
+                                          ? icy.text!
+                                          : null);
+                                return text == null
+                                    ? const SizedBox.shrink()
+                                    : MarqueeText(
+                                        text: text,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              color: theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                            ),
+                                        centerWhenFits: true,
+                                      );
+                              }(),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                const FullPlayerControls(),
-                if (kIsWeb) ...[
-                  const SizedBox(height: 32),
-                  const VolumeSlider(),
-                ],
+              ),
+              const SizedBox(height: 24),
+              const FullPlayerControls(),
+              if (kIsWeb) ...[
+                const SizedBox(height: 32),
+                const VolumeSlider(),
               ],
-            );
-          },
-        ),
+            ],
+          );
+        },
       ),
     );
+
+    if (widget.scrollController != null) {
+      return SingleChildScrollView(
+        controller: widget.scrollController,
+        child: content,
+      );
+    }
+    return content;
   }
 }
 

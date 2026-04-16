@@ -29,12 +29,27 @@ class _SearchScreenState extends State<SearchScreen> {
 
   ScreenType _getScreenType(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    if (size.width >= 600) {
-      return ScreenType.largeScreen;
+    final orientation = MediaQuery.of(context).orientation;
+
+    if (size.height < 650) {
+      if (orientation == Orientation.landscape) {
+        return ScreenType.smallScreenHorizontal;
+      }
+      return ScreenType.smallScreenVertical;
     }
-    if (size.width > size.height) {
+
+    if (size.width >= 1400) {
+      return ScreenType.desktop;
+    }
+
+    if (size.width >= 800) {
+      return ScreenType.tablet;
+    }
+
+    if (orientation == Orientation.landscape) {
       return ScreenType.smallScreenHorizontal;
     }
+
     return ScreenType.smallScreenVertical;
   }
 
@@ -122,7 +137,6 @@ class _SearchScreenState extends State<SearchScreen> {
     final stations = audioPlayerService.stations;
     final loc = AppLocalizations.of(context);
     final screenType = _getScreenType(context);
-    final screenWidth = MediaQuery.of(context).size.width;
 
     final filtered = _query.isEmpty
         ? <Station>[]
@@ -168,7 +182,7 @@ class _SearchScreenState extends State<SearchScreen> {
     } else {
       
       // Small screen: single-column layout
-      if (screenType != ScreenType.largeScreen || screenWidth < 1400) {
+      if (screenType != ScreenType.desktop) {
         bodyContent = ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 12.0),
           itemCount: filtered.length,

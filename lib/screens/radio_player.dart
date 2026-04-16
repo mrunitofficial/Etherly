@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/models/device.dart';
@@ -90,7 +89,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
   /// Build the radio player with draggable sheet.
   @override
   Widget build(BuildContext context) {
-    final isSidePanel = widget.screenType == ScreenType.largeScreen;
+    final isSidePanel = widget.screenType.isLargeFormat;
 
     // Tablet/Web: persistent right side panel with the full player.
     if (isSidePanel) {
@@ -102,7 +101,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
           child: Align(
             alignment: Alignment.topCenter,
             child: FullPlayerContent(
-              scrollController: _sideScrollController,
+              scrollController: null,
               onClose: null,
             ),
           ),

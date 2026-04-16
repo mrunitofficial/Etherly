@@ -133,9 +133,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
     }
 
     final loc = AppLocalizations.of(context);
-    final screenWidth = MediaQuery.of(context).size.width;
     final bottomPadding = EdgeInsets.only(
-      bottom: widget.screenType == ScreenType.largeScreen && screenWidth >= 1400 ? 8.0 : (_miniPlayerHeight + 8.0),
+      bottom: widget.screenType == ScreenType.desktop ? 8.0 : (_miniPlayerHeight + 8.0),
     );
 
     return AnimatedSwitcher(
@@ -225,8 +224,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
     AudioPlayerService service,
     EdgeInsets padding,
   ) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    if (widget.screenType != ScreenType.largeScreen || screenWidth < 1400) {
+    if (widget.screenType != ScreenType.desktop) {
       // Small screen: single-column layout
       return SliverPadding(
         padding: padding,

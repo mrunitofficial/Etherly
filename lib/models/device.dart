@@ -1,5 +1,8 @@
 enum ScreenType {
   smallScreenHorizontal,
   smallScreenVertical,
-  largeScreen,
+  tablet,
+  desktop;
+
+  bool get isLargeFormat => this == ScreenType.tablet || this == ScreenType.desktop;
 }

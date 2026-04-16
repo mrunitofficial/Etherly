@@ -647,14 +647,22 @@ class AudioPlayerService with ChangeNotifier {
     const githubRawUrl =
         'https://raw.githubusercontent.com/mrunitofficial/Etherly-Nederland/main/stations.json';
 
-    final uri = Uri.parse(githubRawUrl);
-    final res = await http.get(uri).timeout(const Duration(seconds: 8));
-    if (res.statusCode == 200) {
-      final data = json.decode(res.body) as List;
-      stations = data.map((json) => Station.fromJson(json)).toList();
-      loaded = true;
-    } else {
-      throw Exception('Failed to load stations: HTTP ${res.statusCode}');
+    try {
+      final uri = Uri.parse(githubRawUrl);
+      final res = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body) as List;
+        stations = data.map((json) => Station.fromJson(json)).toList();
+        loaded = true;
+      } else {
+        if (kDebugMode) {
+          print('Failed to load stations: HTTP ${res.statusCode}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading stations: $e');
+      }
     }
 
     if (loaded) {

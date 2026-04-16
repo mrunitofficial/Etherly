@@ -313,8 +313,19 @@ class _MyHomePageState extends State<MyHomePage>
     final size = MediaQuery.of(context).size;
     final orientation = MediaQuery.of(context).orientation;
 
-    if (size.height >= 800 && size.width >= 800) {
-      return ScreenType.largeScreen;
+    if (size.height < 650) {
+      if (orientation == Orientation.landscape) {
+        return ScreenType.smallScreenHorizontal;
+      }
+      return ScreenType.smallScreenVertical;
+    }
+
+    if (size.width >= 1400) {
+      return ScreenType.desktop;
+    }
+
+    if (size.width >= 800) {
+      return ScreenType.tablet;
     }
 
     if (orientation == Orientation.landscape) {
@@ -354,10 +365,10 @@ class _MyHomePageState extends State<MyHomePage>
 
       /// Appbar with leading icon, search bar and action buttons.
       appBar: AppBar(
-        backgroundColor: screenType == ScreenType.largeScreen
+        backgroundColor: screenType.isLargeFormat
             ? Theme.of(context).colorScheme.surfaceContainer
             : null,
-        scrolledUnderElevation: screenType == ScreenType.largeScreen ? 0 : null,
+        scrolledUnderElevation: screenType.isLargeFormat ? 0 : null,
         actionsPadding: const EdgeInsets.symmetric(horizontal: 4.0),
         animateColor: true,
         notificationPredicate: (notification) {
@@ -372,14 +383,14 @@ class _MyHomePageState extends State<MyHomePage>
           });
           return !insideSheet;
         },
-        leadingWidth: screenType == ScreenType.largeScreen
+        leadingWidth: screenType.isLargeFormat
             ? _navigationRailWidth
             : null,
         leading: IconButton(
           icon: SvgPicture.asset(
             'assets/icon_base.svg',
-            width: screenType == ScreenType.largeScreen ? 36 : 24,
-            height: screenType == ScreenType.largeScreen ? 36 : 24,
+            width: screenType.isLargeFormat ? 36 : 24,
+            height: screenType.isLargeFormat ? 36 : 24,
           ),
           tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
           onPressed: () {
@@ -514,7 +525,7 @@ class _MyHomePageState extends State<MyHomePage>
           IconButton(
             icon: Icon(
               Icons.settings,
-              size: screenType == ScreenType.largeScreen ? 32 : 24,
+              size: screenType.isLargeFormat ? 32 : 24,
             ),
             tooltip:
                 AppLocalizations.of(
@@ -539,7 +550,7 @@ class _MyHomePageState extends State<MyHomePage>
         final content = Align(
           alignment: Alignment.topCenter,
           child: ClipRRect(
-            borderRadius: screenType == ScreenType.largeScreen
+            borderRadius: screenType.isLargeFormat
                 ? const BorderRadius.all(Radius.circular(16))
                 : BorderRadius.zero,
             child: Container(
@@ -561,7 +572,7 @@ class _MyHomePageState extends State<MyHomePage>
         );
 
         // Large screen layout: NavigationRail with side player
-        if (screenType == ScreenType.largeScreen) {
+        if (screenType.isLargeFormat) {
           return Column(
             children: [
               Expanded(
@@ -634,7 +645,7 @@ class _MyHomePageState extends State<MyHomePage>
       }(),
 
       // Bottom navigation bar for small screens or border for large screens
-      bottomNavigationBar: screenType == ScreenType.largeScreen
+      bottomNavigationBar: screenType.isLargeFormat
           ? Container(height: 16)
           : NavigationBar(
               selectedIndex: _selectedIndex,
