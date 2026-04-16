@@ -77,17 +77,15 @@ class PlayButton extends StatelessWidget {
   }
 
   void _handlePlayPause() {
-    if (countdown > 0 || service.isAutoplayInProgress) {
-      service.cancelAutoplayCountdown();
-      return;
-    }
-    if (isCastLoading ||
+    final isLoadingOrBuffering =
+        isCastLoading ||
         processingState == AudioProcessingState.loading ||
-        processingState == AudioProcessingState.buffering) {
-      service.pause();
-      return;
-    }
-    if (isPlaying) {
+        processingState == AudioProcessingState.buffering;
+
+    if (countdown > 0 ||
+        service.isAutoplayInProgress ||
+        isLoadingOrBuffering ||
+        isPlaying) {
       service.pause();
     } else {
       service.play();
