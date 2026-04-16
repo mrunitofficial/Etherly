@@ -169,10 +169,6 @@ class _MyAppState extends State<MyApp> {
                   titleSpacing: 0.0,
                   surfaceTintColor: lightColorScheme.surfaceContainer,
                   shadowColor: lightColorScheme.surfaceContainerLowest,
-                  backgroundColor: kIsWeb
-                      ? lightColorScheme.surfaceContainer
-                      : null,
-                  scrolledUnderElevation: kIsWeb ? 0 : null,
                 ),
                 navigationBarTheme: NavigationBarThemeData(
                   backgroundColor: lightColorScheme.surfaceContainer,
@@ -195,10 +191,6 @@ class _MyAppState extends State<MyApp> {
                   titleSpacing: 0.0,
                   surfaceTintColor: darkColorScheme.surfaceContainer,
                   shadowColor: darkColorScheme.surfaceContainerLowest,
-                  backgroundColor: kIsWeb
-                      ? darkColorScheme.surfaceContainer
-                      : null,
-                  scrolledUnderElevation: kIsWeb ? 0 : null,
                 ),
                 navigationBarTheme: NavigationBarThemeData(
                   backgroundColor: darkColorScheme.surfaceContainer,
@@ -362,7 +354,11 @@ class _MyHomePageState extends State<MyHomePage>
 
       /// Appbar with leading icon, search bar and action buttons.
       appBar: AppBar(
-        actionsPadding: EdgeInsets.symmetric(horizontal: 4.0),
+        backgroundColor: screenType == ScreenType.largeScreen
+            ? Theme.of(context).colorScheme.surfaceContainer
+            : null,
+        scrolledUnderElevation: screenType == ScreenType.largeScreen ? 0 : null,
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 4.0),
         animateColor: true,
         notificationPredicate: (notification) {
           final context = notification.context;

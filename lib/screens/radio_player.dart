@@ -126,9 +126,8 @@ class _RadioPlayerState extends State<RadioPlayer> {
         final maxPlayerSize = _cachedMaxPlayerSize!;
         _latestMinPlayerSize = minPlayerSize;
 
-        // Landscape mode and small web screen: show mini floating button.
-        if (widget.screenType == ScreenType.smallScreenHorizontal ||
-            (widget.screenType != ScreenType.largeScreen && kIsWeb)) {
+        // Small horizontal screen: show mini floating buttons.
+        if (widget.screenType == ScreenType.smallScreenHorizontal) {
           return Consumer<AudioPlayerService>(
             builder: (context, service, _) => ValueListenableBuilder<int>(
               valueListenable: service.autoplayCountdownNotifier,
@@ -236,8 +235,8 @@ class _RadioPlayerState extends State<RadioPlayer> {
           );
         }
 
-        // Portrait mode on mobile: show draggable sheet.
-        if (widget.screenType == ScreenType.smallScreenVertical && !kIsWeb) {
+        // Small vertical screen: show draggable sheet.
+        if (widget.screenType == ScreenType.smallScreenVertical) {
           return DraggableScrollableSheet(
             controller: _controller,
             initialChildSize: minPlayerSize,
