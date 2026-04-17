@@ -19,13 +19,6 @@ class RadioPlayer extends StatefulWidget {
   static const double _maxPlayerHeight = 620.0;
   static const Duration _animationDuration = Duration(milliseconds: 300);
 
-  // Transition progress (0 = mini, 1 = full)
-  static double getTransitionProgress(double currentHeight) {
-    return ((currentHeight - _minPlayerHeight) /
-            (_maxPlayerHeight - _minPlayerHeight))
-        .clamp(0.0, 1.0);
-  }
-
   @override
   State<RadioPlayer> createState() => _RadioPlayerState();
 }
@@ -91,7 +84,139 @@ class _RadioPlayerState extends State<RadioPlayer> {
 
     // 2. Small Horizontal Screen: mini floating buttons.
     if (widget.screenType == ScreenType.smallScreenHorizontal) {
-      return _buildLandscapeControls();
+      return Consumer<AudioPlayerService>(
+        builder: (context, service, _) => ValueListenableBuilder<int>(
+          valueListenable: service.autoplayCountdownNotifier,
+          builder: (context, countdown, _) => SafeArea(
+            child: Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 0, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    ValueListenableBuilder<bool>(
+                      valueListenable: service.sleepTimerActive,
+                      builder: (context, isSleepTimerSet, _) =>
+                          FloatingActionButton.small(
+                            heroTag: 'mini_timer_fab',
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.secondaryContainer,
+                            onPressed: isSleepTimerSet
+                                ? () => service.cancelSleepTimer()
+                                : () async {
+                                    final selected = await showDialog<Duration>(
+                                      context: context,
+                                      builder: (context) => SleepTimer(
+                                        onTimerSelected: (duration) =>
+                                            Navigator.of(context).pop(duration),
+                                      ),
+                                    );
+                                    if (selected != null) {
+                                      service.setSleepTimer(selected);
+                                    }
+                                  },
+                            tooltip: isSleepTimerSet
+                                ? (AppLocalizations.of(
+                                        context,
+                                      )?.translate('playerCancelSleepTimer') ??
+                                      'Cancel sleep timer')
+                                : (AppLocalizations.of(
+                                        context,
+                                      )?.translate('playerSleepTimer') ??
+                                      'Sleep timer'),
+                            child: Icon(
+                              isSleepTimerSet
+                                  ? Icons.timer
+                                  : Icons.timer_outlined,
+                              color: isSleepTimerSet
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onSecondaryContainer,
+                            ),
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    FloatingActionButton.small(
+                      heroTag: 'mini_quality_fab',
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.secondaryContainer,
+                      onPressed: () async {
+                        final mediaItem = service.mediaItem;
+                        Station? station;
+
+                        if (mediaItem != null && service.stations.isNotEmpty) {
+                          station = service.stations.firstWhere(
+                            (s) => s.id == mediaItem.id,
+                            orElse: () => service.stations.first,
+                          );
+                        }
+
+                        final prefQuality =
+                            service.prefs.getString('streamQuality') ?? 'mp3';
+                        final selectedQuality =
+                            station != null && prefQuality == 'aac'
+                            ? (station.streamAAC.isNotEmpty ? 'aac' : 'mp3')
+                            : 'mp3';
+
+                        final newQuality = await showDialog<String>(
+                          context: context,
+                          builder: (context) => QualitySetting(
+                            station: station,
+                            selectedQuality: selectedQuality,
+                            onQualitySelected: (q) =>
+                                Navigator.of(context).pop(q),
+                          ),
+                        );
+
+                        if (newQuality != null &&
+                            station != null &&
+                            newQuality != selectedQuality) {
+                          service.prefs.setString('streamQuality', newQuality);
+                          service.stop();
+                          service.playMediaItem(station);
+                        }
+                      },
+                      tooltip:
+                          AppLocalizations.of(
+                            context,
+                          )?.translate('playerStreamQuality') ??
+                          'Stream quality',
+                      child: Icon(
+                        Icons.high_quality_outlined,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    PlayButton(
+                      service: service,
+                      countdown: countdown,
+                      processingState: service.playbackState.processingState,
+                      isPlaying: service.isPlaying,
+                      small: true,
+                      heroTag: 'mini_player_fab_landscape',
+                      elevation: 6,
+                      tooltip:
+                          AppLocalizations.of(
+                            context,
+                          )?.translate('playerPlay') ??
+                          'Play',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
     }
 
     // 3. Small Vertical Screen: draggable sheet.
@@ -111,9 +236,11 @@ class _RadioPlayerState extends State<RadioPlayer> {
           snapSizes: [minPlayerSize, maxPlayerSize],
           builder: (context, scrollController) => LayoutBuilder(
             builder: (context, constraints) {
-              final progress = RadioPlayer.getTransitionProgress(
-                constraints.maxHeight,
-              );
+              final progress =
+                  ((constraints.maxHeight - RadioPlayer._minPlayerHeight) /
+                          (RadioPlayer._maxPlayerHeight -
+                              RadioPlayer._minPlayerHeight))
+                      .clamp(0.0, 1.0);
               final miniPlayerOpacity = (1.0 - (progress / 0.3)).clamp(
                 0.0,
                 1.0,
@@ -180,139 +307,6 @@ class _RadioPlayerState extends State<RadioPlayer> {
           ),
         );
       },
-    );
-  }
-
-  /// Build controls for landscape mode.
-  Widget _buildLandscapeControls() {
-    return Consumer<AudioPlayerService>(
-      builder: (context, service, _) => ValueListenableBuilder<int>(
-        valueListenable: service.autoplayCountdownNotifier,
-        builder: (context, countdown, _) => SafeArea(
-          child: Align(
-            alignment: Alignment.bottomRight,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 0, 20, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  ValueListenableBuilder<bool>(
-                    valueListenable: service.sleepTimerActive,
-                    builder: (context, isSleepTimerSet, _) =>
-                        FloatingActionButton.small(
-                          heroTag: 'mini_timer_fab',
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
-                          onPressed: isSleepTimerSet
-                              ? () => service.cancelSleepTimer()
-                              : () async {
-                                  final selected = await showDialog<Duration>(
-                                    context: context,
-                                    builder: (context) => SleepTimer(
-                                      onTimerSelected: (duration) =>
-                                          Navigator.of(context).pop(duration),
-                                    ),
-                                  );
-                                  if (selected != null) {
-                                    service.setSleepTimer(selected);
-                                  }
-                                },
-                          tooltip: isSleepTimerSet
-                              ? (AppLocalizations.of(
-                                      context,
-                                    )?.translate('playerCancelSleepTimer') ??
-                                    'Cancel sleep timer')
-                              : (AppLocalizations.of(
-                                      context,
-                                    )?.translate('playerSleepTimer') ??
-                                    'Sleep timer'),
-                          child: Icon(
-                            isSleepTimerSet
-                                ? Icons.timer
-                                : Icons.timer_outlined,
-                            color: isSleepTimerSet
-                                ? Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer
-                                : Theme.of(
-                                    context,
-                                  ).colorScheme.onSecondaryContainer,
-                          ),
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  FloatingActionButton.small(
-                    heroTag: 'mini_quality_fab',
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.secondaryContainer,
-                    onPressed: () async {
-                      final mediaItem = service.mediaItem;
-                      Station? station;
-
-                      if (mediaItem != null && service.stations.isNotEmpty) {
-                        station = service.stations.firstWhere(
-                          (s) => s.id == mediaItem.id,
-                          orElse: () => service.stations.first,
-                        );
-                      }
-
-                      final prefQuality =
-                          service.prefs.getString('streamQuality') ?? 'mp3';
-                      final selectedQuality =
-                          station != null && prefQuality == 'aac'
-                          ? (station.streamAAC.isNotEmpty ? 'aac' : 'mp3')
-                          : 'mp3';
-
-                      final newQuality = await showDialog<String>(
-                        context: context,
-                        builder: (context) => QualitySetting(
-                          station: station,
-                          selectedQuality: selectedQuality,
-                          onQualitySelected: (q) =>
-                              Navigator.of(context).pop(q),
-                        ),
-                      );
-
-                      if (newQuality != null &&
-                          station != null &&
-                          newQuality != selectedQuality) {
-                        service.prefs.setString('streamQuality', newQuality);
-                        service.stop();
-                        service.playMediaItem(station);
-                      }
-                    },
-                    tooltip:
-                        AppLocalizations.of(
-                          context,
-                        )?.translate('playerStreamQuality') ??
-                        'Stream quality',
-                    child: Icon(
-                      Icons.high_quality_outlined,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  PlayButton(
-                    service: service,
-                    countdown: countdown,
-                    processingState: service.playbackState.processingState,
-                    isPlaying: service.isPlaying,
-                    small: true,
-                    heroTag: 'mini_player_fab_landscape',
-                    elevation: 6,
-                    tooltip:
-                        AppLocalizations.of(context)?.translate('playerPlay') ??
-                        'Play',
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
