@@ -19,16 +19,6 @@ class RadioPlayer extends StatefulWidget {
   static const double _maxPlayerHeight = 620.0;
   static const Duration _animationDuration = Duration(milliseconds: 300);
 
-  // Fractional min size based on available height
-  static double getMinPlayerSize(double screenHeight) {
-    return (_minPlayerHeight / screenHeight).clamp(0.0, 1.0);
-  }
-
-  // Fractional max size based on available height
-  static double getMaxPlayerSize(double screenHeight) {
-    return (_maxPlayerHeight / screenHeight).clamp(0.0, 1.0);
-  }
-
   // Transition progress (0 = mini, 1 = full)
   static double getTransitionProgress(double currentHeight) {
     return ((currentHeight - _minPlayerHeight) /
@@ -108,8 +98,8 @@ class _RadioPlayerState extends State<RadioPlayer> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenHeight = constraints.maxHeight;
-        final minPlayerSize = RadioPlayer.getMinPlayerSize(screenHeight);
-        final maxPlayerSize = RadioPlayer.getMaxPlayerSize(screenHeight);
+        final minPlayerSize = RadioPlayer._minPlayerHeight / screenHeight;
+        final maxPlayerSize = RadioPlayer._maxPlayerHeight / screenHeight;
         _latestMinPlayerSize = minPlayerSize;
 
         return DraggableScrollableSheet(
@@ -124,8 +114,14 @@ class _RadioPlayerState extends State<RadioPlayer> {
               final progress = RadioPlayer.getTransitionProgress(
                 constraints.maxHeight,
               );
-              final miniPlayerOpacity = (1.0 - (progress / 0.3)).clamp(0.0, 1.0);
-              final fullPlayerOpacity = ((progress - 0.3) / 0.3).clamp(0.0, 1.0);
+              final miniPlayerOpacity = (1.0 - (progress / 0.3)).clamp(
+                0.0,
+                1.0,
+              );
+              final fullPlayerOpacity = ((progress - 0.3) / 0.3).clamp(
+                0.0,
+                1.0,
+              );
 
               return Container(
                 decoration: BoxDecoration(
@@ -206,37 +202,40 @@ class _RadioPlayerState extends State<RadioPlayer> {
                     builder: (context, isSleepTimerSet, _) =>
                         FloatingActionButton.small(
                           heroTag: 'mini_timer_fab',
-                          backgroundColor:
-                              Theme.of(context).colorScheme.secondaryContainer,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer,
                           onPressed: isSleepTimerSet
                               ? () => service.cancelSleepTimer()
                               : () async {
                                   final selected = await showDialog<Duration>(
-                                        context: context,
-                                        builder: (context) => SleepTimer(
-                                          onTimerSelected: (duration) =>
-                                              Navigator.of(context).pop(duration),
-                                        ),
-                                      );
+                                    context: context,
+                                    builder: (context) => SleepTimer(
+                                      onTimerSelected: (duration) =>
+                                          Navigator.of(context).pop(duration),
+                                    ),
+                                  );
                                   if (selected != null) {
                                     service.setSleepTimer(selected);
                                   }
                                 },
                           tooltip: isSleepTimerSet
-                              ? (AppLocalizations.of(context)?.translate(
-                                      'playerCancelSleepTimer',
-                                    ) ??
+                              ? (AppLocalizations.of(
+                                      context,
+                                    )?.translate('playerCancelSleepTimer') ??
                                     'Cancel sleep timer')
-                              : (AppLocalizations.of(context)?.translate(
-                                      'playerSleepTimer',
-                                    ) ??
+                              : (AppLocalizations.of(
+                                      context,
+                                    )?.translate('playerSleepTimer') ??
                                     'Sleep timer'),
                           child: Icon(
                             isSleepTimerSet
                                 ? Icons.timer
                                 : Icons.timer_outlined,
                             color: isSleepTimerSet
-                                ? Theme.of(context).colorScheme.onPrimaryContainer
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer
                                 : Theme.of(
                                     context,
                                   ).colorScheme.onSecondaryContainer,
@@ -246,8 +245,9 @@ class _RadioPlayerState extends State<RadioPlayer> {
                   const SizedBox(height: 12),
                   FloatingActionButton.small(
                     heroTag: 'mini_quality_fab',
-                    backgroundColor:
-                        Theme.of(context).colorScheme.secondaryContainer,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.secondaryContainer,
                     onPressed: () async {
                       final mediaItem = service.mediaItem;
                       Station? station;
@@ -271,7 +271,8 @@ class _RadioPlayerState extends State<RadioPlayer> {
                         builder: (context) => QualitySetting(
                           station: station,
                           selectedQuality: selectedQuality,
-                          onQualitySelected: (q) => Navigator.of(context).pop(q),
+                          onQualitySelected: (q) =>
+                              Navigator.of(context).pop(q),
                         ),
                       );
 
@@ -284,9 +285,9 @@ class _RadioPlayerState extends State<RadioPlayer> {
                       }
                     },
                     tooltip:
-                        AppLocalizations.of(context)?.translate(
-                          'playerStreamQuality',
-                        ) ??
+                        AppLocalizations.of(
+                          context,
+                        )?.translate('playerStreamQuality') ??
                         'Stream quality',
                     child: Icon(
                       Icons.high_quality_outlined,
