@@ -46,10 +46,6 @@ class _RadioPlayerState extends State<RadioPlayer> {
   late ValueNotifier<bool> _closeNotifier;
   double? _latestMinPlayerSize;
 
-  double? _cachedMinPlayerSize;
-  double? _cachedMaxPlayerSize;
-  double? _cachedScreenHeight;
-
   @override
   void initState() {
     super.initState();
@@ -86,13 +82,10 @@ class _RadioPlayerState extends State<RadioPlayer> {
     }
   }
 
-  /// Build the radio player with draggable sheet.
   @override
   Widget build(BuildContext context) {
-    final isSidePanel = widget.screenType.isLargeFormat;
-
-    // Tablet/Web: persistent right side panel with the full player.
-    if (isSidePanel) {
+    // 1. Tablet/Desktop: persistent right side panel.
+    if (widget.screenType.isLargeFormat) {
       return Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainer,
@@ -106,252 +99,219 @@ class _RadioPlayerState extends State<RadioPlayer> {
       );
     }
 
+    // 2. Small Horizontal Screen: mini floating buttons.
+    if (widget.screenType == ScreenType.smallScreenHorizontal) {
+      return _buildLandscapeControls();
+    }
+
+    // 3. Small Vertical Screen: draggable sheet.
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (_cachedScreenHeight != constraints.maxHeight) {
-          _cachedScreenHeight = constraints.maxHeight;
-          _cachedMinPlayerSize = RadioPlayer.getMinPlayerSize(
-            constraints.maxHeight,
-          );
-          _cachedMaxPlayerSize = RadioPlayer.getMaxPlayerSize(
-            constraints.maxHeight,
-          );
-        }
-
-        final minPlayerSize = _cachedMinPlayerSize!;
-        final maxPlayerSize = _cachedMaxPlayerSize!;
+        final screenHeight = constraints.maxHeight;
+        final minPlayerSize = RadioPlayer.getMinPlayerSize(screenHeight);
+        final maxPlayerSize = RadioPlayer.getMaxPlayerSize(screenHeight);
         _latestMinPlayerSize = minPlayerSize;
 
-        // Small horizontal screen: show mini floating buttons.
-        if (widget.screenType == ScreenType.smallScreenHorizontal) {
-          return Consumer<AudioPlayerService>(
-            builder: (context, service, _) => ValueListenableBuilder<int>(
-              valueListenable: service.autoplayCountdownNotifier,
-              builder: (context, countdown, _) => SafeArea(
-                child: Align(
-                  alignment: Alignment.bottomRight,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 0, 20, 20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        ValueListenableBuilder<bool>(
-                          valueListenable: service.sleepTimerActive,
-                          builder: (context, isSleepTimerSet, _) =>
-                              FloatingActionButton.small(
-                                heroTag: 'mini_timer_fab',
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.secondaryContainer,
-                                onPressed: isSleepTimerSet
-                                    ? () => service.cancelSleepTimer()
-                                    : () async {
-                                        final selected =
-                                            await showDialog<Duration>(
-                                              context: context,
-                                              builder: (context) => SleepTimer(
-                                                onTimerSelected: (duration) =>
-                                                    Navigator.of(
-                                                      context,
-                                                    ).pop(duration),
-                                              ),
-                                            );
-                                        if (selected != null) {
-                                          service.setSleepTimer(selected);
-                                        }
-                                      },
-                                tooltip: isSleepTimerSet
-                                    ? (AppLocalizations.of(context)?.translate(
-                                            'playerCancelSleepTimer',
-                                          ) ??
-                                          'Cancel sleep timer')
-                                    : (AppLocalizations.of(
-                                            context,
-                                          )?.translate('playerSleepTimer') ??
-                                          'Sleep timer'),
-                                child: Icon(
-                                  isSleepTimerSet
-                                      ? Icons.timer
-                                      : Icons.timer_outlined,
-                                  color: isSleepTimerSet
-                                      ? Theme.of(
-                                          context,
-                                        ).colorScheme.onPrimaryContainer
-                                      : Theme.of(
-                                          context,
-                                        ).colorScheme.onSecondaryContainer,
-                                ),
-                              ),
-                        ),
-                        const SizedBox(height: 12),
-                        FloatingActionButton.small(
-                          heroTag: 'mini_quality_fab',
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
-                          onPressed: () async {
-                            final mediaItem = service.mediaItem;
-                            Station? station;
+        return DraggableScrollableSheet(
+          controller: _controller,
+          initialChildSize: minPlayerSize,
+          minChildSize: minPlayerSize,
+          maxChildSize: maxPlayerSize,
+          snap: true,
+          snapSizes: [minPlayerSize, maxPlayerSize],
+          builder: (context, scrollController) => LayoutBuilder(
+            builder: (context, constraints) {
+              final progress = RadioPlayer.getTransitionProgress(
+                constraints.maxHeight,
+              );
+              final miniPlayerOpacity = (1.0 - (progress / 0.3)).clamp(0.0, 1.0);
+              final fullPlayerOpacity = ((progress - 0.3) / 0.3).clamp(0.0, 1.0);
 
-                            if (mediaItem != null &&
-                                service.stations.isNotEmpty) {
-                              station = service.stations.firstWhere(
-                                (s) => s.id == mediaItem.id,
-                                orElse: () => service.stations.first,
-                              );
-                            }
-
-                            final prefQuality =
-                                service.prefs.getString('streamQuality') ??
-                                'mp3';
-                            final selectedQuality =
-                                station != null && prefQuality == 'aac'
-                                ? (station.streamAAC.isNotEmpty ? 'aac' : 'mp3')
-                                : 'mp3';
-
-                            final newQuality = await showDialog<String>(
-                              context: context,
-                              builder: (context) => QualitySetting(
-                                station: station,
-                                selectedQuality: selectedQuality,
-                                onQualitySelected: (q) =>
-                                    Navigator.of(context).pop(q),
-                              ),
-                            );
-
-                            if (newQuality != null &&
-                                station != null &&
-                                newQuality != selectedQuality) {
-                              service.prefs.setString(
-                                'streamQuality',
-                                newQuality,
-                              );
-                              service.stop();
-                              service.playMediaItem(station);
-                            }
-                          },
-                          tooltip:
-                              AppLocalizations.of(
-                                context,
-                              )?.translate('playerStreamQuality') ??
-                              'Stream quality',
-                          child: Icon(
-                            Icons.high_quality_outlined,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSecondaryContainer,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        PlayButton(
-                          service: service,
-                          countdown: countdown,
-                          processingState:
-                              service.playbackState.processingState,
-                          isPlaying: service.isPlaying,
-                          small: true,
-                          heroTag: 'mini_player_fab_landscape',
-                          elevation: 6,
-                          tooltip:
-                              AppLocalizations.of(
-                                context,
-                              )?.translate('playerPlay') ??
-                              'Play',
-                        ),
-                      ],
-                    ),
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32),
                   ),
                 ),
-              ),
-            ),
-          );
-        }
-
-        // Small vertical screen: show draggable sheet.
-        if (widget.screenType == ScreenType.smallScreenVertical) {
-          return DraggableScrollableSheet(
-            controller: _controller,
-            initialChildSize: minPlayerSize,
-            minChildSize: minPlayerSize,
-            maxChildSize: maxPlayerSize,
-            snap: true,
-            snapSizes: [minPlayerSize, maxPlayerSize],
-            builder: (context, scrollController) => LayoutBuilder(
-              builder: (context, constraints) {
-                final progress = RadioPlayer.getTransitionProgress(
-                  constraints.maxHeight,
-                );
-                final miniPlayerOpacity = (1.0 - (progress / 0.3)).clamp(
-                  0.0,
-                  1.0,
-                );
-                final fullPlayerOpacity = ((progress - 0.3) / 0.3).clamp(
-                  0.0,
-                  1.0,
-                );
-
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainer,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      topRight: Radius.circular(32),
+                child: Stack(
+                  children: [
+                    Opacity(
+                      opacity: fullPlayerOpacity,
+                      child: FullPlayerContent(
+                        scrollController: scrollController,
+                        onClose: () => _controller.isAttached
+                            ? _controller
+                                  .animateTo(
+                                    minPlayerSize,
+                                    duration: RadioPlayer._animationDuration,
+                                    curve: Curves.easeOut,
+                                  )
+                                  .catchError((_) {})
+                            : null,
+                      ),
                     ),
-                  ),
-                  child: Stack(
-                    children: [
-                      Opacity(
-                        opacity: fullPlayerOpacity,
-                        child: FullPlayerContent(
-                          scrollController: scrollController,
-                          onClose: () => _controller.isAttached
+                    IgnorePointer(
+                      ignoring: miniPlayerOpacity == 0,
+                      child: Opacity(
+                        opacity: miniPlayerOpacity,
+                        child: MiniPlayerTapRegion(
+                          onExpand: () => _controller.isAttached
                               ? _controller
                                     .animateTo(
-                                      minPlayerSize,
+                                      maxPlayerSize,
                                       duration: RadioPlayer._animationDuration,
                                       curve: Curves.easeOut,
                                     )
                                     .catchError((_) {})
                               : null,
+                          child: const MiniPlayerContent(),
                         ),
                       ),
-                      IgnorePointer(
-                        ignoring: miniPlayerOpacity == 0,
-                        child: Opacity(
-                          opacity: miniPlayerOpacity,
-                          child: MiniPlayerTapRegion(
-                            onExpand: () => _controller.isAttached
-                                ? _controller
-                                      .animateTo(
-                                        maxPlayerSize,
-                                        duration:
-                                            RadioPlayer._animationDuration,
-                                        curve: Curves.easeOut,
-                                      )
-                                      .catchError((_) {})
-                                : null,
-                            child: const MiniPlayerContent(),
+                    ),
+                    const Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 16),
+                        child: _DragHandle(),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  /// Build controls for landscape mode.
+  Widget _buildLandscapeControls() {
+    return Consumer<AudioPlayerService>(
+      builder: (context, service, _) => ValueListenableBuilder<int>(
+        valueListenable: service.autoplayCountdownNotifier,
+        builder: (context, countdown, _) => SafeArea(
+          child: Align(
+            alignment: Alignment.bottomRight,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 0, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  ValueListenableBuilder<bool>(
+                    valueListenable: service.sleepTimerActive,
+                    builder: (context, isSleepTimerSet, _) =>
+                        FloatingActionButton.small(
+                          heroTag: 'mini_timer_fab',
+                          backgroundColor:
+                              Theme.of(context).colorScheme.secondaryContainer,
+                          onPressed: isSleepTimerSet
+                              ? () => service.cancelSleepTimer()
+                              : () async {
+                                  final selected = await showDialog<Duration>(
+                                        context: context,
+                                        builder: (context) => SleepTimer(
+                                          onTimerSelected: (duration) =>
+                                              Navigator.of(context).pop(duration),
+                                        ),
+                                      );
+                                  if (selected != null) {
+                                    service.setSleepTimer(selected);
+                                  }
+                                },
+                          tooltip: isSleepTimerSet
+                              ? (AppLocalizations.of(context)?.translate(
+                                      'playerCancelSleepTimer',
+                                    ) ??
+                                    'Cancel sleep timer')
+                              : (AppLocalizations.of(context)?.translate(
+                                      'playerSleepTimer',
+                                    ) ??
+                                    'Sleep timer'),
+                          child: Icon(
+                            isSleepTimerSet
+                                ? Icons.timer
+                                : Icons.timer_outlined,
+                            color: isSleepTimerSet
+                                ? Theme.of(context).colorScheme.onPrimaryContainer
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.onSecondaryContainer,
                           ),
                         ),
-                      ),
-                      const Align(
-                        alignment: Alignment.topCenter,
-                        child: Padding(
-                          padding: EdgeInsets.only(top: 16),
-                          child: _DragHandle(),
-                        ),
-                      ),
-                    ],
                   ),
-                );
-              },
-            ),
-          );
-        }
+                  const SizedBox(height: 12),
+                  FloatingActionButton.small(
+                    heroTag: 'mini_quality_fab',
+                    backgroundColor:
+                        Theme.of(context).colorScheme.secondaryContainer,
+                    onPressed: () async {
+                      final mediaItem = service.mediaItem;
+                      Station? station;
 
-        return const SizedBox.shrink();
-      },
+                      if (mediaItem != null && service.stations.isNotEmpty) {
+                        station = service.stations.firstWhere(
+                          (s) => s.id == mediaItem.id,
+                          orElse: () => service.stations.first,
+                        );
+                      }
+
+                      final prefQuality =
+                          service.prefs.getString('streamQuality') ?? 'mp3';
+                      final selectedQuality =
+                          station != null && prefQuality == 'aac'
+                          ? (station.streamAAC.isNotEmpty ? 'aac' : 'mp3')
+                          : 'mp3';
+
+                      final newQuality = await showDialog<String>(
+                        context: context,
+                        builder: (context) => QualitySetting(
+                          station: station,
+                          selectedQuality: selectedQuality,
+                          onQualitySelected: (q) => Navigator.of(context).pop(q),
+                        ),
+                      );
+
+                      if (newQuality != null &&
+                          station != null &&
+                          newQuality != selectedQuality) {
+                        service.prefs.setString('streamQuality', newQuality);
+                        service.stop();
+                        service.playMediaItem(station);
+                      }
+                    },
+                    tooltip:
+                        AppLocalizations.of(context)?.translate(
+                          'playerStreamQuality',
+                        ) ??
+                        'Stream quality',
+                    child: Icon(
+                      Icons.high_quality_outlined,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  PlayButton(
+                    service: service,
+                    countdown: countdown,
+                    processingState: service.playbackState.processingState,
+                    isPlaying: service.isPlaying,
+                    small: true,
+                    heroTag: 'mini_player_fab_landscape',
+                    elevation: 6,
+                    tooltip:
+                        AppLocalizations.of(context)?.translate('playerPlay') ??
+                        'Play',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

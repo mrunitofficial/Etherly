@@ -99,10 +99,7 @@ class MyAudioHandler extends BaseAudioHandler {
     await _player.stop();
     this.mediaItem.add(mediaItem);
     if (_stopRequested) return;
-
-    // Call play() eagerly so the UI doesn't flash the play icon during the network load
     _player.play().catchError((_) {});
-
     await _setAudioSource(mediaItem);
     if (_stopRequested) {
       await _player.stop();
