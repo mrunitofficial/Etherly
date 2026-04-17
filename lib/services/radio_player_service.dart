@@ -30,6 +30,7 @@ Future<MyAudioHandler> initAudioService({
 
 class MyAudioHandler extends BaseAudioHandler {
   bool _stopRequested = false;
+  bool _isResuming = false;
   SharedPreferences? _prefs;
   final AudioPlayer _player = AudioPlayer();
   List<Station> _stations = [];
@@ -54,7 +55,7 @@ class MyAudioHandler extends BaseAudioHandler {
   }
 
   MyAudioHandler({this.castService}) {
-    _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
+    _player.playbackEventStream.map(_transformEvent).listen(playbackState.add);
     _listenForIcy();
     _initAudioSession();
   }
@@ -98,10 +99,10 @@ class MyAudioHandler extends BaseAudioHandler {
     await _player.stop();
     this.mediaItem.add(mediaItem);
     if (_stopRequested) return;
-    
+
     // Call play() eagerly so the UI doesn't flash the play icon during the network load
-    _player.play();
-    
+    _player.play().catchError((_) {});
+
     await _setAudioSource(mediaItem);
     if (_stopRequested) {
       await _player.stop();
@@ -116,16 +117,22 @@ class MyAudioHandler extends BaseAudioHandler {
         _player.processingState == ProcessingState.idle) {
       final item = mediaItem.value;
       if (item != null) {
-        _player.play();
+        _player.play().catchError((_) {});
         await _setAudioSource(item);
         if (_stopRequested) {
           await _player.stop();
         }
       }
     } else {
-      await _player.seek(null);
-      if (!_stopRequested) {
-        await _player.play();
+      _isResuming = true;
+      try {
+        await _player.seek(null);
+        if (!_stopRequested) {
+          await _player.play();
+        }
+      } finally {
+        _isResuming = false;
+        playbackState.add(_transformEvent(_player.playbackEvent));
       }
     }
   }
@@ -325,7 +332,7 @@ class MyAudioHandler extends BaseAudioHandler {
     if (effectiveProcessingState == ProcessingState.buffering) {
       if (kIsWeb) {
         effectiveProcessingState = ProcessingState.ready;
-      } else if (!_player.playing) {
+      } else if (!_player.playing && !_isResuming) {
         effectiveProcessingState = ProcessingState.ready;
       }
     }
