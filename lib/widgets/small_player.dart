@@ -43,7 +43,7 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
               IgnorePointer(
                 ignoring: true,
                 child: StationArt(
-                  artUrl: artUrl, 
+                  artUrl: artUrl,
                   size: 56.0,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -110,7 +110,6 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                     countdown: countdown,
                     processingState: processingState,
                     isPlaying: isPlaying,
-                    isCastLoading: service.isCastLoading,
                     small: true,
                     heroTag: "mini_player_fab",
                     tooltip: isPlaying

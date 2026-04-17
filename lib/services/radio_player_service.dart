@@ -98,9 +98,14 @@ class MyAudioHandler extends BaseAudioHandler {
     await _player.stop();
     this.mediaItem.add(mediaItem);
     if (_stopRequested) return;
+    
+    // Call play() eagerly so the UI doesn't flash the play icon during the network load
+    _player.play();
+    
     await _setAudioSource(mediaItem);
-    if (_stopRequested) return;
-    await _player.play();
+    if (_stopRequested) {
+      await _player.stop();
+    }
   }
 
   /// All player control methods.
@@ -111,13 +116,17 @@ class MyAudioHandler extends BaseAudioHandler {
         _player.processingState == ProcessingState.idle) {
       final item = mediaItem.value;
       if (item != null) {
+        _player.play();
         await _setAudioSource(item);
+        if (_stopRequested) {
+          await _player.stop();
+        }
       }
     } else {
       await _player.seek(null);
-    }
-    if (!_stopRequested) {
-      await _player.play();
+      if (!_stopRequested) {
+        await _player.play();
+      }
     }
   }
 
@@ -311,12 +320,15 @@ class MyAudioHandler extends BaseAudioHandler {
 
   /// Media controls for rich media notification (RMN).
   PlaybackState _transformEvent(PlaybackEvent event) {
-    final effectiveProcessingState =
-        _player.playing &&
-            (event.processingState == ProcessingState.buffering ||
-                event.processingState == ProcessingState.loading)
-        ? ProcessingState.ready
-        : event.processingState;
+    var effectiveProcessingState = event.processingState;
+
+    if (effectiveProcessingState == ProcessingState.buffering) {
+      if (kIsWeb) {
+        effectiveProcessingState = ProcessingState.ready;
+      } else if (!_player.playing) {
+        effectiveProcessingState = ProcessingState.ready;
+      }
+    }
 
     return PlaybackState(
       controls: [

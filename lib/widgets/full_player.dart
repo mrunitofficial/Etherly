@@ -14,11 +14,7 @@ import 'package:etherly/widgets/play_button.dart';
 
 /// Full player content shown in the expanded state of the radio player.
 class FullPlayerContent extends StatefulWidget {
-  const FullPlayerContent({
-    super.key,
-    this.scrollController,
-    this.onClose,
-  });
+  const FullPlayerContent({super.key, this.scrollController, this.onClose});
 
   final ScrollController? scrollController;
   final VoidCallback? onClose;
@@ -50,10 +46,7 @@ class _FullPlayerContentState extends State<FullPlayerContent> {
               ),
               const SizedBox(height: 8),
               Center(
-                child: StationArt(
-                  artUrl: getSafeArtUrl(mediaItem),
-                  size: 280,
-                ),
+                child: StationArt(artUrl: getSafeArtUrl(mediaItem), size: 280),
               ),
               const SizedBox(height: 24),
               Padding(
@@ -103,10 +96,7 @@ class _FullPlayerContentState extends State<FullPlayerContent> {
               ),
               const SizedBox(height: 24),
               const FullPlayerControls(),
-              if (kIsWeb) ...[
-                const SizedBox(height: 32),
-                const VolumeSlider(),
-              ],
+              if (kIsWeb) ...[const SizedBox(height: 32), const VolumeSlider()],
             ],
           );
         },
@@ -231,14 +221,11 @@ class FullPlayerControls extends StatelessWidget {
                     countdown: countdown,
                     processingState: service.playbackState.processingState,
                     isPlaying: service.isPlaying,
-                    isCastLoading: service.isCastLoading,
                     heroTag: "full_player_fab",
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
                     tooltip: service.isPlaying
                         ? (loc?.translate('playerPause') ?? 'Pause')
                         : (loc?.translate('playerPlay') ?? 'Play'),
+                    small: false,
                   ),
                 ),
               ),
@@ -276,7 +263,7 @@ void handleStreamQuality(BuildContext context) async {
   final service = Provider.of<AudioPlayerService>(context, listen: false);
   final mediaItem = service.mediaItem;
   Station? station;
-  
+
   if (mediaItem != null && service.stations.isNotEmpty) {
     station = service.stations.firstWhere(
       (s) => s.id == mediaItem.id,
@@ -297,7 +284,7 @@ void handleStreamQuality(BuildContext context) async {
       onQualitySelected: (q) => Navigator.of(context).pop(q),
     ),
   );
-  
+
   if (newQuality != null && station != null && newQuality != selectedQuality) {
     service.prefs.setString('streamQuality', newQuality);
     service.stop();
