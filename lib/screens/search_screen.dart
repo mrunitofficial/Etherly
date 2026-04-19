@@ -110,9 +110,12 @@ class _StationSearchBarState extends State<StationSearchBar> {
           onChanged: (_) {
             controller.openView();
           },
-          leading: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12.0),
-            child: Icon(Icons.search),
+          leading: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            child: Icon(
+              Icons.search,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           hintText: _isListening
               ? loc?.translate('searchPanelVoiceHint') ??
@@ -120,7 +123,10 @@ class _StationSearchBarState extends State<StationSearchBar> {
               : loc?.translate('searchPanelHint') ?? 'Search stations...',
           trailing: [
             IconButton(
-              icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
+              icon: Icon(
+                _isListening ? Icons.mic : Icons.mic_none,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               tooltip:
                   loc?.translate('mainTooltipVoiceSearch') ?? 'Voice search',
               onPressed: _toggleListening,
