@@ -27,31 +27,6 @@ class _SearchScreenState extends State<SearchScreen> {
   late stt.SpeechToText _speech;
   bool _isListening = false;
 
-  ScreenType _getScreenType(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final orientation = MediaQuery.of(context).orientation;
-
-    if (size.height < 650) {
-      if (orientation == Orientation.landscape) {
-        return ScreenType.smallScreenHorizontal;
-      }
-      return ScreenType.smallScreenVertical;
-    }
-
-    if (size.width >= 1400) {
-      return ScreenType.desktop;
-    }
-
-    if (size.width >= 800) {
-      return ScreenType.tablet;
-    }
-
-    if (orientation == Orientation.landscape) {
-      return ScreenType.smallScreenHorizontal;
-    }
-
-    return ScreenType.smallScreenVertical;
-  }
 
   /// Initializes and disposes resources.
   @override
@@ -136,7 +111,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final audioPlayerService = Provider.of<AudioPlayerService>(context);
     final stations = audioPlayerService.stations;
     final loc = AppLocalizations.of(context);
-    final screenType = _getScreenType(context);
+    final screenType = ScreenType.fromContext(context);
 
     final filtered = _query.isEmpty
         ? <Station>[]

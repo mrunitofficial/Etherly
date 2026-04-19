@@ -308,33 +308,6 @@ class _MyHomePageState extends State<MyHomePage>
     }
   }
 
-  /// Determines the screen type based on device size and orientation.
-  ScreenType _getScreenType(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final orientation = MediaQuery.of(context).orientation;
-
-    if (size.height < 650) {
-      if (orientation == Orientation.landscape) {
-        return ScreenType.smallScreenHorizontal;
-      }
-      return ScreenType.smallScreenVertical;
-    }
-
-    if (size.width >= 1400) {
-      return ScreenType.desktop;
-    }
-
-    if (size.width >= 800) {
-      return ScreenType.tablet;
-    }
-
-    if (orientation == Orientation.landscape) {
-      return ScreenType.smallScreenHorizontal;
-    }
-
-    return ScreenType.smallScreenVertical;
-  }
-
   /// Builds the appropriate screen widget based on the selected index.
   Widget _buildScreen(int index, ScreenType screenType) {
     switch (index) {
@@ -358,7 +331,7 @@ class _MyHomePageState extends State<MyHomePage>
   /// Builds the main Scaffold with AppBar, body, and NavigationBar.
   @override
   Widget build(BuildContext context) {
-    final screenType = _getScreenType(context);
+    final screenType = ScreenType.fromContext(context);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -383,9 +356,7 @@ class _MyHomePageState extends State<MyHomePage>
           });
           return !insideSheet;
         },
-        leadingWidth: screenType.isLargeFormat
-            ? _navigationRailWidth
-            : null,
+        leadingWidth: screenType.isLargeFormat ? _navigationRailWidth : null,
         leading: IconButton(
           icon: SvgPicture.asset(
             'assets/icon_base.svg',
