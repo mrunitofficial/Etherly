@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:etherly/localization/app_localizations.dart';
@@ -115,6 +116,10 @@ class IcyTextDisplay extends StatelessWidget {
     }
   }
 
+  Future<void> _copyToClipboard(BuildContext context, String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -136,6 +141,7 @@ class IcyTextDisplay extends StatelessWidget {
         return InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: isSong ? () => _searchSong(context, service, text) : null,
+          onLongPress: isSong ? () => _copyToClipboard(context, text) : null,
           child: Padding(
             padding: padding ?? const EdgeInsets.symmetric(horizontal: 8.0),
             child: MarqueeText(
