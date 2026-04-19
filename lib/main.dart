@@ -370,72 +370,7 @@ class _MyHomePageState extends State<MyHomePage>
                 true;
           },
         ),
-        title: Container(
-          height: 56,
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          ),
-          child: Row(
-            children: [
-              IconButton(
-                padding: EdgeInsets.zero,
-                icon: Icon(
-                  Icons.search,
-                  color: Theme.of(context).hintColor,
-                  size: 24,
-                ),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ChangeNotifierProvider.value(
-                      value: context.read<AudioPlayerService>(),
-                      child: const SearchScreen(),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ChangeNotifierProvider.value(
-                        value: context.read<AudioPlayerService>(),
-                        child: const SearchScreen(),
-                      ),
-                    ),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(
-                          context,
-                        )?.translate('searchPanelHint') ??
-                        'Search stations',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).hintColor,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.mic_none),
-                tooltip:
-                    AppLocalizations.of(
-                      context,
-                    )?.translate('mainTooltipVoiceSearch') ??
-                    'Voice search',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ChangeNotifierProvider.value(
-                      value: context.read<AudioPlayerService>(),
-                      child: const SearchScreen(startListening: true),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        title: const StationSearchBar(),
         actions: [
           if (context.read<ChromeCastService>().isCastSupported())
             IconButton(
