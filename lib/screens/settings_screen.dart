@@ -50,6 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _autoPlay = false;
   bool _forceDefaultColor = false;
   String _selectedQuality = 'mp3';
+  String _selectedMusicApp = 'always_ask';
 
   @override
   void initState() {
@@ -67,6 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _autoPlay = _prefs!.getBool('autoPlay') ?? false;
         _forceDefaultColor = _prefs!.getBool('forceDefaultColor') ?? false;
         _selectedQuality = _prefs!.getString('streamQuality') ?? 'mp3';
+        _selectedMusicApp = _prefs!.getString('favoriteMusicApp') ?? 'always_ask';
       });
       dynamicColorNotifier.value = !_forceDefaultColor;
     }
@@ -102,6 +104,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _saveMusicApp(String musicApp) async {
+    if (_prefs != null) {
+      await _prefs!.setString('favoriteMusicApp', musicApp);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -123,6 +131,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (!kIsWeb) _buildForceDefaultColorSwitch(loc),
                   _buildStartingTabDropdownSetting(loc),
                   if (!kIsWeb) _buildAutoPlaySwitch(loc),
+                  if (!kIsWeb) _buildMusicAppDropdownSetting(loc),
                   const Divider(),
                   _buildAboutSection(loc),
                 ],
@@ -277,6 +286,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
             }
           },
           items: qualityOptions.map<DropdownMenuItem<String>>((opt) {
+            return DropdownMenuItem<String>(
+              value: opt['key']!,
+              child: Text(opt['label']!),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMusicAppDropdownSetting(AppLocalizations loc) {
+    final musicAppOptions = [
+      {'key': 'always_ask', 'label': loc.translate('settingsMusicAppAlwaysAsk')},
+      {'key': 'youtube', 'label': loc.translate('settingsMusicAppYoutube')},
+      {'key': 'ytmusic', 'label': loc.translate('settingsMusicAppYtMusic')},
+      {'key': 'spotify', 'label': loc.translate('settingsMusicAppSpotify')},
+    ];
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+      title: Text(loc.translate('settingsPreferredMusicApp')),
+      trailing: SizedBox(
+        width: 140,
+        child: DropdownButton<String>(
+          isExpanded: true,
+          elevation: 1,
+          dropdownColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+          value: _selectedMusicApp,
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              setState(() {
+                _selectedMusicApp = newValue;
+              });
+              _saveMusicApp(newValue);
+            }
+          },
+          items: musicAppOptions.map<DropdownMenuItem<String>>((opt) {
             return DropdownMenuItem<String>(
               value: opt['key']!,
               child: Text(opt['label']!),

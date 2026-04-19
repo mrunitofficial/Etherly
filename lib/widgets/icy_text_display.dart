@@ -23,14 +23,19 @@ class IcyTextDisplay extends StatelessWidget {
   Future<void> _searchSong(BuildContext context, AudioPlayerService service, String songName) async {
     final prefs = service.prefs;
     String? selectedApp = prefs.getString('favoriteMusicApp');
+    final wasAlwaysAsk = selectedApp == 'always_ask';
 
-    if (selectedApp == null) {
+    if (selectedApp == null || wasAlwaysAsk) {
       selectedApp = await showDialog<String>(
         context: context,
-        builder: (context) => MusicAppPicker(initialSelection: selectedApp),
+        builder: (context) => MusicAppPicker(initialSelection: wasAlwaysAsk ? null : selectedApp),
       );
+      
       if (selectedApp != null) {
-        await prefs.setString('favoriteMusicApp', selectedApp);
+        // Only persist if it wasn't already set to "always_ask"
+        if (!wasAlwaysAsk) {
+          await prefs.setString('favoriteMusicApp', selectedApp);
+        }
       } else {
         return; // User cancelled
       }
