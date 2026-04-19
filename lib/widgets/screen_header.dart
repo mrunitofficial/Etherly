@@ -24,7 +24,7 @@ class ScreenHeader extends StatelessWidget {
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
             ),
-            if (actions != null) actions!,
+            ?actions,
           ],
         ),
       ),

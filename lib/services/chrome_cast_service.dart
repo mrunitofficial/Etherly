@@ -8,7 +8,7 @@ class ChromeCastService with ChangeNotifier {
   bool isCastSupported({bool horizontalWeb = false}) {
     if (horizontalWeb) return false;
     if (kIsWeb) return false;
-    return Platform.isAndroid || Platform.isIOS;
+    return Platform.isAndroid;
   }
 
   bool _disposed = false;
@@ -54,11 +54,7 @@ class ChromeCastService with ChangeNotifier {
     await Future.delayed(const Duration(milliseconds: 100));
 
     const appId = GoogleCastDiscoveryCriteria.kDefaultApplicationId;
-    final options = Platform.isIOS
-        ? IOSGoogleCastOptions(
-            GoogleCastDiscoveryCriteriaInitialize.initWithApplicationID(appId),
-          )
-        : GoogleCastOptionsAndroid(appId: appId);
+    final options = GoogleCastOptionsAndroid(appId: appId);
 
     await GoogleCastContext.instance.setSharedInstanceWithOptions(options);
 

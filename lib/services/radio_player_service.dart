@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:audio_session/audio_session.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
 
@@ -31,10 +30,10 @@ Future<MyAudioHandler> initAudioService({
 
 class MyAudioHandler extends BaseAudioHandler {
   bool _stopRequested = false;
+  bool _isResuming = false;
   SharedPreferences? _prefs;
-  final AudioPlayer _player = AudioPlayer(handleInterruptions: false);
+  final AudioPlayer _player = AudioPlayer();
   List<Station> _stations = [];
-  bool _wasPlayingBeforeInterrupt = false;
   AudioSession? _audioSession;
   double _volume = 1.0;
 
@@ -56,49 +55,15 @@ class MyAudioHandler extends BaseAudioHandler {
   }
 
   MyAudioHandler({this.castService}) {
-    _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
+    _player.playbackEventStream.map(_transformEvent).listen(playbackState.add);
     _listenForIcy();
     _initAudioSession();
   }
 
-  /// Initialize audio session and handle interruptions.
+  /// Initialize audio session to let Android/OS handle interruptions natively.
   Future<void> _initAudioSession() async {
     final session = await AudioSession.instance;
     _audioSession = session;
-    session.becomingNoisyEventStream.listen((_) async {
-      await stop();
-    });
-    session.devicesChangedEventStream.listen((event) async {
-      bool btChanged =
-          event.devicesAdded.any(
-            (d) =>
-                d.isOutput &&
-                (d.type == AudioDeviceType.bluetoothA2dp ||
-                    d.type == AudioDeviceType.bluetoothLe ||
-                    d.type == AudioDeviceType.bluetoothSco),
-          ) ||
-          event.devicesRemoved.any(
-            (d) =>
-                d.isOutput &&
-                (d.type == AudioDeviceType.bluetoothA2dp ||
-                    d.type == AudioDeviceType.bluetoothLe ||
-                    d.type == AudioDeviceType.bluetoothSco),
-          );
-      if (btChanged) await stop();
-    });
-    session.interruptionEventStream.listen((event) async {
-      if (event.begin) {
-        _wasPlayingBeforeInterrupt = _player.playing;
-        if (_wasPlayingBeforeInterrupt) {
-          await pause();
-        }
-      } else {
-        if (_wasPlayingBeforeInterrupt) {
-          _wasPlayingBeforeInterrupt = false;
-          await play();
-        }
-      }
-    });
   }
 
   /// Set the ICY service for metadata updates.
@@ -134,9 +99,11 @@ class MyAudioHandler extends BaseAudioHandler {
     await _player.stop();
     this.mediaItem.add(mediaItem);
     if (_stopRequested) return;
+    _player.play().catchError((_) {});
     await _setAudioSource(mediaItem);
-    if (_stopRequested) return;
-    await _player.play();
+    if (_stopRequested) {
+      await _player.stop();
+    }
   }
 
   /// All player control methods.
@@ -147,18 +114,30 @@ class MyAudioHandler extends BaseAudioHandler {
         _player.processingState == ProcessingState.idle) {
       final item = mediaItem.value;
       if (item != null) {
+        _player.play().catchError((_) {});
         await _setAudioSource(item);
+        if (_stopRequested) {
+          await _player.stop();
+        }
       }
-    }
-    if (!_stopRequested) {
-      await _player.play();
+    } else {
+      _isResuming = true;
+      try {
+        await _player.seek(null);
+        if (!_stopRequested) {
+          await _player.play();
+        }
+      } finally {
+        _isResuming = false;
+        playbackState.add(_transformEvent(_player.playbackEvent));
+      }
     }
   }
 
   @override
   Future<void> pause() {
-    _stopRequested = true;
-    return _player.stop();
+    _stopRequested = false;
+    return _player.pause();
   }
 
   @override
@@ -301,8 +280,8 @@ class MyAudioHandler extends BaseAudioHandler {
 
     final List<String?> urlPriority = station != null
         ? (quality == 'aac'
-            ? <String?>[station.streamAAC, station.streamMP3]
-            : <String?>[station.streamMP3, station.streamAAC])
+              ? <String?>[station.streamAAC, station.streamMP3]
+              : <String?>[station.streamMP3, station.streamAAC])
         : [item.extras?['url'] as String?];
 
     final List<String> validUrls = urlPriority
@@ -317,7 +296,7 @@ class MyAudioHandler extends BaseAudioHandler {
     for (int i = 0; i < validUrls.length; i++) {
       final urlString = validUrls[i];
       final sourceUrl = Uri.parse(urlString);
-      
+
       try {
         await _player.setAudioSource(AudioSource.uri(sourceUrl, tag: item));
         await _player.setVolume(_volume);
@@ -326,7 +305,15 @@ class MyAudioHandler extends BaseAudioHandler {
         return;
       } catch (e) {
         if (kDebugMode) {
-          print('Error setting audio source (${quality == 'aac' && i == 0 ? 'AAC' : quality == 'mp3' && i == 0 ? 'MP3' : i == 1 ? 'fallback' : 'unknown'}): $e');
+          print(
+            'Error setting audio source (${quality == 'aac' && i == 0
+                ? 'AAC'
+                : quality == 'mp3' && i == 0
+                ? 'MP3'
+                : i == 1
+                ? 'fallback'
+                : 'unknown'}): $e',
+          );
         }
         if (i == validUrls.length - 1) {
           return;
@@ -337,18 +324,21 @@ class MyAudioHandler extends BaseAudioHandler {
 
   /// Media controls for rich media notification (RMN).
   PlaybackState _transformEvent(PlaybackEvent event) {
-    final effectiveProcessingState =
-        _player.playing &&
-            (event.processingState == ProcessingState.buffering ||
-                event.processingState == ProcessingState.loading)
-        ? ProcessingState.ready
-        : event.processingState;
+    var effectiveProcessingState = event.processingState;
+
+    if (effectiveProcessingState == ProcessingState.buffering) {
+      if (kIsWeb) {
+        effectiveProcessingState = ProcessingState.ready;
+      } else if (!_player.playing && !_isResuming) {
+        effectiveProcessingState = ProcessingState.ready;
+      }
+    }
 
     return PlaybackState(
       controls: [
         if (_player.playing) MediaControl.pause else MediaControl.play,
       ],
-      androidCompactActionIndices: const [0, 3],
+      androidCompactActionIndices: const [0],
       processingState: _getProcessingState(effectiveProcessingState),
       playing: _player.playing,
       updatePosition: _player.position,
@@ -497,7 +487,6 @@ class AudioPlayerService with ChangeNotifier {
   /// Initialize service: load preferences, stations, and set up listeners.
   Future<void> _init() async {
     _prefs = await SharedPreferences.getInstance();
-    await _requestNotificationPermission();
 
     _audioHandler.playbackState.listen((_) => notifyListeners());
     _audioHandler.mediaItem.listen((mediaItem) {
@@ -588,13 +577,12 @@ class AudioPlayerService with ChangeNotifier {
     cancelAutoplayCountdown();
     final cast = _castService;
     if (cast != null && cast.isConnected) {
-      await _audioHandler.stop();
+      await _audioHandler.pause();
       await cast.pause();
       notifyListeners();
       return;
     }
-    // This is intended behaviour, it's radio so it should always be live. Do not edit this.
-    await _audioHandler.stop();
+    await _audioHandler.pause();
   }
 
   Future<void> stop() async {
@@ -667,7 +655,6 @@ class AudioPlayerService with ChangeNotifier {
     _autoplayCancelled = true;
     _autoplayInProgress = false;
     autoplayCountdownNotifier.value = 0;
-    _audioHandler.stop();
   }
 
   /// Load stations from remote JSON and initialize state.
@@ -676,14 +663,22 @@ class AudioPlayerService with ChangeNotifier {
     const githubRawUrl =
         'https://raw.githubusercontent.com/mrunitofficial/Etherly-Nederland/main/stations.json';
 
-    final uri = Uri.parse(githubRawUrl);
-    final res = await http.get(uri).timeout(const Duration(seconds: 8));
-    if (res.statusCode == 200) {
-      final data = json.decode(res.body) as List;
-      stations = data.map((json) => Station.fromJson(json)).toList();
-      loaded = true;
-    } else {
-      throw Exception('Failed to load stations: HTTP ${res.statusCode}');
+    try {
+      final uri = Uri.parse(githubRawUrl);
+      final res = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body) as List;
+        stations = data.map((json) => Station.fromJson(json)).toList();
+        loaded = true;
+      } else {
+        if (kDebugMode) {
+          print('Failed to load stations: HTTP ${res.statusCode}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading stations: $e');
+      }
     }
 
     if (loaded) {
@@ -775,19 +770,6 @@ class AudioPlayerService with ChangeNotifier {
 
     _autoplayInProgress = false;
     autoplayCountdownNotifier.value = 0;
-  }
-
-  /// Request notification permission on supported platforms for RMN.
-  Future<void> _requestNotificationPermission() async {
-    if (kIsWeb) return;
-    try {
-      final status = await Permission.notification.request();
-      if (status.isDenied ||
-          status.isPermanentlyDenied ||
-          status.isRestricted) {}
-    } catch (e) {
-      // Handle any exceptions if necessary.
-    }
   }
 }
 

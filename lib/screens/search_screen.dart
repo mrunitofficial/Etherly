@@ -6,74 +6,39 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:permission_handler/permission_handler.dart';
 
-/// A screen that allows users to search for radio stations by typing or voice input.
-class SearchScreen extends StatefulWidget {
-  final bool startListening;
-
-  const SearchScreen({
-    super.key, 
-    this.startListening = false,
-  });
+/// A native search bar that allows users to search for radio stations.
+class StationSearchBar extends StatefulWidget {
+  const StationSearchBar({super.key});
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  State<StationSearchBar> createState() => _StationSearchBarState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
-  final TextEditingController _controller = TextEditingController();
-  String _query = '';
+class _StationSearchBarState extends State<StationSearchBar> {
+  final SearchController _controller = SearchController();
   late stt.SpeechToText _speech;
   bool _isListening = false;
 
-  ScreenType _getScreenType(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    if (size.width >= 600) {
-      return ScreenType.largeScreen;
-    }
-    if (size.width > size.height) {
-      return ScreenType.smallScreenHorizontal;
-    }
-    return ScreenType.smallScreenVertical;
-  }
-
-  /// Initializes and disposes resources.
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
-    _controller.addListener(_onQueryChanged);
-
-    if (widget.startListening) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _toggleListening());
-    }
   }
 
   @override
   void dispose() {
-    _controller.removeListener(_onQueryChanged);
     _controller.dispose();
-
     if (_speech.isListening) {
       _speech.stop();
     }
     super.dispose();
   }
 
-  /// Manages states.
-  void _onQueryChanged() {
-    setState(() {
-      _query = _controller.text;
-    });
-  }
-
   void _onSpeechStatus(String status) {
     if (status == 'done' || status == 'notListening') {
       if (mounted) {
         setState(() => _isListening = false);
-        FocusScope.of(context).requestFocus(FocusNode());
-        _onQueryChanged();
       }
     }
   }
@@ -84,13 +49,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _toggleListening() async {
     if (!_isListening) {
-      final micStatus = await Permission.microphone.request();
-      if (!mounted) return;
-
-      if (!micStatus.isGranted) {
-        return;
-      }
-
       final available = await _speech.initialize(
         onStatus: _onSpeechStatus,
         onError: _onSpeechError,
@@ -100,13 +58,13 @@ class _SearchScreenState extends State<SearchScreen> {
 
       if (available) {
         setState(() => _isListening = true);
+        if (!_controller.isOpen) {
+          _controller.openView();
+        }
         _speech.listen(
           onResult: (result) {
             if (!mounted) return;
             _controller.text = result.recognizedWords;
-            _controller.selection = TextSelection.fromPosition(
-              TextPosition(offset: _controller.text.length),
-            );
           },
           listenOptions: stt.SpeechListenOptions(
             partialResults: true,
@@ -122,184 +80,145 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  /// Builds the search screen UI.
   @override
   Widget build(BuildContext context) {
-    final audioPlayerService = Provider.of<AudioPlayerService>(context);
+    final audioPlayerService = context.watch<AudioPlayerService>();
     final stations = audioPlayerService.stations;
     final loc = AppLocalizations.of(context);
-    final screenType = _getScreenType(context);
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenType = ScreenType.fromContext(context);
 
-    final filtered = _query.isEmpty
-        ? <Station>[]
-        : stations.where((station) {
-            final q = _query.toLowerCase();
-            return station.name.toLowerCase().contains(q) ||
-                station.category.toLowerCase().contains(q) ||
-                station.id.toLowerCase().contains(q);
-          }).toList();
-
-    Widget bodyContent;
-    if (_query.isEmpty) {
-      bodyContent = Align(
-        alignment: Alignment.topCenter,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 256.0),
-          child: Text(
-            loc?.translate(
-                  _isListening
-                      ? 'searchPanelVoiceToSearch'
-                      : 'searchPanelTypeToSearch',
-                ) ??
-                (_isListening
-                    ? 'Speak to search stations......'
-                    : 'Type to search stations...'),
-            style: Theme.of(context).textTheme.headlineMedium,
-            textAlign: TextAlign.center,
+    return SearchAnchor(
+      searchController: _controller,
+      viewElevation: 0,
+      viewBackgroundColor: Theme.of(
+        context,
+      ).colorScheme.surfaceContainerHighest,
+      isFullScreen: !screenType.isLargeFormat,
+      builder: (BuildContext context, SearchController controller) {
+        return SearchBar(
+          controller: controller,
+          elevation: const WidgetStatePropertyAll<double>(0.0),
+          backgroundColor: WidgetStatePropertyAll<Color>(
+            Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
-        ),
-      );
-    } else if (filtered.isEmpty) {
-      bodyContent = Align(
-        alignment: Alignment.topCenter,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 256.0),
-          child: Text(
-            loc?.translate('searchPanelNoResults') ?? 'No stations found',
-            style: Theme.of(context).textTheme.headlineMedium,
-            textAlign: TextAlign.center,
+          padding: const WidgetStatePropertyAll<EdgeInsets>(
+            EdgeInsets.symmetric(horizontal: 4.0),
           ),
-        ),
-      );
-    } else {
-      
-      // Small screen: single-column layout
-      if (screenType != ScreenType.largeScreen || screenWidth < 1400) {
-        bodyContent = ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          itemCount: filtered.length,
-          itemBuilder: (context, index) {
-            final station = filtered[index];
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: StationCardItem(
-                station: station,
-                isFavorite: station.isFavorite,
-                screenType: screenType,
-                onTap: () async {
-                  audioPlayerService.playMediaItem(station);
-                  audioPlayerService.radioPlayerShouldClose.value = true;
-                  Navigator.of(context).pop();
-                  await Future.delayed(const Duration(milliseconds: 350));
-                },
-                onFavorite: () {
-                  audioPlayerService.toggleFavorite(station);
-                },
-              ),
-            );
+          onTap: () {
+            controller.openView();
           },
-        );
-      } else {
-        // Large screen: 2-column layout
-        final rowCount = (filtered.length / 2).ceil();
-        bodyContent = ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          itemCount: rowCount,
-          itemBuilder: (context, rowIndex) {
-            final leftIndex = rowIndex * 2;
-            final rightIndex = leftIndex + 1;
-            final leftStation = filtered[leftIndex];
-            final rightStation = rightIndex < filtered.length
-                ? filtered[rightIndex]
-                : null;
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: StationCardItem(
-                      station: leftStation,
-                      isFavorite: leftStation.isFavorite,
-                      screenType: screenType,
-                      onTap: () async {
-                        audioPlayerService.playMediaItem(leftStation);
-                        audioPlayerService.radioPlayerShouldClose.value = true;
-                        Navigator.of(context).pop();
-                        await Future.delayed(const Duration(milliseconds: 350));
-                      },
-                      onFavorite: () {
-                        audioPlayerService.toggleFavorite(leftStation);
-                      },
-                    ),
-                  ),
-                  if (rightStation != null) ...[
-                    const SizedBox(width: 8.0),
-                    Expanded(
-                      child: StationCardItem(
-                        station: rightStation,
-                        isFavorite: rightStation.isFavorite,
-                        screenType: screenType,
-                        onTap: () async {
-                          audioPlayerService.playMediaItem(rightStation);
-                          audioPlayerService.radioPlayerShouldClose.value = true;
-                          Navigator.of(context).pop();
-                          await Future.delayed(const Duration(milliseconds: 350));
-                        },
-                        onFavorite: () {
-                          audioPlayerService.toggleFavorite(rightStation);
-                        },
-                      ),
-                    ),
-                  ] else
-                    const Expanded(child: SizedBox.shrink()),
-                ],
-              ),
-            );
+          onChanged: (_) {
+            controller.openView();
           },
-        );
-      }
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (_speech.isListening) {
-              _speech.stop();
-            }
-            Navigator.of(context).pop();
-          },
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: _isListening
-                      ? loc?.translate('searchPanelVoiceHint') ??
-                            'Start talking to search stations...'
-                      : loc?.translate('searchPanelHint') ??
-                            'Search stations...',
-                  border: InputBorder.none,
-                ),
-              ),
+          leading: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            child: Icon(
+              Icons.search,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
+          ),
+          hintText: _isListening
+              ? loc?.translate('searchPanelVoiceHint') ??
+                    'Start talking to search stations...'
+              : loc?.translate('searchPanelHint') ?? 'Search stations...',
+          trailing: [
             IconButton(
-              icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
+              icon: Icon(
+                _isListening ? Icons.mic : Icons.mic_none,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               tooltip:
-                  loc?.translate('searchPanelVoiceTooltip') ?? 'Voice search',
+                  loc?.translate('mainTooltipVoiceSearch') ?? 'Voice search',
               onPressed: _toggleListening,
             ),
           ],
-        ),
-      ),
-      body: bodyContent,
+        );
+      },
+      suggestionsBuilder: (BuildContext context, SearchController controller) {
+        final query = controller.text.toLowerCase();
+
+        final filtered = query.isEmpty
+            ? <Station>[]
+            : stations.where((station) {
+                return station.name.toLowerCase().contains(query) ||
+                    station.category.toLowerCase().contains(query) ||
+                    station.id.toLowerCase().contains(query) ||
+                    station.tags.any(
+                      (tag) => tag.toLowerCase().contains(query),
+                    );
+              }).toList();
+
+        if (query.isEmpty) {
+          return [
+            Padding(
+              padding: const EdgeInsets.only(top: 64.0),
+              child: Center(
+                child: Text(
+                  _isListening
+                      ? (loc?.translate('searchPanelVoiceToSearch') ??
+                            'Speak to search stations......')
+                      : (loc?.translate('searchPanelTypeToSearch') ??
+                            'Type to search stations...'),
+                  style: Theme.of(context).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ];
+        }
+
+        if (filtered.isEmpty) {
+          return [
+            Padding(
+              padding: const EdgeInsets.only(top: 64.0),
+              child: Center(
+                child: Text(
+                  loc?.translate('searchPanelNoResults') ?? 'No stations found',
+                  style: Theme.of(context).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ];
+        }
+
+        return [
+          const SizedBox(height: 8.0),
+          ...filtered.map((station) {
+            return ListenableBuilder(
+              listenable: audioPlayerService,
+              builder: (context, _) {
+                final currentStation = audioPlayerService.stations.firstWhere(
+                  (s) => s.id == station.id,
+                  orElse: () => station,
+                );
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12.0,
+                    vertical: 4.0,
+                  ),
+                  child: StationCardItem(
+                    station: currentStation,
+                    isFavorite: currentStation.isFavorite,
+                    screenType: screenType,
+                    onTap: () async {
+                      audioPlayerService.playMediaItem(currentStation);
+                      audioPlayerService.radioPlayerShouldClose.value = true;
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      controller.closeView(currentStation.name);
+                    },
+                    onFavorite: () {
+                      audioPlayerService.toggleFavorite(currentStation);
+                    },
+                  ),
+                );
+              },
+            );
+          }),
+          const SizedBox(height: 8.0),
+        ];
+      },
     );
   }
 }

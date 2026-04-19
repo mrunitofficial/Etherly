@@ -5,6 +5,7 @@ import 'package:etherly/services/radio_player_service.dart';
 import 'package:etherly/widgets/station_art.dart';
 import 'package:etherly/widgets/marquee_text.dart';
 import 'package:etherly/widgets/play_button.dart';
+import 'package:etherly/widgets/icy_text_display.dart';
 
 /// Mini player content shown in the collapsed state of the radio player
 class MiniPlayerContent extends StatefulWidget {
@@ -43,7 +44,7 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
               IgnorePointer(
                 ignoring: true,
                 child: StationArt(
-                  artUrl: artUrl, 
+                  artUrl: artUrl,
                   size: 56.0,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -64,39 +65,12 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                         ),
                       ),
                     ),
-                    Builder(
-                      builder: (context) {
-                        final icy = service.icyService;
-                        if (service.isCasting) {
-                          return const SizedBox.shrink();
-                        }
-                        if (icy.isLoading) {
-                          return IgnorePointer(
-                            ignoring: true,
-                            child: MarqueeText(
-                              text:
-                                  loc?.translate('playerLoadingSong') ??
-                                  'Loading song...',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          );
-                        }
-                        final text = icy.text;
-                        if (text != null && text.isNotEmpty) {
-                          return IgnorePointer(
-                            ignoring: true,
-                            child: MarqueeText(
-                              text: text,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
+                    IcyTextDisplay(
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      centerWhenFits: false,
+                      padding: EdgeInsets.zero,
                     ),
                   ],
                 ),
@@ -110,9 +84,9 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                     countdown: countdown,
                     processingState: processingState,
                     isPlaying: isPlaying,
-                    isCastLoading: service.isCastLoading,
                     small: true,
                     heroTag: "mini_player_fab",
+                    elevation: 0,
                     tooltip: isPlaying
                         ? (loc?.translate('playerPause') ?? 'Pause')
                         : (loc?.translate('playerPlay') ?? 'Play'),

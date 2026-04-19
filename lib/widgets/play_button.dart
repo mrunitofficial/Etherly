@@ -7,40 +7,36 @@ class PlayButton extends StatelessWidget {
   const PlayButton({
     super.key,
     required this.service,
-    required this.countdown,
     required this.processingState,
     required this.isPlaying,
-    this.isCastLoading = false,
-    this.small = false,
-    this.heroTag,
+    required this.countdown,
+    required this.small,
     this.tooltip,
-    this.elevation = 0,
-    this.shape,
+    this.heroTag,
+    this.elevation,
   });
 
   final AudioPlayerService service;
-  final int countdown;
   final AudioProcessingState processingState;
   final bool isPlaying;
-  final bool isCastLoading;
+  final int countdown;
   final bool small;
-  final String? heroTag;
   final String? tooltip;
-  final double elevation;
-  final ShapeBorder? shape;
+  final String? heroTag;
+  final double? elevation;
 
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
       heroTag: heroTag,
-      onPressed: () => _handlePlayPause(),
       elevation: elevation,
       tooltip: tooltip,
-      shape: shape,
+      onPressed: () => _handlePlayPause(),
       child: _buildButtonContent(context),
     );
   }
 
+  // This determines the icon to show when the player is loading, buffering, or playing
   Widget _buildButtonContent(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -55,23 +51,12 @@ class PlayButton extends StatelessWidget {
       );
     }
 
-    // Show spinner when: 
-    // 1. Actively loading/buffering
-    // 2. Ready but not yet playing (the brief gap that causes the flash)
-    final showSpinner = isCastLoading ||
-        processingState == AudioProcessingState.loading ||
-        processingState == AudioProcessingState.buffering;
-    
-    // Also show spinner in the transition gap: ready state but not playing yet
-    final inTransitionGap = !isPlaying && 
-        processingState == AudioProcessingState.ready &&
-        service.mediaItem != null;  // There's a station loaded
-    
-    if (showSpinner || inTransitionGap) {
+    if ((processingState == AudioProcessingState.buffering) ||
+        processingState == AudioProcessingState.loading) {
       return SizedBox.square(
-        dimension: small ? 24.0 : 40.0,
+        dimension: small ? 24.0 : 48.0,
         child: CircularProgressIndicator(
-          strokeWidth: small ? 2.0 : 3.0,
+          strokeWidth: small ? 2.0 : 4.0,
           valueColor: AlwaysStoppedAnimation(colorScheme.onPrimaryContainer),
         ),
       );
@@ -83,19 +68,10 @@ class PlayButton extends StatelessWidget {
     );
   }
 
+  // This handles the play/pause logic
   void _handlePlayPause() {
-    if (countdown > 0 || service.isAutoplayInProgress) {
-      service.cancelAutoplayCountdown();
-      return;
-    }
-    if (isCastLoading ||
-        processingState == AudioProcessingState.loading ||
-        processingState == AudioProcessingState.buffering) {
-      service.stop();
-      return;
-    }
-    if (isPlaying) {
-      service.stop();
+    if (countdown > 0 || isPlaying) {
+      service.pause();
     } else {
       service.play();
     }
