@@ -27,10 +27,10 @@ const _navigationRailWidth = 96.0;
 /// Entry point of the application.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   PaintingBinding.instance.imageCache.maximumSize = 4000;
   PaintingBinding.instance.imageCache.maximumSizeBytes = 1000 << 20;
-  
+
   final prefs = await SharedPreferences.getInstance();
   final themeString = prefs.getString('theme');
   final theme = (ThemeMode.values.firstWhere(
@@ -169,10 +169,6 @@ class _MyAppState extends State<MyApp> {
                   titleSpacing: 0.0,
                   surfaceTintColor: lightColorScheme.surfaceContainer,
                   shadowColor: lightColorScheme.surfaceContainerLowest,
-                  backgroundColor: kIsWeb
-                      ? lightColorScheme.surfaceContainer
-                      : null,
-                  scrolledUnderElevation: kIsWeb ? 0 : null,
                 ),
                 navigationBarTheme: NavigationBarThemeData(
                   backgroundColor: lightColorScheme.surfaceContainer,
@@ -195,10 +191,6 @@ class _MyAppState extends State<MyApp> {
                   titleSpacing: 0.0,
                   surfaceTintColor: darkColorScheme.surfaceContainer,
                   shadowColor: darkColorScheme.surfaceContainerLowest,
-                  backgroundColor: kIsWeb
-                      ? darkColorScheme.surfaceContainer
-                      : null,
-                  scrolledUnderElevation: kIsWeb ? 0 : null,
                 ),
                 navigationBarTheme: NavigationBarThemeData(
                   backgroundColor: darkColorScheme.surfaceContainer,
@@ -268,7 +260,8 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   late int _selectedIndex;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -277,7 +270,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _selectedIndex = widget.startingTab;
-    
+
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -287,7 +280,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       curve: Curves.easeInOut,
     );
     _fadeController.forward();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final service = context.read<AudioPlayerService>();
       if (service.stations.isNotEmpty) {
@@ -315,22 +308,6 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
     }
   }
 
-  /// Determines the screen type based on device size and orientation.
-  ScreenType _getScreenType(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final orientation = MediaQuery.of(context).orientation;
-
-    if (size.height >= 800 && size.width >= 800) {
-      return ScreenType.largeScreen;
-    }
-
-    if (orientation == Orientation.landscape) {
-      return ScreenType.smallScreenHorizontal;
-    }
-
-    return ScreenType.smallScreenVertical;
-  }
-
   /// Builds the appropriate screen widget based on the selected index.
   Widget _buildScreen(int index, ScreenType screenType) {
     switch (index) {
@@ -354,14 +331,18 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
   /// Builds the main Scaffold with AppBar, body, and NavigationBar.
   @override
   Widget build(BuildContext context) {
-    final screenType = _getScreenType(context);
+    final screenType = ScreenType.fromContext(context);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
 
       /// Appbar with leading icon, search bar and action buttons.
       appBar: AppBar(
-        actionsPadding: EdgeInsets.symmetric(horizontal: 4.0),
+        backgroundColor: screenType.isLargeFormat
+            ? Theme.of(context).colorScheme.surfaceContainer
+            : null,
+        scrolledUnderElevation: screenType.isLargeFormat ? 0 : null,
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 4.0),
         animateColor: true,
         notificationPredicate: (notification) {
           final context = notification.context;
@@ -375,14 +356,12 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           });
           return !insideSheet;
         },
-        leadingWidth: screenType == ScreenType.largeScreen
-            ? _navigationRailWidth
-            : null,
+        leadingWidth: screenType.isLargeFormat ? _navigationRailWidth : null,
         leading: IconButton(
           icon: SvgPicture.asset(
             'assets/icon_base.svg',
-            width: screenType == ScreenType.largeScreen ? 36 : 24,
-            height: screenType == ScreenType.largeScreen ? 36 : 24,
+            width: screenType.isLargeFormat ? 36 : 24,
+            height: screenType.isLargeFormat ? 36 : 24,
           ),
           tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
           onPressed: () {
@@ -391,72 +370,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                 true;
           },
         ),
-        title: Container(
-          height: 56,
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          ),
-          child: Row(
-            children: [
-              IconButton(
-                padding: EdgeInsets.zero,
-                icon: Icon(
-                  Icons.search,
-                  color: Theme.of(context).hintColor,
-                  size: 24,
-                ),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ChangeNotifierProvider.value(
-                      value: context.read<AudioPlayerService>(),
-                      child: const SearchScreen(),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ChangeNotifierProvider.value(
-                        value: context.read<AudioPlayerService>(),
-                        child: const SearchScreen(),
-                      ),
-                    ),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(
-                          context,
-                        )?.translate('searchPanelHint') ??
-                        'Search stations',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).hintColor,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.mic_none),
-                tooltip:
-                    AppLocalizations.of(
-                      context,
-                    )?.translate('mainTooltipVoiceSearch') ??
-                    'Voice search',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ChangeNotifierProvider.value(
-                      value: context.read<AudioPlayerService>(),
-                      child: const SearchScreen(startListening: true),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        title: const StationSearchBar(),
         actions: [
           if (context.read<ChromeCastService>().isCastSupported())
             IconButton(
@@ -470,7 +384,10 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                     right: -2,
                     top: -2,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 3,
+                        vertical: 1,
+                      ),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(4),
@@ -480,13 +397,15 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
                         style: TextStyle(
                           fontSize: 7,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ),
                   ),
-                  // END BETA ICON
 
+                  // END BETA ICON
                 ],
               ),
               tooltip:
@@ -512,7 +431,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
           IconButton(
             icon: Icon(
               Icons.settings,
-              size: screenType == ScreenType.largeScreen ? 32 : 24,
+              size: screenType.isLargeFormat ? 32 : 24,
             ),
             tooltip:
                 AppLocalizations.of(
@@ -537,7 +456,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         final content = Align(
           alignment: Alignment.topCenter,
           child: ClipRRect(
-            borderRadius: screenType == ScreenType.largeScreen
+            borderRadius: screenType.isLargeFormat
                 ? const BorderRadius.all(Radius.circular(16))
                 : BorderRadius.zero,
             child: Container(
@@ -559,7 +478,7 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
         );
 
         // Large screen layout: NavigationRail with side player
-        if (screenType == ScreenType.largeScreen) {
+        if (screenType.isLargeFormat) {
           return Column(
             children: [
               Expanded(
@@ -632,10 +551,8 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       }(),
 
       // Bottom navigation bar for small screens or border for large screens
-      bottomNavigationBar: screenType == ScreenType.largeScreen
-          ? Container(
-              height: 16,
-            )
+      bottomNavigationBar: screenType.isLargeFormat
+          ? Container(height: 16)
           : NavigationBar(
               selectedIndex: _selectedIndex,
               onDestinationSelected: (index) {

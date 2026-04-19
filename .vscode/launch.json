@@ -5,21 +5,28 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "etherly",
+            "name": "Etherly (debug mode)",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "etherly (profile mode)",
+            "name": "Etherly (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "etherly (release mode)",
+            "name": "Etherly (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"
+        },
+        {
+            "name": "Emulator (debug mode)",
+            "type": "dart",
+            "request": "launch",
+            "preLaunchTask": "launch-vulkan-emulator",
+            "deviceId": "emulator-5554"
         }
     ]
 }

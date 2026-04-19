@@ -23,7 +23,7 @@ class CategoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const double itemWidth = 128.0;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -40,26 +40,34 @@ class CategoryRow extends StatelessWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final double availableWidth = constraints.maxWidth - 24.0;
-              final int crossAxisCount = (availableWidth / itemWidth).floor().clamp(2, 12);
+              final int crossAxisCount = (availableWidth / itemWidth)
+                  .floor()
+                  .clamp(2, 12);
               final double spacing = 8.0;
               final double totalSpacing = spacing * (crossAxisCount - 1);
-              final double responsiveItemWidth = (availableWidth - totalSpacing) / crossAxisCount;
-              
+              final double responsiveItemWidth =
+                  (availableWidth - totalSpacing) / crossAxisCount;
+
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12.0,
+                  vertical: 4.0,
+                ),
                 child: Wrap(
                   spacing: spacing,
                   runSpacing: spacing,
                   children: stations.map((station) {
                     return Selector<AudioPlayerService, Station?>(
-                      selector: (context, service) => service.stations.firstWhere(
-                        (s) => s.id == station.id,
-                        orElse: () => station,
-                      ),
+                      selector: (context, service) =>
+                          service.stations.firstWhere(
+                            (s) => s.id == station.id,
+                            orElse: () => station,
+                          ),
                       shouldRebuild: (prev, next) =>
                           prev?.isFavorite != next?.isFavorite,
                       builder: (context, updatedStation, _) {
-                        if (updatedStation == null) return const SizedBox.shrink();
+                        if (updatedStation == null)
+                          return const SizedBox.shrink();
                         return SizedBox(
                           width: responsiveItemWidth,
                           height: responsiveItemWidth,
@@ -67,10 +75,11 @@ class CategoryRow extends StatelessWidget {
                             child: StationGridItem(
                               station: updatedStation,
                               isFavorite: updatedStation.isFavorite,
-                              onTap: () =>
-                                  audioPlayerService.playMediaItem(updatedStation),
-                              onFavorite: () =>
-                                  audioPlayerService.toggleFavorite(updatedStation),
+                              onTap: () => audioPlayerService.playMediaItem(
+                                updatedStation,
+                              ),
+                              onFavorite: () => audioPlayerService
+                                  .toggleFavorite(updatedStation),
                               borderRadius: BorderRadius.circular(12.0),
                             ),
                           ),

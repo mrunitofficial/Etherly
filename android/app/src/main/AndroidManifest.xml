@@ -5,7 +5,6 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
   <uses-permission android:name="android.permission.INTERNET"/>
-  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
   <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
   <application
@@ -76,5 +75,66 @@
         <action android:name="android.intent.action.VIEW" />
         <data android:scheme="mailto" />
       </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="spotify" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="vnd.youtube" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" android:host="music.youtube.com" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" android:host="music.apple.com" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" android:host="music.amazon.com" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="amznmp3" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="tidal" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="soundcloud" />
+      </intent>
+      
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="music" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="youtube-music" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="youtubemusic" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="vnd.youtube.music" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="vnd.apple.music" />
+      </intent>
+      
+      <package android:name="com.google.android.youtube" />
+      <package android:name="com.google.android.apps.youtube.music" />
+      <package android:name="com.spotify.music" />
+      <package android:name="com.apple.android.music" />
+      <package android:name="com.aspiro.tidal" />
+      <package android:name="com.soundcloud.android" />
+      <package android:name="com.amazon.mp3" />
     </queries>
 </manifest>

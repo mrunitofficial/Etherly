@@ -38,7 +38,7 @@ class StationCardItem extends StatelessWidget {
                 children: [
                   StationArt(
                     artUrl: station.artURL,
-                    size: screenType == ScreenType.largeScreen ? 84.0 : 56.0,
+                    size: screenType.isLargeFormat ? 84.0 : 56.0,
                     borderRadius: BorderRadius.circular(8.0),
                   ),
                   const SizedBox(width: 16.0),

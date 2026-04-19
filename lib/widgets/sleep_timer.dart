@@ -62,7 +62,10 @@ class SleepTimer extends StatelessWidget {
                       foregroundColor: Theme.of(
                         context,
                       ).colorScheme.onSecondaryContainer,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 8,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -97,7 +100,10 @@ class SleepTimer extends StatelessWidget {
                     foregroundColor: Theme.of(
                       context,
                     ).colorScheme.onPrimaryContainer,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 8,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

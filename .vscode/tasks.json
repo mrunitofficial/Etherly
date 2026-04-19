@@ -1,0 +1,16 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "launch-vulkan-emulator",
+            "type": "shell",
+            "command": "~/Android/Sdk/emulator/emulator -avd Pixel_Tablet -gpu host -no-snapshot -feature -Vulkan",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

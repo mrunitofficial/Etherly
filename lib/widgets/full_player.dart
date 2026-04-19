@@ -11,16 +11,12 @@ import 'package:etherly/widgets/station_art.dart';
 import 'package:etherly/widgets/quality_setting.dart';
 import 'package:etherly/widgets/marquee_text.dart';
 import 'package:etherly/widgets/play_button.dart';
-
+import 'package:etherly/widgets/icy_text_display.dart';
 /// Full player content shown in the expanded state of the radio player.
 class FullPlayerContent extends StatefulWidget {
-  const FullPlayerContent({
-    super.key,
-    required this.scrollController,
-    this.onClose,
-  });
+  const FullPlayerContent({super.key, this.scrollController, this.onClose});
 
-  final ScrollController scrollController;
+  final ScrollController? scrollController;
   final VoidCallback? onClose;
 
   @override
@@ -32,89 +28,66 @@ class _FullPlayerContentState extends State<FullPlayerContent> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      controller: widget.scrollController,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 32),
-        child: Consumer<AudioPlayerService>(
-          builder: (context, service, _) {
-            final mediaItem = service.mediaItem;
-            if (mediaItem?.id != _lastStationId) _lastStationId = mediaItem?.id;
+    Widget content = Padding(
+      padding: const EdgeInsets.only(bottom: 32),
+      child: Consumer<AudioPlayerService>(
+        builder: (context, service, _) {
+          final mediaItem = service.mediaItem;
+          if (mediaItem?.id != _lastStationId) _lastStationId = mediaItem?.id;
 
-            final loc = AppLocalizations.of(context);
-            final theme = Theme.of(context);
+          final loc = AppLocalizations.of(context);
+          final theme = Theme.of(context);
 
-            return Column(
-              children: [
-                FullPlayerHeader(
-                  onClose: widget.onClose,
-                  slogan: mediaItem?.album ?? '',
-                ),
-                const SizedBox(height: 8),
-                Center(
-                  child: StationArt(
-                    artUrl: getSafeArtUrl(mediaItem),
-                    size: 280,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Column(
-                    children: [
-                      MarqueeText(
-                        text:
-                            mediaItem?.title ??
-                            (loc?.translate('playerLoadingStation') ??
-                                'Select a station...'),
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        centerWhenFits: true,
+          return Column(
+            children: [
+              FullPlayerHeader(
+                onClose: widget.onClose,
+                slogan: mediaItem?.album ?? '',
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: StationArt(artUrl: getSafeArtUrl(mediaItem), size: 280),
+              ),
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  children: [
+                    MarqueeText(
+                      text:
+                          mediaItem?.title ??
+                          (loc?.translate('playerLoadingStation') ??
+                              'Select a station...'),
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
                       ),
-                      if (!kIsWeb)
-                        SizedBox(
-                          height: 28,
-                          child: service.isCasting
-                              ? const SizedBox.shrink()
-                              : () {
-                                  final icy = service.icyService;
-                                  final text = icy.isLoading
-                                      ? (loc?.translate('playerLoadingSong') ??
-                                            'Loading song...')
-                                      : (icy.text?.isNotEmpty == true
-                                            ? icy.text!
-                                            : null);
-                                  return text == null
-                                      ? const SizedBox.shrink()
-                                      : MarqueeText(
-                                          text: text,
-                                          style: theme.textTheme.titleMedium
-                                              ?.copyWith(
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                          centerWhenFits: true,
-                                        );
-                                }(),
-                        ),
-                    ],
-                  ),
+                      centerWhenFits: true,
+                    ),
+                    if (!kIsWeb)
+                      const SizedBox(
+                        height: 28,
+                        child: IcyTextDisplay(),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                const FullPlayerControls(),
-                if (kIsWeb) ...[
-                  const SizedBox(height: 32),
-                  const VolumeSlider(),
-                ],
-              ],
-            );
-          },
-        ),
+              ),
+              const SizedBox(height: 24),
+              const FullPlayerControls(),
+              if (kIsWeb) ...[const SizedBox(height: 32), const VolumeSlider()],
+            ],
+          );
+        },
       ),
     );
+
+    if (widget.scrollController != null) {
+      return SingleChildScrollView(
+        controller: widget.scrollController,
+        child: content,
+      );
+    }
+    return content;
   }
 }
 
@@ -226,14 +199,12 @@ class FullPlayerControls extends StatelessWidget {
                     countdown: countdown,
                     processingState: service.playbackState.processingState,
                     isPlaying: service.isPlaying,
-                    isCastLoading: service.isCastLoading,
                     heroTag: "full_player_fab",
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                    elevation: 0,
                     tooltip: service.isPlaying
                         ? (loc?.translate('playerPause') ?? 'Pause')
                         : (loc?.translate('playerPlay') ?? 'Play'),
+                    small: false,
                   ),
                 ),
               ),
@@ -271,7 +242,7 @@ void handleStreamQuality(BuildContext context) async {
   final service = Provider.of<AudioPlayerService>(context, listen: false);
   final mediaItem = service.mediaItem;
   Station? station;
-  
+
   if (mediaItem != null && service.stations.isNotEmpty) {
     station = service.stations.firstWhere(
       (s) => s.id == mediaItem.id,
@@ -292,7 +263,7 @@ void handleStreamQuality(BuildContext context) async {
       onQualitySelected: (q) => Navigator.of(context).pop(q),
     ),
   );
-  
+
   if (newQuality != null && station != null && newQuality != selectedQuality) {
     service.prefs.setString('streamQuality', newQuality);
     service.stop();

@@ -16,7 +16,6 @@ dependencies:
   just_audio: ^0.10.5
   audio_service: ^0.18.12
   audio_session: ^0.2.2
-  permission_handler: ^12.0.1
   http: ^1.5.0
   shared_preferences: ^2.5.3
   cached_network_image: ^3.4.1
@@ -40,7 +39,6 @@ flutter:
 
 flutter_launcher_icons:
   android: true
-  ios: true
   web:
     generate: true
     image_path: "assets/app_icon.png"
