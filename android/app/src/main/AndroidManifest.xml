@@ -75,5 +75,17 @@
         <action android:name="android.intent.action.VIEW" />
         <data android:scheme="mailto" />
       </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="spotify" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="vnd.youtube" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" android:host="music.youtube.com" />
+      </intent>
     </queries>
 </manifest>

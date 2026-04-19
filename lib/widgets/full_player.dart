@@ -11,7 +11,7 @@ import 'package:etherly/widgets/station_art.dart';
 import 'package:etherly/widgets/quality_setting.dart';
 import 'package:etherly/widgets/marquee_text.dart';
 import 'package:etherly/widgets/play_button.dart';
-
+import 'package:etherly/widgets/icy_text_display.dart';
 /// Full player content shown in the expanded state of the radio player.
 class FullPlayerContent extends StatefulWidget {
   const FullPlayerContent({super.key, this.scrollController, this.onClose});
@@ -65,31 +65,9 @@ class _FullPlayerContentState extends State<FullPlayerContent> {
                       centerWhenFits: true,
                     ),
                     if (!kIsWeb)
-                      SizedBox(
+                      const SizedBox(
                         height: 28,
-                        child: service.isCasting
-                            ? const SizedBox.shrink()
-                            : () {
-                                final icy = service.icyService;
-                                final text = icy.isLoading
-                                    ? (loc?.translate('playerLoadingSong') ??
-                                          'Loading song...')
-                                    : (icy.text?.isNotEmpty == true
-                                          ? icy.text!
-                                          : null);
-                                return text == null
-                                    ? const SizedBox.shrink()
-                                    : MarqueeText(
-                                        text: text,
-                                        style: theme.textTheme.titleMedium
-                                            ?.copyWith(
-                                              color: theme
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
-                                            ),
-                                        centerWhenFits: true,
-                                      );
-                              }(),
+                        child: IcyTextDisplay(),
                       ),
                   ],
                 ),
