@@ -112,6 +112,7 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                     isPlaying: isPlaying,
                     small: true,
                     heroTag: "mini_player_fab",
+                    elevation: 0,
                     tooltip: isPlaying
                         ? (loc?.translate('playerPause') ?? 'Pause')
                         : (loc?.translate('playerPlay') ?? 'Play'),

@@ -222,6 +222,7 @@ class FullPlayerControls extends StatelessWidget {
                     processingState: service.playbackState.processingState,
                     isPlaying: service.isPlaying,
                     heroTag: "full_player_fab",
+                    elevation: 0,
                     tooltip: service.isPlaying
                         ? (loc?.translate('playerPause') ?? 'Pause')
                         : (loc?.translate('playerPlay') ?? 'Play'),
