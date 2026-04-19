@@ -70,10 +70,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _availableAppIds = apps.map((a) => a['id']!).toList();
         
-        // Validation: If a specific app was selected but is no longer installed, 
-        // reset to "always_ask" to avoid UI crashes.
-        final isSpecialOption = _selectedMusicApp == 'always_ask' || _selectedMusicApp == 'internet_search';
-        if (!isSpecialOption && _availableAppIds.isNotEmpty && !_availableAppIds.contains(_selectedMusicApp)) {
+        final isSpecialOption =
+            _selectedMusicApp == 'always_ask' ||
+            _selectedMusicApp == 'internet_search';
+        if (!isSpecialOption && !_availableAppIds.contains(_selectedMusicApp)) {
           _selectedMusicApp = 'always_ask';
           _saveMusicApp('always_ask');
         }
@@ -334,13 +334,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     final musicAppOptions = [
-      {'key': 'always_ask', 'label': loc.translate('settingsMusicAppAlwaysAsk')},
+      {
+        'key': 'always_ask',
+        'label': loc.translate('settingsMusicAppAlwaysAsk'),
+      },
       ..._musicAppService
           .getAllSupportedApps()
-          .where((app) => _availableAppIds.contains(app['id']))
-          .map((app) => {'key': app['id']!, 'label': getAppLabel(app['id']!, app['name']!)}),
-      {'key': 'internet_search', 'label': loc.translate('playerSearchInternet')},
+          .where(
+            (app) =>
+                _availableAppIds.contains(app['id']) ||
+                app['id'] == _selectedMusicApp,
+          )
+          .map(
+            (app) => {
+              'key': app['id'] as String,
+              'label': getAppLabel(app['id'] as String, app['name'] as String),
+            },
+          ),
+      {
+        'key': 'internet_search',
+        'label': loc.translate('playerSearchInternet'),
+      },
     ];
+
+    // Safety check to prevent DropdownButton from crashing if the selected value is missing
+    final String safeMusicAppValue =
+        musicAppOptions.any((opt) => opt['key'] == _selectedMusicApp)
+            ? _selectedMusicApp
+            : 'always_ask';
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
       title: Text(loc.translate('settingsPreferredMusicApp')),
@@ -350,7 +371,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           isExpanded: true,
           elevation: 1,
           dropdownColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-          value: _selectedMusicApp,
+          value: safeMusicAppValue,
           onChanged: (String? newValue) {
             if (newValue != null) {
               setState(() {
