@@ -108,6 +108,30 @@
         <data android:scheme="soundcloud" />
       </intent>
       
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="music" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="youtube-music" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="youtubemusic" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="vnd.youtube.music" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="vnd.apple.music" />
+      </intent>
+      
+      <package android:name="com.google.android.youtube" />
+      <package android:name="com.google.android.apps.youtube.music" />
+      <package android:name="com.spotify.music" />
       <package android:name="com.apple.android.music" />
       <package android:name="com.aspiro.tidal" />
       <package android:name="com.soundcloud.android" />

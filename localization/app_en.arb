@@ -64,6 +64,8 @@
   "settingsMusicAppTidal": "Tidal",
   "settingsMusicAppSoundcloud": "SoundCloud",
   "settingsMusicAppAmazon": "Amazon Music",
+  "playerSearchInternet": "Search internet",
+  "playerNoMusicAppsInstalled": "No music apps installed",
   "favoritesTitle": "Favorites",
   "favoritesEmptyTitle": "No favorite stations yet",
   "favoritesEmptySubtitle": "Favorite a radio station first",

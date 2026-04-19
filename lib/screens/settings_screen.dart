@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:etherly/localization/app_localizations.dart';
+import '../services/music_app_service.dart';
 import '../../main.dart' show dynamicColorNotifier;
 
 /// Easy options menu item builder for dropdown settings.
@@ -51,6 +52,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _forceDefaultColor = false;
   String _selectedQuality = 'mp3';
   String _selectedMusicApp = 'always_ask';
+  List<String> _availableAppIds = [];
+  final MusicAppService _musicAppService = MusicAppService();
 
   @override
   void initState() {
@@ -58,6 +61,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _selectedTheme = widget.themeNotifier.value;
     _forceDefaultColor = !(dynamicColorNotifier.value);
     _loadSettings();
+    _checkAvailableApps();
+  }
+
+  Future<void> _checkAvailableApps() async {
+    final apps = await _musicAppService.getAvailableApps();
+    if (mounted) {
+      setState(() {
+        _availableAppIds = apps.map((a) => a['id']!).toList();
+        
+        // Validation: If a specific app was selected but is no longer installed, 
+        // reset to "always_ask" to avoid UI crashes.
+        final isSpecialOption = _selectedMusicApp == 'always_ask' || _selectedMusicApp == 'internet_search';
+        if (!isSpecialOption && _availableAppIds.isNotEmpty && !_availableAppIds.contains(_selectedMusicApp)) {
+          _selectedMusicApp = 'always_ask';
+          _saveMusicApp('always_ask');
+        }
+      });
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -297,15 +318,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildMusicAppDropdownSetting(AppLocalizations loc) {
+    String getAppLabel(String id, String defaultName) {
+      final keyMap = {
+        'youtube': 'settingsMusicAppYoutube',
+        'ytmusic': 'settingsMusicAppYtMusic',
+        'spotify': 'settingsMusicAppSpotify',
+        'apple_music': 'settingsMusicAppAppleMusic',
+        'tidal': 'settingsMusicAppTidal',
+        'soundcloud': 'settingsMusicAppSoundcloud',
+        'amazon': 'settingsMusicAppAmazon',
+      };
+      final key = keyMap[id];
+      if (key != null) return loc.translate(key);
+      return defaultName;
+    }
+
     final musicAppOptions = [
       {'key': 'always_ask', 'label': loc.translate('settingsMusicAppAlwaysAsk')},
-      {'key': 'youtube', 'label': loc.translate('settingsMusicAppYoutube')},
-      {'key': 'ytmusic', 'label': loc.translate('settingsMusicAppYtMusic')},
-      {'key': 'spotify', 'label': loc.translate('settingsMusicAppSpotify')},
-      {'key': 'apple_music', 'label': loc.translate('settingsMusicAppAppleMusic')},
-      {'key': 'tidal', 'label': loc.translate('settingsMusicAppTidal')},
-      {'key': 'soundcloud', 'label': loc.translate('settingsMusicAppSoundcloud')},
-      {'key': 'amazon', 'label': loc.translate('settingsMusicAppAmazon')},
+      ..._musicAppService
+          .getAllSupportedApps()
+          .where((app) => _availableAppIds.contains(app['id']))
+          .map((app) => {'key': app['id']!, 'label': getAppLabel(app['id']!, app['name']!)}),
+      {'key': 'internet_search', 'label': loc.translate('playerSearchInternet')},
     ];
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),

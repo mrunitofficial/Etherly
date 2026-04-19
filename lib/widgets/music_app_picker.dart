@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../services/music_app_service.dart';
 import '../localization/app_localizations.dart';
 
-/// A dialog widget for picking a preferred music app, showing only installed apps.
 class MusicAppPicker extends StatefulWidget {
-  final String? initialSelection;
-
-  const MusicAppPicker({super.key, this.initialSelection});
+  const MusicAppPicker({super.key});
 
   @override
   State<MusicAppPicker> createState() => _MusicAppPickerState();
 }
 
 class _MusicAppPickerState extends State<MusicAppPicker> {
+  final MusicAppService _musicAppService = MusicAppService();
   bool _isLoading = true;
-  final List<Map<String, String>> _availableOptions = [];
+  List<Map<String, String>> _availableOptions = [];
 
   @override
   void initState() {
@@ -23,40 +21,10 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
   }
 
   Future<void> _checkAvailableApps() async {
-    final allOptions = [
-      {'id': 'youtube', 'name': 'YouTube', 'scheme': 'vnd.youtube://'},
-      {
-        'id': 'ytmusic',
-        'name': 'YouTube Music',
-        'scheme': 'https://music.youtube.com',
-      },
-      {'id': 'spotify', 'name': 'Spotify', 'scheme': 'spotify://'},
-      {
-        'id': 'apple_music',
-        'name': 'Apple Music',
-        'scheme': 'https://music.apple.com',
-      },
-      {'id': 'tidal', 'name': 'Tidal', 'scheme': 'tidal://'},
-      {'id': 'soundcloud', 'name': 'SoundCloud', 'scheme': 'soundcloud://'},
-      {'id': 'amazon', 'name': 'Amazon Music', 'scheme': 'amznmp3://'},
-    ];
-
-    for (final option in allOptions) {
-      try {
-        final canOpen = await canLaunchUrl(Uri.parse(option['scheme']!));
-        if (canOpen) {
-          _availableOptions.add({
-            'id': option['id']!,
-            'name': option['name']!,
-          });
-        }
-      } catch (_) {
-        // Ignore errors for specific schemes
-      }
-    }
-
+    final apps = await _musicAppService.getAvailableApps();
     if (mounted) {
       setState(() {
+        _availableOptions = apps;
         _isLoading = false;
       });
     }
@@ -67,11 +35,11 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
     final loc = AppLocalizations.of(context);
 
     return AlertDialog(
-      title: Center(
-        child: Text(
-          loc?.translate('playerPickMusicApp') ?? 'Choose music app',
-          textAlign: TextAlign.center,
-        ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(
+        loc?.translate('playerPickMusicApp') ?? 'Pick a music app',
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       content: SizedBox(
         width: 320,
@@ -86,25 +54,42 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
                     ),
                   ],
                 )
-                : _availableOptions.isEmpty
-                ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        loc?.translate('musicAppNoSupportedApps') ??
-                            'No supported music apps found on this device.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                )
                 : SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children:
-                        _availableOptions.map((option) {
+                    children: [
+                      if (_availableOptions.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            loc?.translate('playerNoMusicAppsInstalled') ??
+                                'No music apps installed',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        )
+                      else
+                        ..._availableOptions.map((option) {
+                          String getAppLabel(String id, String defaultName) {
+                            final keyMap = {
+                              'youtube': 'settingsMusicAppYoutube',
+                              'ytmusic': 'settingsMusicAppYtMusic',
+                              'spotify': 'settingsMusicAppSpotify',
+                              'apple_music': 'settingsMusicAppAppleMusic',
+                              'tidal': 'settingsMusicAppTidal',
+                              'soundcloud': 'settingsMusicAppSoundcloud',
+                              'amazon': 'settingsMusicAppAmazon',
+                            };
+                            final key = keyMap[id];
+                            return (key != null ? loc?.translate(key) : null) ?? defaultName;
+                          }
+
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4.0),
                             child: SizedBox(
@@ -131,13 +116,60 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
                                   Navigator.of(context).pop(option['id']);
                                 },
                                 child: Text(
-                                  option['name']!,
+                                  getAppLabel(option['id']!, option['name']!),
                                   textAlign: TextAlign.center,
                                 ),
                               ),
                             ),
                           );
-                        }).toList(),
+                        }),
+                      const SizedBox(height: 8),
+                      // OR divider
+                      Center(
+                        child: Text(
+                          loc?.translate('sleepTimerOr') ?? 'or',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 20,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Search Internet Button
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
+                              foregroundColor:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop('internet_search');
+                            },
+                            child: Text(
+                              loc?.translate('playerSearchInternet') ??
+                                  'Search internet',
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
       ),
