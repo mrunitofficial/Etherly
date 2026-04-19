@@ -119,7 +119,8 @@ class _SearchScreenState extends State<SearchScreen> {
             final q = _query.toLowerCase();
             return station.name.toLowerCase().contains(q) ||
                 station.category.toLowerCase().contains(q) ||
-                station.id.toLowerCase().contains(q);
+                station.id.toLowerCase().contains(q) ||
+                station.tags.any((tag) => tag.toLowerCase().contains(q));
           }).toList();
 
     Widget bodyContent;
