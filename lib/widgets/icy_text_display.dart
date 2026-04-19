@@ -54,6 +54,14 @@ class IcyTextDisplay extends StatelessWidget {
         uri = Uri.parse('https://music.youtube.com/search?q=$query');
       case 'spotify':
         uri = Uri.parse('spotify:search:$query');
+      case 'apple_music':
+        uri = Uri.parse('https://music.apple.com/search?term=$query');
+      case 'tidal':
+        uri = Uri.parse('tidal://search/$query');
+      case 'soundcloud':
+        uri = Uri.parse('soundcloud://search?q=$query');
+      case 'amazon':
+        uri = Uri.parse('https://music.amazon.com/search/$query');
     }
 
     if (uri != null) {

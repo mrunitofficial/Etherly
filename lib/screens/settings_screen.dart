@@ -302,6 +302,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       {'key': 'youtube', 'label': loc.translate('settingsMusicAppYoutube')},
       {'key': 'ytmusic', 'label': loc.translate('settingsMusicAppYtMusic')},
       {'key': 'spotify', 'label': loc.translate('settingsMusicAppSpotify')},
+      {'key': 'apple_music', 'label': loc.translate('settingsMusicAppAppleMusic')},
+      {'key': 'tidal', 'label': loc.translate('settingsMusicAppTidal')},
+      {'key': 'soundcloud', 'label': loc.translate('settingsMusicAppSoundcloud')},
+      {'key': 'amazon', 'label': loc.translate('settingsMusicAppAmazon')},
     ];
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),

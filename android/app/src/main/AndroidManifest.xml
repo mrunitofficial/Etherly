@@ -87,5 +87,30 @@
         <action android:name="android.intent.action.VIEW" />
         <data android:scheme="https" android:host="music.youtube.com" />
       </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" android:host="music.apple.com" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" android:host="music.amazon.com" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="amznmp3" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="tidal" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="soundcloud" />
+      </intent>
+      
+      <package android:name="com.apple.android.music" />
+      <package android:name="com.aspiro.tidal" />
+      <package android:name="com.soundcloud.android" />
+      <package android:name="com.amazon.mp3" />
     </queries>
 </manifest>
