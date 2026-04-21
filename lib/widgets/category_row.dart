@@ -66,8 +66,9 @@ class CategoryRow extends StatelessWidget {
                       shouldRebuild: (prev, next) =>
                           prev?.isFavorite != next?.isFavorite,
                       builder: (context, updatedStation, _) {
-                        if (updatedStation == null)
+                        if (updatedStation == null) {
                           return const SizedBox.shrink();
+                        }
                         return SizedBox(
                           width: responsiveItemWidth,
                           height: responsiveItemWidth,
