@@ -100,9 +100,7 @@ class _MyAppState extends State<MyApp> {
         await _chromeCastService!.init();
       }
 
-      _audioPlayerService = AudioPlayerService(
-        castService: _chromeCastService,
-      );
+      _audioPlayerService = AudioPlayerService(castService: _chromeCastService);
 
       if (!mounted) return;
       setState(() {
@@ -154,6 +152,9 @@ class _MyAppState extends State<MyApp> {
                 useMaterial3: true,
                 colorScheme: lightColorScheme,
                 scaffoldBackgroundColor: lightColorScheme.surfaceContainer,
+                floatingActionButtonTheme: const FloatingActionButtonThemeData(
+                  shape: CircleBorder(),
+                ),
                 appBarTheme: AppBarTheme(
                   toolbarHeight: 80,
                   titleSpacing: 0.0,
@@ -176,6 +177,9 @@ class _MyAppState extends State<MyApp> {
                 useMaterial3: true,
                 colorScheme: darkColorScheme,
                 scaffoldBackgroundColor: darkColorScheme.surfaceContainer,
+                floatingActionButtonTheme: const FloatingActionButtonThemeData(
+                  shape: CircleBorder(),
+                ),
                 appBarTheme: AppBarTheme(
                   toolbarHeight: 80,
                   titleSpacing: 0.0,

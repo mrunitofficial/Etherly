@@ -191,21 +191,17 @@ class FullPlayerControls extends StatelessWidget {
               const SizedBox(width: 32),
               ValueListenableBuilder<int>(
                 valueListenable: service.autoplayCountdownNotifier,
-                builder: (context, countdown, _) => SizedBox(
-                  width: 80,
-                  height: 80,
-                  child: PlayButton(
-                    service: service,
-                    countdown: countdown,
-                    processingState: service.player.processingState,
-                    isPlaying: service.isPlaying,
-                    heroTag: "full_player_fab",
-                    elevation: 0,
-                    tooltip: service.isPlaying
-                        ? (loc?.translate('playerPause') ?? 'Pause')
-                        : (loc?.translate('playerPlay') ?? 'Play'),
-                    small: false,
-                  ),
+                builder: (context, countdown, _) => PlayButton(
+                  service: service,
+                  countdown: countdown,
+                  processingState: service.player.processingState,
+                  isPlaying: service.isPlaying,
+                  heroTag: "full_player_fab",
+                  elevation: 0,
+                  tooltip: service.isPlaying
+                      ? (loc?.translate('playerPause') ?? 'Pause')
+                      : (loc?.translate('playerPlay') ?? 'Play'),
+                  size: PlayButtonSize.large,
                 ),
               ),
               const SizedBox(width: 32),

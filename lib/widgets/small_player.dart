@@ -84,7 +84,7 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                     countdown: countdown,
                     processingState: processingState,
                     isPlaying: isPlaying,
-                    small: true,
+                    size: PlayButtonSize.medium,
                     heroTag: "mini_player_fab",
                     elevation: 0,
                     tooltip: isPlaying

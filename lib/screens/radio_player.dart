@@ -201,7 +201,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
                       countdown: countdown,
                       processingState: service.player.processingState,
                       isPlaying: service.isPlaying,
-                      small: true,
+                      size: PlayButtonSize.medium,
                       heroTag: 'mini_player_fab_landscape',
                       elevation: 6,
                       tooltip:
