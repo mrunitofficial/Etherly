@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/models/station.dart';
-import 'package:etherly/services/radio_player_service.dart';
+import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/screens/settings_screen.dart';
 import 'package:etherly/main.dart' show themeNotifier;
 import 'package:etherly/widgets/sleep_timer.dart';
@@ -197,7 +197,7 @@ class FullPlayerControls extends StatelessWidget {
                   child: PlayButton(
                     service: service,
                     countdown: countdown,
-                    processingState: service.playbackState.processingState,
+                    processingState: service.player.processingState,
                     isPlaying: service.isPlaying,
                     heroTag: "full_player_fab",
                     elevation: 0,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:audio_service/audio_service.dart';
-import 'package:etherly/services/radio_player_service.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:etherly/services/audio_player_service.dart';
 
 /// A reusable play/pause button widget that handles loading, countdown, and play states.
 class PlayButton extends StatelessWidget {
@@ -17,7 +17,7 @@ class PlayButton extends StatelessWidget {
   });
 
   final AudioPlayerService service;
-  final AudioProcessingState processingState;
+  final ProcessingState processingState;
   final bool isPlaying;
   final int countdown;
   final bool small;
@@ -51,8 +51,8 @@ class PlayButton extends StatelessWidget {
       );
     }
 
-    if ((processingState == AudioProcessingState.buffering) ||
-        processingState == AudioProcessingState.loading) {
+    if ((processingState == ProcessingState.buffering) ||
+        processingState == ProcessingState.loading) {
       return SizedBox.square(
         dimension: small ? 24.0 : 48.0,
         child: CircularProgressIndicator(

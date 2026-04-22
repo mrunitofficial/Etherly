@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:etherly/models/station.dart';
-import 'package:etherly/services/radio_player_service.dart';
+import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/screen_header.dart';
 import 'package:etherly/widgets/category_row.dart';
 import 'package:flutter/material.dart';

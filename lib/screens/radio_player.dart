@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/models/device.dart';
 import 'package:etherly/models/station.dart';
-import 'package:etherly/services/radio_player_service.dart';
+import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/full_player.dart';
 import 'package:etherly/widgets/small_player.dart';
 import 'package:etherly/widgets/play_button.dart';
@@ -199,7 +199,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
                     PlayButton(
                       service: service,
                       countdown: countdown,
-                      processingState: service.playbackState.processingState,
+                      processingState: service.player.processingState,
                       isPlaying: service.isPlaying,
                       small: true,
                       heroTag: 'mini_player_fab_landscape',

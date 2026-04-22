@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
-import 'package:etherly/services/radio_player_service.dart';
+import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/station_art.dart';
 import 'package:etherly/widgets/marquee_text.dart';
 import 'package:etherly/widgets/play_button.dart';
@@ -34,7 +34,7 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
         final stationName =
             mediaItem?.title ??
             (loc?.translate('playerLoadingStation') ?? 'Loading station...');
-        final processingState = service.playbackState.processingState;
+        final processingState = service.player.processingState;
         final isPlaying = service.isPlaying;
 
         return Padding(

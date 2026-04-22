@@ -1,6 +1,6 @@
 import 'package:etherly/models/station.dart';
 import 'package:etherly/models/device.dart';
-import 'package:etherly/services/radio_player_service.dart';
+import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/station_card_item.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

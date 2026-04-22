@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:etherly/localization/app_localizations.dart';
-import 'package:etherly/services/radio_player_service.dart';
+import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/services/music_app_service.dart';
 import 'package:etherly/widgets/marquee_text.dart';
 import 'package:etherly/widgets/music_app_picker.dart';

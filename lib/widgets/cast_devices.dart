@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
-import 'package:etherly/services/radio_player_service.dart';
+import 'package:etherly/services/audio_player_service.dart';
 import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
 
 /// Dialog to show available Cast devices and connect/disconnect.

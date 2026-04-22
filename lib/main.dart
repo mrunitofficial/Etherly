@@ -7,7 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'models/device.dart';
 import 'localization/app_localizations.dart';
-import 'services/radio_player_service.dart';
+import 'services/audio_player_service.dart';
 import 'screens/settings_screen.dart';
 import 'screens/stations_screen.dart';
 import 'screens/favorites_screen.dart';
@@ -92,10 +92,6 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initAudioService(BuildContext context) async {
     if (_localizationsLoaded || _initializingAudio) return;
     _initializingAudio = true;
-    final loc = AppLocalizations.of(context);
-    final channelName =
-        loc?.translate('notification_channel_name') ?? 'Radio playback';
-
     try {
       _chromeCastService ??= ChromeCastService();
 
@@ -104,13 +100,7 @@ class _MyAppState extends State<MyApp> {
         await _chromeCastService!.init();
       }
 
-      final audioHandler = await initAudioService(
-        channelName: channelName,
-        castService: _chromeCastService,
-      );
-
       _audioPlayerService = AudioPlayerService(
-        audioHandler,
         castService: _chromeCastService,
       );
 
