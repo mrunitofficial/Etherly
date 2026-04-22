@@ -170,6 +170,9 @@ class _MyAppState extends State<MyApp> {
                 tooltipTheme: const TooltipThemeData(
                   waitDuration: Duration(milliseconds: 500),
                 ),
+                dialogTheme: const DialogThemeData(
+                  constraints: BoxConstraints(minWidth: 320, maxWidth: 320),
+                ),
               ),
 
               /// Dark theme data
@@ -194,6 +197,9 @@ class _MyAppState extends State<MyApp> {
                 ),
                 tooltipTheme: const TooltipThemeData(
                   waitDuration: Duration(seconds: 1),
+                ),
+                dialogTheme: const DialogThemeData(
+                  constraints: BoxConstraints(minWidth: 320, maxWidth: 320),
                 ),
               ),
 

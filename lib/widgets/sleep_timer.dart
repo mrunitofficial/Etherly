@@ -43,63 +43,23 @@ class SleepTimer extends StatelessWidget {
       ),
 
       /// The content of the dialog.
-      content: SizedBox(
-        width: 320,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            /// Predefined timer options.
-            ...options.map(
-              (option) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.secondaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onSecondaryContainer,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      onTimerSelected(option['duration']);
-                    },
-                    child: Text(option['label'], textAlign: TextAlign.center),
-                  ),
-                ),
-              ),
-            ),
-
-            /// OR text devider.
-            Center(
-              child: Text(
-                loc?.translate('sleepTimerOr') ?? 'or',
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 20),
-              ),
-            ),
-
-            /// Set exact time button.
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          /// Predefined timer options.
+          ...options.map(
+            (option) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
               child: SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: Theme.of(
                       context,
-                    ).colorScheme.primaryContainer,
+                    ).colorScheme.secondaryContainer,
                     foregroundColor: Theme.of(
                       context,
-                    ).colorScheme.onPrimaryContainer,
+                    ).colorScheme.onSecondaryContainer,
                     padding: const EdgeInsets.symmetric(
                       vertical: 12,
                       horizontal: 8,
@@ -108,40 +68,75 @@ class SleepTimer extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay.fromDateTime(
-                        DateTime.now().add(const Duration(minutes: 5)),
-                      ),
-                    );
-                    if (picked != null) {
-                      final nowDateTime = DateTime.now();
-                      final pickedDateTime = DateTime(
-                        nowDateTime.year,
-                        nowDateTime.month,
-                        nowDateTime.day,
-                        picked.hour,
-                        picked.minute,
-                      );
-                      var duration = pickedDateTime.difference(nowDateTime);
-                      if (duration.isNegative || duration.inSeconds == 0) {
-                        final tomorrow = pickedDateTime.add(
-                          const Duration(days: 1),
-                        );
-                        duration = tomorrow.difference(nowDateTime);
-                      }
-                      onTimerSelected(duration);
-                    }
+                  onPressed: () {
+                    onTimerSelected(option['duration']);
                   },
-                  child: Text(
-                    loc?.translate('sleepTimerSetExact') ?? 'Set exact time',
-                  ),
+                  child: Text(option['label'], textAlign: TextAlign.center),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+
+          /// OR text devider.
+          Center(
+            child: Text(
+              loc?.translate('sleepTimerOr') ?? 'or',
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 20),
+            ),
+          ),
+
+          /// Set exact time button.
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.fromDateTime(
+                      DateTime.now().add(const Duration(minutes: 5)),
+                    ),
+                  );
+                  if (picked != null) {
+                    final nowDateTime = DateTime.now();
+                    final pickedDateTime = DateTime(
+                      nowDateTime.year,
+                      nowDateTime.month,
+                      nowDateTime.day,
+                      picked.hour,
+                      picked.minute,
+                    );
+                    var duration = pickedDateTime.difference(nowDateTime);
+                    if (duration.isNegative || duration.inSeconds == 0) {
+                      final tomorrow = pickedDateTime.add(
+                        const Duration(days: 1),
+                      );
+                      duration = tomorrow.difference(nowDateTime);
+                    }
+                    onTimerSelected(duration);
+                  }
+                },
+                child: Text(
+                  loc?.translate('sleepTimerSetExact') ?? 'Set exact time',
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
 
       // Close button.
