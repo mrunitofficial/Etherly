@@ -70,8 +70,8 @@ class PlayButton extends StatelessWidget {
 
   // This handles the play/pause logic.
   void _handlePlayPause() {
-    if (countdown > 0 || isPlaying) {
-      service.pause();
+    if (countdown > 0 || isPlaying || service.icyService.isLoading) {
+      service.stop();
     } else {
       service.play();
     }
