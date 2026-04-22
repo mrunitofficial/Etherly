@@ -51,7 +51,7 @@ class PlayButton extends StatelessWidget {
       );
     }
 
-    if ((processingState == ProcessingState.buffering) ||
+    if (processingState == ProcessingState.buffering ||
         processingState == ProcessingState.loading) {
       return SizedBox.square(
         dimension: small ? 24.0 : 48.0,
@@ -70,8 +70,11 @@ class PlayButton extends StatelessWidget {
 
   // This handles the play/pause logic.
   void _handlePlayPause() {
-    if (countdown > 0 || isPlaying || service.icyService.isLoading) {
+    if (processingState == ProcessingState.buffering ||
+        processingState == ProcessingState.loading) {
       service.stop();
+    } else if (countdown > 0 || isPlaying) {
+      service.pause();
     } else {
       service.play();
     }
