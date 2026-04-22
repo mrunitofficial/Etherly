@@ -25,7 +25,7 @@ class IcyService with ChangeNotifier {
     notifyListeners();
   }
 
-  void onPause() {
+  void stopLoading() {
     _loading = false;
     notifyListeners();
   }

@@ -239,7 +239,7 @@ class AudioPlayerService with ChangeNotifier {
   /// Pauses playback.
   Future<void> pause() async {
     cancelAutoplayCountdown();
-    icyService.setIdle();
+    icyService.stopLoading();
     if (_castService != null && _castService.isConnected) {
       await player.pause();
       await _castService.pause();
@@ -252,7 +252,7 @@ class AudioPlayerService with ChangeNotifier {
   /// Stops playback.
   Future<void> stop() async {
     cancelAutoplayCountdown();
-    icyService.setIdle();
+    icyService.stopLoading();
     if (_castService != null && _castService.isConnected) {
       await player.stop();
       await _castService.pause();
