@@ -424,11 +424,7 @@ class AudioPlayerService with ChangeNotifier {
 
   Timer? _autoplayTimer;
   bool _autoplayCancelled = false;
-  bool _autoplayInProgress = false;
   final ValueNotifier<int> autoplayCountdownNotifier = ValueNotifier(0);
-
-  /// Returns true if autoplay is currently in progress (timer running or about to play)
-  bool get isAutoplayInProgress => _autoplayInProgress && !_autoplayCancelled;
 
   Timer? _sleepTimer;
   final ValueNotifier<bool> sleepTimerActive = ValueNotifier(false);
@@ -645,7 +641,6 @@ class AudioPlayerService with ChangeNotifier {
     _autoplayTimer?.cancel();
     _autoplayTimer = null;
     _autoplayCancelled = true;
-    _autoplayInProgress = false;
     autoplayCountdownNotifier.value = 0;
   }
 
@@ -742,12 +737,10 @@ class AudioPlayerService with ChangeNotifier {
     if (stationToPlay == null) return;
 
     _autoplayCancelled = false;
-    _autoplayInProgress = true;
     autoplayCountdownNotifier.value = _autoPlayCountdownStart;
 
     for (int i = _autoPlayCountdownStart; i > 0; i--) {
       if (_autoplayCancelled) {
-        _autoplayInProgress = false;
         autoplayCountdownNotifier.value = 0;
         return;
       }
@@ -760,7 +753,6 @@ class AudioPlayerService with ChangeNotifier {
       _audioHandler.playMediaItem(stationToPlay.toMediaItem());
     }
 
-    _autoplayInProgress = false;
     autoplayCountdownNotifier.value = 0;
   }
 }
