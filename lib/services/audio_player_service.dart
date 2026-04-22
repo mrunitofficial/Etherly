@@ -23,6 +23,7 @@ class AudioPlayerService with ChangeNotifier {
   final ValueNotifier<bool> _radioPlayerShouldClose = ValueNotifier(false);
   ValueNotifier<bool> get radioPlayerShouldClose => _radioPlayerShouldClose;
 
+  /// Keys for SharedPreferences.
   static const String _lastStationIdKey = 'last_station_id';
   static const String _favoriteStationIdsKey = 'favorite_station_ids';
   static const String _recentStationIdsKey = 'recent_station_ids';
@@ -30,25 +31,34 @@ class AudioPlayerService with ChangeNotifier {
   static const int _maxRecentStations = 10;
   static const int _autoPlayCountdownStart = 3;
 
+  /// List of all available stations and their metadata.
   List<Station> stations = [];
   Map<String, Station> _stationMap = {};
   List<String> _favoriteStationIds = [];
   List<String> _recentStationIds = [];
-  List<Station> get recentStations => _recentStationIds.map((id) => _stationMap[id]).whereType<Station>().toList();
+  List<Station> get recentStations => _recentStationIds
+      .map((id) => _stationMap[id])
+      .whereType<Station>()
+      .toList();
 
+  /// Autoplay countdown timer.
   Timer? _autoplayTimer;
   bool _autoplayCancelled = false;
   final ValueNotifier<int> autoplayCountdownNotifier = ValueNotifier(0);
 
+  /// Sleep timer.
   Timer? _sleepTimer;
   final ValueNotifier<bool> sleepTimerActive = ValueNotifier(false);
   bool get isSleepTimerSet => _sleepTimer != null;
 
+  /// Current media item.
   MediaItem? _currentMediaItem;
   MediaItem? get mediaItem => _currentMediaItem;
 
+  /// Preferences.
   SharedPreferences get prefs => _prefs;
 
+  /// Cast loading status.
   bool get isCastLoading => _castService?.isRemoteLoading.value ?? false;
   bool get isCasting => _castService?.isConnected ?? false;
   bool get isPlaying {
@@ -58,15 +68,19 @@ class AudioPlayerService with ChangeNotifier {
     return player.playing;
   }
 
+  /// Volume level on web.
   double get volume => kIsWeb ? player.volume : 1.0;
 
-  AudioPlayerService({ChromeCastService? castService}) : _castService = castService {
+  /// Creates the service and attaches listeners to the optional cast service.
+  AudioPlayerService({ChromeCastService? castService})
+    : _castService = castService {
     _castService?.isRemotePlaying.addListener(notifyListeners);
     _castService?.isRemoteLoading.addListener(notifyListeners);
     _castService?.isCastingActive.addListener(_onCastingStateChanged);
     _init();
   }
 
+  /// Handles switching notification visibility when casting status changes.
   void _onCastingStateChanged() {
     if (_castService?.isCastingActive.value ?? false) {
       _audioHandler.hideNotification();
@@ -76,9 +90,10 @@ class AudioPlayerService with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Initializes the audio service, listeners, and loads user data.
   Future<void> _init() async {
     _prefs = await SharedPreferences.getInstance();
-    
+
     _audioHandler = await initAudioService(
       player: player,
       channelName: 'Etherly Radio',
@@ -113,6 +128,7 @@ class AudioPlayerService with ChangeNotifier {
     isReady.value = true;
   }
 
+  /// Updates the player volume (Web only).
   void setVolume(double value) {
     if (kIsWeb) {
       final clamped = value.clamp(0.0, 1.0);
@@ -122,6 +138,7 @@ class AudioPlayerService with ChangeNotifier {
     }
   }
 
+  /// Disposes of all timers and listeners.
   @override
   void dispose() {
     _castService?.isRemotePlaying.removeListener(notifyListeners);
@@ -138,10 +155,13 @@ class AudioPlayerService with ChangeNotifier {
     super.dispose();
   }
 
-  /// Playback Controls
+  /// Switches to a specific station. If null, re-initializes the current live stream.
   Future<void> playMediaItem(Station? station) async {
     cancelAutoplayCountdown();
-    final resolved = station ?? _stationMap[_currentMediaItem?.id] ?? (stations.isNotEmpty ? stations.first : null);
+    final resolved =
+        station ??
+        _stationMap[_currentMediaItem?.id] ??
+        (stations.isNotEmpty ? stations.first : null);
     if (resolved == null) return;
 
     final item = resolved.toMediaItem();
@@ -165,29 +185,33 @@ class AudioPlayerService with ChangeNotifier {
     }
   }
 
+  /// Sets the audio source for the player, trying available codecs.
   Future<void> _setAudioSource(MediaItem item) async {
     final quality = _prefs.getString('streamQuality') ?? 'mp3';
     final station = _stationMap[item.id] ?? stations.first;
 
-    final urlPriority = quality == 'aac' 
-        ? [station.streamAAC, station.streamMP3] 
+    final urlPriority = quality == 'aac'
+        ? [station.streamAAC, station.streamMP3]
         : [station.streamMP3, station.streamAAC];
 
     final validUrls = urlPriority.where((u) => u.isNotEmpty).toList();
     if (validUrls.isEmpty) throw Exception("No valid stream URL found");
 
     for (int i = 0; i < validUrls.length; i++) {
-        try {
-            await player.setAudioSource(AudioSource.uri(Uri.parse(validUrls[i]), tag: item));
-            return;
-        } on PlayerInterruptedException {
-            return;
-        } catch (e) {
-            if (i == validUrls.length - 1) return;
-        }
+      try {
+        await player.setAudioSource(
+          AudioSource.uri(Uri.parse(validUrls[i]), tag: item),
+        );
+        return;
+      } on PlayerInterruptedException {
+        return;
+      } catch (e) {
+        if (i == validUrls.length - 1) return;
+      }
     }
   }
 
+  /// Updates current metadata and saves history.
   void _setMediaItem(MediaItem item) {
     _currentMediaItem = item;
     _audioHandler.updateMediaItem(item);
@@ -196,6 +220,7 @@ class AudioPlayerService with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Starts playback. Forces a reset to the live edge.
   Future<void> play() async {
     cancelAutoplayCountdown();
     if (_castService != null && _castService.isConnected) {
@@ -211,6 +236,7 @@ class AudioPlayerService with ChangeNotifier {
     await playMediaItem(null);
   }
 
+  /// Pauses playback.
   Future<void> pause() async {
     cancelAutoplayCountdown();
     if (_castService != null && _castService.isConnected) {
@@ -222,6 +248,7 @@ class AudioPlayerService with ChangeNotifier {
     await player.pause();
   }
 
+  /// Stops playback.
   Future<void> stop() async {
     cancelAutoplayCountdown();
     if (_castService != null && _castService.isConnected) {
@@ -233,40 +260,48 @@ class AudioPlayerService with ChangeNotifier {
     await player.stop();
   }
 
+  /// Skips to the next station in the list.
   Future<void> skipToNext() async {
     cancelAutoplayCountdown();
-    final currentIndex = stations.indexWhere((s) => s.id == _currentMediaItem?.id);
+    final currentIndex = stations.indexWhere(
+      (s) => s.id == _currentMediaItem?.id,
+    );
     if (currentIndex == -1 || stations.isEmpty) return;
     final nextIndex = (currentIndex + 1) % stations.length;
     await playMediaItem(stations[nextIndex]);
   }
 
+  /// Skips to the previous station in the list.
   Future<void> skipToPrevious() async {
     cancelAutoplayCountdown();
-    final currentIndex = stations.indexWhere((s) => s.id == _currentMediaItem?.id);
+    final currentIndex = stations.indexWhere(
+      (s) => s.id == _currentMediaItem?.id,
+    );
     if (currentIndex == -1 || stations.isEmpty) return;
     final prevIndex = (currentIndex - 1 + stations.length) % stations.length;
     await playMediaItem(stations[prevIndex]);
   }
 
-  /// Metadata & Misc
-  
+  /// Pre-fetches all station art to improve UI responsiveness.
   Future<void> precacheAllStationArt(BuildContext context) async {
     for (final station in stations) {
       if (station.artURL.isNotEmpty) {
-        try { await precacheImage(NetworkImage(station.artURL), context); } catch (_) {}
+        try {
+          await precacheImage(NetworkImage(station.artURL), context);
+        } catch (_) {}
       }
     }
   }
 
+  /// Updates favorite status and persists it.
   Future<void> toggleFavorite(Station station) async {
     final index = stations.indexWhere((s) => s.id == station.id);
     if (index == -1) return;
-    
+
     final updated = station.copyWith(isFavorite: !station.isFavorite);
     stations[index] = updated;
     _stationMap[station.id] = updated;
-    
+
     if (updated.isFavorite) {
       _favoriteStationIds.add(updated.id);
     } else {
@@ -276,6 +311,7 @@ class AudioPlayerService with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Schedules the player to stop after a given duration.
   void setSleepTimer(Duration duration) {
     _sleepTimer?.cancel();
     if (duration.inSeconds > 0) {
@@ -290,6 +326,7 @@ class AudioPlayerService with ChangeNotifier {
     }
   }
 
+  /// Cancels any active sleep timer.
   void cancelSleepTimer() {
     _sleepTimer?.cancel();
     _sleepTimer = null;
@@ -297,6 +334,7 @@ class AudioPlayerService with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Cancels the autoplay countdown timer.
   void cancelAutoplayCountdown() {
     _autoplayTimer?.cancel();
     _autoplayTimer = null;
@@ -304,12 +342,16 @@ class AudioPlayerService with ChangeNotifier {
     autoplayCountdownNotifier.value = 0;
   }
 
+  /// Loads the station list from the remote repository.
   Future<void> _loadStations() async {
     bool loaded = false;
-    const githubRawUrl = 'https://raw.githubusercontent.com/mrunitofficial/Etherly-Nederland/main/stations.json';
+    const githubRawUrl =
+        'https://raw.githubusercontent.com/mrunitofficial/Etherly-Nederland/main/stations.json';
 
     try {
-      final res = await http.get(Uri.parse(githubRawUrl)).timeout(const Duration(seconds: 8));
+      final res = await http
+          .get(Uri.parse(githubRawUrl))
+          .timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) {
         final data = json.decode(res.body) as List;
         stations = data.map((j) => Station.fromJson(j)).toList();
@@ -323,7 +365,13 @@ class AudioPlayerService with ChangeNotifier {
       _favoriteStationIds = _prefs.getStringList(_favoriteStationIdsKey) ?? [];
       _recentStationIds = _prefs.getStringList(_recentStationIdsKey) ?? [];
 
-      stations = stations.map((s) => _favoriteStationIds.contains(s.id) ? s.copyWith(isFavorite: true) : s).toList();
+      stations = stations
+          .map(
+            (s) => _favoriteStationIds.contains(s.id)
+                ? s.copyWith(isFavorite: true)
+                : s,
+          )
+          .toList();
       _stationMap = {for (var s in stations) s.id: s};
 
       await _loadLastStation();
@@ -331,6 +379,7 @@ class AudioPlayerService with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Adds a station to the recently played history.
   Future<void> _addRecentStation(String stationId) async {
     _recentStationIds.remove(stationId);
     _recentStationIds.insert(0, stationId);
@@ -341,10 +390,12 @@ class AudioPlayerService with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Persists the ID of the last played station.
   Future<void> _saveLastStation(String id) async {
     await _prefs.setString(_lastStationIdKey, id);
   }
 
+  /// Restores metadata for the last played station.
   Future<void> _loadLastStation() async {
     final lastId = _prefs.getString(_lastStationIdKey);
     if (lastId != null && _stationMap.containsKey(lastId)) {
@@ -352,10 +403,11 @@ class AudioPlayerService with ChangeNotifier {
     }
   }
 
+  /// Manages the autoplay logic on app startup.
   Future<void> _checkAutoplay() async {
     final autoPlay = _prefs.getBool('autoPlay') ?? false;
     if (!autoPlay || (_castService?.isConnected ?? false)) return;
-    
+
     final lastId = _prefs.getString(_lastStationIdKey);
     if (lastId == null || !_stationMap.containsKey(lastId)) return;
 
@@ -364,7 +416,8 @@ class AudioPlayerService with ChangeNotifier {
 
     for (int i = _autoPlayCountdownStart; i > 0; i--) {
       if (_autoplayCancelled) {
-        autoplayCountdownNotifier.value = 0; return;
+        autoplayCountdownNotifier.value = 0;
+        return;
       }
       autoplayCountdownNotifier.value = i;
       await Future.delayed(const Duration(seconds: 1));
