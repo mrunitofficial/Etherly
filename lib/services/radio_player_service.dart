@@ -95,42 +95,31 @@ class MyAudioHandler extends BaseAudioHandler {
   @override
   Future<void> playMediaItem(MediaItem mediaItem) async {
     _stopRequested = false;
+    _isResuming = true;
     _icyService?.startLoading();
-    await _player.stop();
-    this.mediaItem.add(mediaItem);
-    if (_stopRequested) return;
-    _player.play().catchError((_) {});
-    await _setAudioSource(mediaItem);
-    if (_stopRequested) {
+    playbackState.add(_transformEvent(_player.playbackEvent));
+
+    try {
       await _player.stop();
+      this.mediaItem.add(mediaItem);
+      if (_stopRequested) return;
+      _player.play().catchError((_) {});
+      await _setAudioSource(mediaItem);
+      if (_stopRequested) {
+        await _player.stop();
+      }
+    } finally {
+      _isResuming = false;
+      playbackState.add(_transformEvent(_player.playbackEvent));
     }
   }
 
   /// All player control methods.
   @override
   Future<void> play() async {
-    _stopRequested = false;
-    if (_player.audioSource == null ||
-        _player.processingState == ProcessingState.idle) {
-      final item = mediaItem.value;
-      if (item != null) {
-        _player.play().catchError((_) {});
-        await _setAudioSource(item);
-        if (_stopRequested) {
-          await _player.stop();
-        }
-      }
-    } else {
-      _isResuming = true;
-      try {
-        await _player.seek(null);
-        if (!_stopRequested) {
-          await _player.play();
-        }
-      } finally {
-        _isResuming = false;
-        playbackState.add(_transformEvent(_player.playbackEvent));
-      }
+    final item = mediaItem.value;
+    if (item != null) {
+      await playMediaItem(item);
     }
   }
 
@@ -146,7 +135,7 @@ class MyAudioHandler extends BaseAudioHandler {
     return _player.stop();
   }
 
-  /// Logic for skipping to next/previous stations on bluetooth devices.
+  // Logic for skipping to next/previous stations on bluetooth devices.
   int _getCurrentStationIndex() {
     if (_stations.isEmpty) return -1;
     final currentId = mediaItem.value?.id;
@@ -326,10 +315,13 @@ class MyAudioHandler extends BaseAudioHandler {
   PlaybackState _transformEvent(PlaybackEvent event) {
     var effectiveProcessingState = event.processingState;
 
-    if (effectiveProcessingState == ProcessingState.buffering) {
+    // Force buffering state during resumption to prevent UI flicker
+    if (_isResuming) {
+      effectiveProcessingState = ProcessingState.buffering;
+    } else if (effectiveProcessingState == ProcessingState.buffering) {
       if (kIsWeb) {
         effectiveProcessingState = ProcessingState.ready;
-      } else if (!_player.playing && !_isResuming) {
+      } else if (!_player.playing) {
         effectiveProcessingState = ProcessingState.ready;
       }
     }

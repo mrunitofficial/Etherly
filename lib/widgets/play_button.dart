@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:etherly/services/radio_player_service.dart';
 
-/// A reusable play/pause button widget that handles loading, countdown, and play states
+/// A reusable play/pause button widget that handles loading, countdown, and play states.
 class PlayButton extends StatelessWidget {
   const PlayButton({
     super.key,
@@ -36,7 +36,7 @@ class PlayButton extends StatelessWidget {
     );
   }
 
-  // This determines the icon to show when the player is loading, buffering, or playing
+  // This determines the icon to show when the player is loading, buffering, or playing.
   Widget _buildButtonContent(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -68,7 +68,7 @@ class PlayButton extends StatelessWidget {
     );
   }
 
-  // This handles the play/pause logic
+  // This handles the play/pause logic.
   void _handlePlayPause() {
     if (countdown > 0 || isPlaying) {
       service.pause();
