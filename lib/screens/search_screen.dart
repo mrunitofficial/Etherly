@@ -17,6 +17,7 @@ class StationSearchBar extends StatefulWidget {
 
 class _StationSearchBarState extends State<StationSearchBar> {
   final SearchController _controller = SearchController();
+  final FocusNode _focusNode = FocusNode();
   late stt.SpeechToText _speech;
   bool _isListening = false;
 
@@ -24,11 +25,17 @@ class _StationSearchBarState extends State<StationSearchBar> {
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        _focusNode.unfocus();
+      }
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     if (_speech.isListening) {
       _speech.stop();
     }
@@ -96,6 +103,7 @@ class _StationSearchBarState extends State<StationSearchBar> {
       isFullScreen: !screenType.isLargeFormat,
       builder: (BuildContext context, SearchController controller) {
         return SearchBar(
+          focusNode: _focusNode,
           controller: controller,
           elevation: const WidgetStatePropertyAll<double>(0.0),
           backgroundColor: WidgetStatePropertyAll<Color>(
