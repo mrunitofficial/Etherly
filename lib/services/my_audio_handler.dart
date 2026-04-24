@@ -37,7 +37,7 @@ class MyAudioHandler extends BaseAudioHandler {
   final Future<void> Function() onPlay;
   final Future<void> Function() onSkipNext;
   final Future<void> Function() onSkipPrev;
-  
+
   AudioSession? _audioSession;
 
   MyAudioHandler({
@@ -76,7 +76,27 @@ class MyAudioHandler extends BaseAudioHandler {
   Future<void> pause() async => player.pause();
 
   @override
-  Future<void> stop() async => player.stop();
+  Future<void> stop() async {
+    await player.stop();
+    playbackState.add(
+      playbackState.value.copyWith(
+        processingState: AudioProcessingState.idle,
+        playing: false,
+        controls: [],
+      ),
+    );
+    await super.stop();
+  }
+
+  @override
+  Future<void> onTaskRemoved() async {
+    await stop();
+  }
+
+  @override
+  Future<void> onNotificationDeleted() async {
+    await stop();
+  }
 
   @override
   Future<void> skipToNext() async => onSkipNext();
@@ -86,8 +106,12 @@ class MyAudioHandler extends BaseAudioHandler {
 
   /// Custom actions and notification management
   @override
-  Future<dynamic> customAction(String name, [Map<String, dynamic>? extras]) async {
+  Future<dynamic> customAction(
+    String name, [
+    Map<String, dynamic>? extras,
+  ]) async {
     if (name == 'dispose') {
+      await stop();
       await player.dispose();
       return;
     }
@@ -130,7 +154,8 @@ class MyAudioHandler extends BaseAudioHandler {
   PlaybackState _transformEvent(PlaybackEvent event) {
     return PlaybackState(
       controls: [
-        if (player.playing) MediaControl.pause else MediaControl.play,
+        if (player.processingState == ProcessingState.idle)
+          if (player.playing) MediaControl.pause else MediaControl.play,
       ],
       androidCompactActionIndices: const [0],
       processingState: _getProcessingState(player.processingState),
