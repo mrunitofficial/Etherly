@@ -107,9 +107,6 @@ class _StationSearchBarState extends State<StationSearchBar> {
           onTap: () {
             controller.openView();
           },
-          onChanged: (_) {
-            controller.openView();
-          },
           leading: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: Icon(
