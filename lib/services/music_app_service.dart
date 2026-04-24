@@ -56,7 +56,9 @@ class MusicAppService {
 
   List<Map<String, String>>? _cachedAvailableApps;
 
-  Future<List<Map<String, String>>> getAvailableApps({bool forceRefresh = false}) async {
+  Future<List<Map<String, String>>> getAvailableApps({
+    bool forceRefresh = false,
+  }) async {
     if (_cachedAvailableApps != null && !forceRefresh) {
       return _cachedAvailableApps!;
     }

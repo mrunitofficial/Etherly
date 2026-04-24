@@ -5,13 +5,14 @@ import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/models/station.dart';
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/screens/settings_screen.dart';
-import 'package:etherly/main.dart' show themeNotifier;
+import 'package:etherly/services/theme_data.dart' show themeNotifier;
 import 'package:etherly/widgets/sleep_timer.dart';
 import 'package:etherly/widgets/station_art.dart';
 import 'package:etherly/widgets/quality_setting.dart';
 import 'package:etherly/widgets/marquee_text.dart';
 import 'package:etherly/widgets/play_button.dart';
 import 'package:etherly/widgets/icy_text_display.dart';
+
 /// Full player content shown in the expanded state of the radio player.
 class FullPlayerContent extends StatefulWidget {
   const FullPlayerContent({super.key, this.scrollController, this.onClose});
@@ -65,10 +66,7 @@ class _FullPlayerContentState extends State<FullPlayerContent> {
                       centerWhenFits: true,
                     ),
                     if (!kIsWeb)
-                      const SizedBox(
-                        height: 28,
-                        child: IcyTextDisplay(),
-                      ),
+                      const SizedBox(height: 28, child: IcyTextDisplay()),
                   ],
                 ),
               ),

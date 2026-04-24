@@ -92,7 +92,9 @@ class SleepTimer extends StatelessWidget {
               width: double.infinity,
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
                   foregroundColor: Theme.of(
                     context,
                   ).colorScheme.onPrimaryContainer,

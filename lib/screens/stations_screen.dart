@@ -31,7 +31,8 @@ class StationsScreen extends StatefulWidget {
   State<StationsScreen> createState() => _StationsScreenState();
 }
 
-class _StationsScreenState extends State<StationsScreen> with AutomaticKeepAliveClientMixin {
+class _StationsScreenState extends State<StationsScreen>
+    with AutomaticKeepAliveClientMixin {
   late final Future<ViewType> _viewTypeFuture;
   ViewType _viewType = ViewType.list;
 
@@ -132,7 +133,9 @@ class _StationsScreenState extends State<StationsScreen> with AutomaticKeepAlive
 
     final loc = AppLocalizations.of(context);
     final bottomPadding = EdgeInsets.only(
-      bottom: widget.screenType == ScreenType.desktop ? 8.0 : (_miniPlayerHeight + 8.0),
+      bottom: widget.screenType == ScreenType.desktop
+          ? 8.0
+          : (_miniPlayerHeight + 8.0),
     );
 
     return AnimatedSwitcher(
@@ -181,7 +184,7 @@ class _StationsScreenState extends State<StationsScreen> with AutomaticKeepAlive
                   ],
                 )
               : CustomScrollView(
-                cacheExtent: 4000.0,
+                  cacheExtent: 4000.0,
                   slivers: [
                     SliverToBoxAdapter(
                       child: ScreenHeader(
@@ -246,7 +249,10 @@ class _StationsScreenState extends State<StationsScreen> with AutomaticKeepAlive
             if (item is Station) {
               return Padding(
                 key: ValueKey(item.id),
-                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12.0,
+                  vertical: 4.0,
+                ),
                 child: StationCardItem(
                   station: item,
                   isFavorite: item.isFavorite,
@@ -297,38 +303,40 @@ class _StationsScreenState extends State<StationsScreen> with AutomaticKeepAlive
             }
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 4.0,
+              ),
               child: Row(
                 children: [
+                  Expanded(
+                    child: StationCardItem(
+                      key: ValueKey(item.id),
+                      station: item,
+                      isFavorite: item.isFavorite,
+                      onTap: () => service.playMediaItem(item),
+                      onFavorite: () => service.toggleFavorite(item),
+                      screenType: widget.screenType,
+                    ),
+                  ),
+                  if (nextStation != null) ...[
+                    const SizedBox(width: 8.0),
                     Expanded(
                       child: StationCardItem(
-                        key: ValueKey(item.id),
-                        station: item,
-                        isFavorite: item.isFavorite,
-                        onTap: () => service.playMediaItem(item),
-                        onFavorite: () => service.toggleFavorite(item),
+                        key: ValueKey(nextStation.id),
+                        station: nextStation,
+                        isFavorite: nextStation.isFavorite,
+                        onTap: () => service.playMediaItem(nextStation!),
+                        onFavorite: () => service.toggleFavorite(nextStation!),
                         screenType: widget.screenType,
                       ),
                     ),
-                    if (nextStation != null) ...[    
-                      const SizedBox(width: 8.0),
-                      Expanded(
-                        child: StationCardItem(
-                          key: ValueKey(nextStation.id),
-                          station: nextStation,
-                          isFavorite: nextStation.isFavorite,
-                          onTap: () => service.playMediaItem(nextStation!),
-                          onFavorite: () =>
-                              service.toggleFavorite(nextStation!),
-                          screenType: widget.screenType,
-                        ),
-                      ),
-                    ] else
-                      const Expanded(child: SizedBox.shrink()),
-                  ],
-                ),
-              );
-            }
+                  ] else
+                    const Expanded(child: SizedBox.shrink()),
+                ],
+              ),
+            );
+          }
           return const SizedBox.shrink();
         },
       ),

@@ -62,9 +62,7 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
                             'No music apps installed',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -136,10 +134,12 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
                       width: double.infinity,
                       child: FilledButton(
                         style: FilledButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primaryContainer,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onPrimaryContainer,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                           padding: const EdgeInsets.symmetric(
                             vertical: 12,
                             horizontal: 8,

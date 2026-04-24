@@ -23,10 +23,15 @@ class StationArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (size.isInfinite) {
-      return LayoutBuilder(builder: (context, constraints) {
-        final shortestSide = constraints.biggest.shortestSide;
-        return _buildImage(context, shortestSide.isFinite ? shortestSide : size);
-      });
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final shortestSide = constraints.biggest.shortestSide;
+          return _buildImage(
+            context,
+            shortestSide.isFinite ? shortestSide : size,
+          );
+        },
+      );
     }
     return _buildImage(context, size);
   }
@@ -49,8 +54,9 @@ class StationArt extends StatelessWidget {
           height: size,
           fit: BoxFit.cover,
           cacheWidth: cacheSize,
-          loadingBuilder: (context, child, progress) =>
-              progress == null ? child : _buildPlaceholder(context, size, radius, true),
+          loadingBuilder: (context, child, progress) => progress == null
+              ? child
+              : _buildPlaceholder(context, size, radius, true),
           errorBuilder: (context, error, stack) =>
               _buildPlaceholder(context, size, radius, false),
         ),
@@ -66,13 +72,20 @@ class StationArt extends StatelessWidget {
         fit: BoxFit.cover,
         memCacheWidth: cacheSize,
         memCacheHeight: cacheSize,
-        placeholder: (context, url) => _buildPlaceholder(context, size, radius, true),
-        errorWidget: (context, url, error) => _buildPlaceholder(context, size, radius, false),
+        placeholder: (context, url) =>
+            _buildPlaceholder(context, size, radius, true),
+        errorWidget: (context, url, error) =>
+            _buildPlaceholder(context, size, radius, false),
       ),
     );
   }
 
-  Widget _buildPlaceholder(BuildContext context, double size, BorderRadius radius, bool isLoading) {
+  Widget _buildPlaceholder(
+    BuildContext context,
+    double size,
+    BorderRadius radius,
+    bool isLoading,
+  ) {
     final colors = Theme.of(context).colorScheme;
     return Container(
       width: size,

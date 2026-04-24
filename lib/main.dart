@@ -1,52 +1,44 @@
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'models/device.dart';
+
 import 'localization/app_localizations.dart';
 import 'services/audio_player_service.dart';
-import 'screens/settings_screen.dart';
-import 'screens/stations_screen.dart';
-import 'screens/favorites_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/radio_player.dart';
-import 'screens/search_screen.dart';
 import 'services/chrome_cast_service.dart';
-import 'widgets/cast_devices.dart';
-
-/// Global ValueNotifier for ThemeMode, allowing deep widgets to change the theme
-/// and trigger a rebuild of the main application widget.
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
-final ValueNotifier<bool> dynamicColorNotifier = ValueNotifier(false);
-const _brandColor = Colors.blue;
-const _navigationRailWidth = 96.0;
+import 'services/theme_data.dart';
+import 'screens/app_screen.dart';
 
 /// Entry point of the application.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Configure image cache.
   PaintingBinding.instance.imageCache.maximumSize = 4000;
   PaintingBinding.instance.imageCache.maximumSizeBytes = 1000 << 20;
 
+  // Load preferences.
   final prefs = await SharedPreferences.getInstance();
   final themeString = prefs.getString('theme');
-  final theme = (ThemeMode.values.firstWhere(
-    (e) => e.toString() == themeString,
-    orElse: () => ThemeMode.system,
-  ));
+  final theme =
+      ThemeMode.values.asNameMap()[themeString?.replaceFirst(
+        'ThemeMode.',
+        '',
+      )] ??
+      ThemeMode.system;
   themeNotifier.value = theme;
   final forceDefaultColor = prefs.getBool('forceDefaultColor') ?? false;
   dynamicColorNotifier.value = !forceDefaultColor;
   final startingTab = prefs.getInt('startingTab') ?? 0;
 
+  // Run the app.
   runApp(MyApp(startingTab: startingTab));
 }
 
 /// The root widget of the application.
-/// Initializes theme, localization, and audio service.
 class MyApp extends StatefulWidget {
   final int startingTab;
 
@@ -67,6 +59,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     themeNotifier.addListener(_onThemeChange);
+    _initAudioService();
   }
 
   @override
@@ -89,7 +82,7 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> _initAudioService(BuildContext context) async {
+  Future<void> _initAudioService() async {
     if (_localizationsLoaded || _initializingAudio) return;
     _initializingAudio = true;
     try {
@@ -128,11 +121,11 @@ class _MyAppState extends State<MyApp> {
               darkColorScheme = darkDynamic;
             } else {
               lightColorScheme = ColorScheme.fromSeed(
-                seedColor: _brandColor,
+                seedColor: brandColor,
                 brightness: Brightness.light,
               );
               darkColorScheme = ColorScheme.fromSeed(
-                seedColor: _brandColor,
+                seedColor: brandColor,
                 brightness: Brightness.dark,
               );
             }
@@ -147,68 +140,12 @@ class _MyAppState extends State<MyApp> {
               ],
               supportedLocales: const [Locale('en'), Locale('nl')],
 
-              /// Light theme data
-              theme: ThemeData(
-                useMaterial3: true,
-                colorScheme: lightColorScheme,
-                scaffoldBackgroundColor: lightColorScheme.surfaceContainer,
-                floatingActionButtonTheme: const FloatingActionButtonThemeData(
-                  shape: CircleBorder(),
-                ),
-                appBarTheme: AppBarTheme(
-                  toolbarHeight: 80,
-                  titleSpacing: 0.0,
-                  surfaceTintColor: lightColorScheme.surfaceContainer,
-                  shadowColor: lightColorScheme.surfaceContainerLowest,
-                ),
-                navigationBarTheme: NavigationBarThemeData(
-                  backgroundColor: lightColorScheme.surfaceContainer,
-                ),
-                navigationRailTheme: NavigationRailThemeData(
-                  backgroundColor: lightColorScheme.surfaceContainer,
-                ),
-                tooltipTheme: const TooltipThemeData(
-                  waitDuration: Duration(milliseconds: 500),
-                ),
-                dialogTheme: const DialogThemeData(
-                  constraints: BoxConstraints(minWidth: 320, maxWidth: 320),
-                ),
-              ),
-
-              /// Dark theme data
-              darkTheme: ThemeData(
-                useMaterial3: true,
-                colorScheme: darkColorScheme,
-                scaffoldBackgroundColor: darkColorScheme.surfaceContainer,
-                floatingActionButtonTheme: const FloatingActionButtonThemeData(
-                  shape: CircleBorder(),
-                ),
-                appBarTheme: AppBarTheme(
-                  toolbarHeight: 80,
-                  titleSpacing: 0.0,
-                  surfaceTintColor: darkColorScheme.surfaceContainer,
-                  shadowColor: darkColorScheme.surfaceContainerLowest,
-                ),
-                navigationBarTheme: NavigationBarThemeData(
-                  backgroundColor: darkColorScheme.surfaceContainer,
-                ),
-                navigationRailTheme: NavigationRailThemeData(
-                  backgroundColor: darkColorScheme.surfaceContainer,
-                ),
-                tooltipTheme: const TooltipThemeData(
-                  waitDuration: Duration(seconds: 1),
-                ),
-                dialogTheme: const DialogThemeData(
-                  constraints: BoxConstraints(minWidth: 320, maxWidth: 320),
-                ),
-              ),
-
-              /// Initialize audio service
+              theme: AppTheme.getLight(lightColorScheme),
+              darkTheme: AppTheme.getDark(darkColorScheme),
               themeMode: themeNotifier.value,
               home: Builder(
                 builder: (context) {
                   if (!_localizationsLoaded) {
-                    _initAudioService(context);
                     return const SizedBox.shrink();
                   }
                   return MultiProvider(
@@ -220,7 +157,7 @@ class _MyAppState extends State<MyApp> {
                         create: (_) => _chromeCastService!,
                       ),
                     ],
-                    child: MyHomePage(
+                    child: AppScreen(
                       startingTab: widget.startingTab,
                       onHomeContentLoaded: _triggerFadeIn,
                     ),
@@ -238,355 +175,6 @@ class _MyAppState extends State<MyApp> {
           },
         );
       },
-    );
-  }
-}
-
-/// The main structure of the app, containing the AppBar, the main content (screens),
-/// the persistent radio player, and the bottom NavigationBar.
-typedef HomeContentLoadedCallback = void Function();
-
-class MyHomePage extends StatefulWidget {
-  final int startingTab;
-  final HomeContentLoadedCallback? onHomeContentLoaded;
-
-  const MyHomePage({
-    super.key,
-    required this.startingTab,
-    this.onHomeContentLoaded,
-  });
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage>
-    with SingleTickerProviderStateMixin {
-  late int _selectedIndex;
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedIndex = widget.startingTab;
-
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeInOut,
-    );
-    _fadeController.forward();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final service = context.read<AudioPlayerService>();
-      if (service.stations.isNotEmpty) {
-        service.precacheAllStationArt(context);
-      } else {
-        service.isReady.addListener(() {
-          if (service.isReady.value) {
-            service.precacheAllStationArt(context);
-          }
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    super.dispose();
-  }
-
-  void _onTabSelected(int index) {
-    if (_selectedIndex != index) {
-      _fadeController.forward(from: 0.0);
-      setState(() => _selectedIndex = index);
-    }
-  }
-
-  /// Builds the appropriate screen widget based on the selected index.
-  Widget _buildScreen(int index, ScreenType screenType) {
-    switch (index) {
-      case 0:
-        return HomeScreen(onContentLoaded: widget.onHomeContentLoaded);
-      case 1:
-        return StationsScreen(
-          onContentLoaded: widget.onHomeContentLoaded,
-          screenType: screenType,
-        );
-      case 2:
-        return FavoritesScreen(
-          onContentLoaded: widget.onHomeContentLoaded,
-          screenType: screenType,
-        );
-      default:
-        return HomeScreen(onContentLoaded: widget.onHomeContentLoaded);
-    }
-  }
-
-  /// Builds the main Scaffold with AppBar, body, and NavigationBar.
-  @override
-  Widget build(BuildContext context) {
-    final screenType = ScreenType.fromContext(context);
-
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-
-      /// Appbar with leading icon, search bar and action buttons.
-      appBar: AppBar(
-        backgroundColor: screenType.isLargeFormat
-            ? Theme.of(context).colorScheme.surfaceContainer
-            : null,
-        scrolledUnderElevation: screenType.isLargeFormat ? 0 : null,
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 4.0),
-        animateColor: true,
-        notificationPredicate: (notification) {
-          final context = notification.context;
-          bool insideSheet = false;
-          context?.visitAncestorElements((element) {
-            if (element.widget is DraggableScrollableSheet) {
-              insideSheet = true;
-              return false;
-            }
-            return true;
-          });
-          return !insideSheet;
-        },
-        leadingWidth: screenType.isLargeFormat ? _navigationRailWidth : null,
-        leading: IconButton(
-          icon: SvgPicture.asset(
-            'assets/icon_base.svg',
-            width: screenType.isLargeFormat ? 36 : 24,
-            height: screenType.isLargeFormat ? 36 : 24,
-          ),
-          tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
-          onPressed: () {
-            _onTabSelected(0);
-            context.read<AudioPlayerService>().radioPlayerShouldClose.value =
-                true;
-          },
-        ),
-        title: const StationSearchBar(),
-        actions: [
-          if (context.read<ChromeCastService>().isCastSupported())
-            IconButton(
-              icon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.cast_rounded),
-
-                  // BETA ICON
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 3,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'BETA',
-                        style: TextStyle(
-                          fontSize: 7,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // END BETA ICON
-                ],
-              ),
-              tooltip:
-                  AppLocalizations.of(context)?.translate('mainTooltipCast') ??
-                  'Cast to device',
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (_) => MultiProvider(
-                    providers: [
-                      ChangeNotifierProvider.value(
-                        value: context.read<AudioPlayerService>(),
-                      ),
-                      ChangeNotifierProvider.value(
-                        value: context.read<ChromeCastService>(),
-                      ),
-                    ],
-                    child: const CastDevices(),
-                  ),
-                );
-              },
-            ),
-          IconButton(
-            icon: Icon(
-              Icons.settings,
-              size: screenType.isLargeFormat ? 32 : 24,
-            ),
-            tooltip:
-                AppLocalizations.of(
-                  context,
-                )?.translate('mainTooltipSettings') ??
-                'Settings',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      SettingsScreen(themeNotifier: themeNotifier),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-
-      // Main content area with animated screen transitions.
-      body: () {
-        final content = Align(
-          alignment: Alignment.topCenter,
-          child: ClipRRect(
-            borderRadius: screenType.isLargeFormat
-                ? const BorderRadius.all(Radius.circular(16))
-                : BorderRadius.zero,
-            child: Container(
-              color: Theme.of(context).colorScheme.surface,
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: IndexedStack(
-                  index: _selectedIndex,
-                  sizing: StackFit.expand,
-                  children: [
-                    _buildScreen(0, screenType),
-                    _buildScreen(1, screenType),
-                    _buildScreen(2, screenType),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-
-        // Large screen layout: NavigationRail with side player
-        if (screenType.isLargeFormat) {
-          return Column(
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    NavigationRail(
-                      minWidth: _navigationRailWidth,
-                      selectedIndex: _selectedIndex,
-                      onDestinationSelected: (index) {
-                        _onTabSelected(index);
-                        context
-                                .read<AudioPlayerService>()
-                                .radioPlayerShouldClose
-                                .value =
-                            true;
-                      },
-                      labelType: NavigationRailLabelType.all,
-                      destinations: [
-                        NavigationRailDestination(
-                          selectedIcon: const Icon(Icons.home),
-                          icon: const Icon(Icons.home_outlined),
-                          label: Text(
-                            AppLocalizations.of(
-                                  context,
-                                )?.translate('navHome') ??
-                                'Home',
-                          ),
-                        ),
-                        NavigationRailDestination(
-                          selectedIcon: const Icon(Icons.radio),
-                          icon: const Icon(Icons.radio_outlined),
-                          label: Text(
-                            AppLocalizations.of(
-                                  context,
-                                )?.translate('navStations') ??
-                                'All stations',
-                          ),
-                        ),
-                        NavigationRailDestination(
-                          selectedIcon: const Icon(Icons.favorite),
-                          icon: const Icon(Icons.favorite_outline),
-                          label: Text(
-                            AppLocalizations.of(
-                                  context,
-                                )?.translate('navFavorites') ??
-                                'Favorites',
-                          ),
-                        ),
-                      ],
-                    ),
-                    Expanded(child: content),
-                    SizedBox(
-                      width: 360,
-                      child: RadioPlayer(screenType: screenType),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        }
-
-        // Small screen layout: Stack with bottom player
-        return Stack(
-          children: [
-            content,
-            RadioPlayer(screenType: screenType),
-          ],
-        );
-      }(),
-
-      // Bottom navigation bar for small screens or border for large screens
-      bottomNavigationBar: screenType.isLargeFormat
-          ? Container(height: 16)
-          : NavigationBar(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) {
-                _onTabSelected(index);
-                context
-                        .read<AudioPlayerService>()
-                        .radioPlayerShouldClose
-                        .value =
-                    true;
-              },
-              destinations: [
-                NavigationDestination(
-                  selectedIcon: const Icon(Icons.home),
-                  icon: const Icon(Icons.home_outlined),
-                  label:
-                      AppLocalizations.of(context)?.translate('navHome') ??
-                      'Home',
-                ),
-                NavigationDestination(
-                  selectedIcon: const Icon(Icons.radio),
-                  icon: const Icon(Icons.radio_outlined),
-                  label:
-                      AppLocalizations.of(context)?.translate('navStations') ??
-                      'All stations',
-                ),
-                NavigationDestination(
-                  selectedIcon: const Icon(Icons.favorite),
-                  icon: const Icon(Icons.favorite_outline),
-                  label:
-                      AppLocalizations.of(context)?.translate('navFavorites') ??
-                      'Favorites',
-                ),
-              ],
-            ),
     );
   }
 }
