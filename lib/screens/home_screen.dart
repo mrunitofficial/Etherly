@@ -31,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _loadingTimer = Timer(Theme.of(context).extension<Speed>()!.short1, () {
+    _loadingTimer = Timer(Speed().short1, () {
       if (mounted) {
         setState(() {
           _showLoading = true;

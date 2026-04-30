@@ -60,6 +60,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     themeNotifier.addListener(_onThemeChange);
     _initAudioService();
+    Future.delayed(const Duration(seconds: 3), _triggerFadeIn);
   }
 
   @override
@@ -74,7 +75,7 @@ class _MyAppState extends State<MyApp> {
 
   void _triggerFadeIn() {
     if (!_showApp) {
-      Future.delayed(Speed().long1, () {
+      Future.delayed(const Duration(milliseconds: 450), () {
         setState(() {
           _showApp = true;
         });
@@ -145,7 +146,9 @@ class _MyAppState extends State<MyApp> {
               themeMode: themeNotifier.value,
               home: Builder(
                 builder: (context) {
-                  if (!_localizationsLoaded) {
+                  if (!_localizationsLoaded ||
+                      _audioPlayerService == null ||
+                      _chromeCastService == null) {
                     return const SizedBox.shrink();
                   }
                   return MultiProvider(
@@ -168,7 +171,7 @@ class _MyAppState extends State<MyApp> {
 
             return AnimatedOpacity(
               opacity: _showApp ? 1.0 : 0.0,
-              duration: Theme.of(context).extension<Speed>()!.long1,
+              duration: const Duration(milliseconds: 450),
               curve: Curves.easeIn,
               child: appContent,
             );

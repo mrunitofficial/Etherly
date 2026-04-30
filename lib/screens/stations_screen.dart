@@ -49,7 +49,7 @@ class _StationsScreenState extends State<StationsScreen>
     super.initState();
     _viewTypeFuture = _loadViewType();
 
-    _loadingTimer = Timer(Theme.of(context).extension<Speed>()!.short1, () {
+    _loadingTimer = Timer(Speed().short1, () {
       if (mounted) {
         setState(() => _showLoading = true);
       }

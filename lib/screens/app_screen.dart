@@ -43,7 +43,7 @@ class _AppScreenState extends State<AppScreen>
     _selectedIndex = widget.startingTab;
 
     _fadeController = AnimationController(
-      duration: Theme.of(context).extension<Speed>()!.medium1,
+      duration: Speed().medium1,
       vsync: this,
     );
     _fadeAnimation = CurvedAnimation(
