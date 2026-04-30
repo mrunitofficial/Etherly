@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Station {
   final String id;
   final String name;
@@ -23,25 +25,35 @@ class Station {
     this.isFavorite = false,
   });
 
-  factory Station.fromJson(Map<String, dynamic> json) {
+  factory Station.fromJson(Map<String, dynamic> json, {String? docId}) {
+    final streams = json['streams'] as Map<String, dynamic>? ?? {};
     return Station(
-      id: json['ID'],
-      name: json['Name'],
-      album: json['Album'],
-      streamMP3: json['streamMP3'] ?? '',
-      streamAAC: json['streamAAC'] ?? '',
-      artURL: json['ArtURL'],
-      category: json['Category'],
+      id: docId ?? json['ID'] ?? '',
+      name: json['name'] ?? json['Name'] ?? '',
+      album: json['slogan'] ?? json['Album'] ?? '',
+      streamMP3: streams['mp3'] ?? json['streamMP3'] ?? '',
+      streamAAC: streams['aac'] ?? json['streamAAC'] ?? '',
+      artURL: json['art'] ?? json['ArtURL'] ?? '',
+      category: json['category'] ?? json['Category'] ?? '',
       rank: json['rank'] is int
           ? json['rank']
           : (json['rank'] is String && json['rank'].isNotEmpty
                 ? int.tryParse(json['rank'])
                 : null),
       tags:
+          (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
           (json['Tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
           [],
       isFavorite: json['isFavorite'] ?? false,
     );
+  }
+
+  factory Station.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) {
+      throw Exception("Document data was null");
+    }
+    return Station.fromJson(data, docId: doc.id);
   }
 
   Station copyWith({

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:just_audio/just_audio.dart';
@@ -348,20 +349,22 @@ class AudioPlayerService with ChangeNotifier {
   /// Loads the station list from the remote repository.
   Future<void> _loadStations() async {
     bool loaded = false;
-    const githubRawUrl =
-        'https://raw.githubusercontent.com/mrunitofficial/Etherly-Nederland/main/stations.json';
 
     try {
-      final res = await http
-          .get(Uri.parse(githubRawUrl))
-          .timeout(const Duration(seconds: 8));
-      if (res.statusCode == 200) {
-        final data = json.decode(res.body) as List;
-        stations = data.map((j) => Station.fromJson(j)).toList();
-        loaded = true;
-      }
+      final snapshot = await FirebaseFirestore.instance.collection('stations').get();
+      stations = snapshot.docs.map((doc) => Station.fromFirestore(doc)).toList();
+      
+      // Sort by rank if it exists, otherwise leave order or sort by name
+      stations.sort((a, b) {
+        if (a.rank != null && b.rank != null) return a.rank!.compareTo(b.rank!);
+        if (a.rank != null) return -1;
+        if (b.rank != null) return 1;
+        return a.name.compareTo(b.name);
+      });
+
+      loaded = true;
     } catch (e) {
-      if (kDebugMode) print('Error loading stations: $e');
+      if (kDebugMode) print('Error loading stations from Firebase: $e');
     }
 
     if (loaded) {

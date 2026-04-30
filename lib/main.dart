@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:firebase_core/firebase_core.dart';
 
+import 'firebase_options.dart';
 import 'localization/app_localizations.dart';
 import 'services/audio_player_service.dart';
 import 'services/chrome_cast_service.dart';
@@ -15,6 +17,13 @@ import 'screens/app_screen.dart';
 /// Entry point of the application.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization failed. Make sure to run `flutterfire configure`: $e');
+  }
 
   // Configure image cache.
   PaintingBinding.instance.imageCache.maximumSize = 4000;
