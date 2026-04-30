@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
-import 'package:etherly/models/station.dart';
+
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/screens/settings_screen.dart';
 import 'package:etherly/services/theme_data.dart' show themeNotifier;
@@ -149,9 +149,9 @@ class FullPlayerControls extends StatelessWidget {
         final loc = AppLocalizations.of(context);
         final station = service.mediaItem == null
             ? null
-            : service.stations.cast<Station?>().firstWhere(
-                (s) => s?.id == service.mediaItem!.id,
-                orElse: () => null,
+            : service.stations.firstWhere(
+                (s) => s.id == service.mediaItem!.id,
+                orElse: () => service.stations.first,
               );
         final isFavorite = station?.isFavorite ?? false;
 

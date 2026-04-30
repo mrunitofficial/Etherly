@@ -202,21 +202,23 @@ class AudioPlayerService with ChangeNotifier {
     }
 
     // Try preferred quality first, then fallback to any other available.
-    final urlPriority = [
-      if (availableStreams.containsKey(quality)) availableStreams[quality]!,
-      ...availableStreams.values.where((u) => u != availableStreams[quality]),
+    final entriesPriority = [
+      if (availableStreams.containsKey(quality))
+        MapEntry(quality, availableStreams[quality]!),
+      ...availableStreams.entries.where((e) => e.key != quality),
     ];
 
-    for (int i = 0; i < urlPriority.length; i++) {
+    for (int i = 0; i < entriesPriority.length; i++) {
+      final entry = entriesPriority[i];
       try {
         await player.setAudioSource(
-          AudioSource.uri(Uri.parse(urlPriority[i]), tag: item),
+          AudioSource.uri(Uri.parse(entry.value), tag: item),
         );
         return;
       } on PlayerInterruptedException {
         rethrow;
       } catch (e) {
-        if (i == urlPriority.length - 1) return;
+        if (i == entriesPriority.length - 1) return;
       }
     }
   }
