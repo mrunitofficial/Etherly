@@ -132,15 +132,12 @@ class _MarqueeTextState extends State<MarqueeText> {
         if (widget.centerWhenFits && textWidth <= containerWidth) {
           return SizedBox(
             height: height,
-            width: double.infinity,
-            child: Center(
-              child: Text(
-                widget.text,
-                style: widget.style,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                textAlign: TextAlign.center,
-              ),
+            child: Text(
+              widget.text,
+              style: widget.style,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              textAlign: TextAlign.center,
             ),
           );
         }
@@ -148,7 +145,7 @@ class _MarqueeTextState extends State<MarqueeText> {
         // Scrollable marquee
         return SizedBox(
           height: height,
-          width: double.infinity,
+          width: textWidth > containerWidth ? double.infinity : null,
           child: AnimatedOpacity(
             opacity: _opacity,
             duration: const Duration(milliseconds: 400),

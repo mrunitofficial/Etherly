@@ -140,22 +140,34 @@ class IcyTextDisplay extends StatelessWidget {
 
             final isSong = !icy.loading && icy.title?.isNotEmpty == true;
 
-            return InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: isSong ? () => _searchSong(context, service, text) : null,
-              onLongPress: isSong
-                  ? () => _copyToClipboard(context, text)
-                  : null,
-              child: Padding(
-                padding: padding ?? const EdgeInsets.symmetric(horizontal: 8.0),
-                child: MarqueeText(
-                  text: text,
-                  style:
-                      style ??
-                      theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                  centerWhenFits: centerWhenFits,
+            return Align(
+              alignment: centerWhenFits
+                  ? Alignment.center
+                  : Alignment.centerLeft,
+              child: Material(
+                color: Colors.transparent,
+                clipBehavior: Clip.antiAlias,
+                shape: const StadiumBorder(),
+                child: InkWell(
+                  onTap: isSong
+                      ? () => _searchSong(context, service, text)
+                      : null,
+                  onLongPress: isSong
+                      ? () => _copyToClipboard(context, text)
+                      : null,
+                  child: Padding(
+                    padding:
+                        padding ?? const EdgeInsets.symmetric(horizontal: 12.0),
+                    child: MarqueeText(
+                      text: text,
+                      style:
+                          style ??
+                          theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                      centerWhenFits: centerWhenFits,
+                    ),
+                  ),
                 ),
               ),
             );
