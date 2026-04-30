@@ -65,4 +65,5 @@ class DefaultFirebaseOptions {
     projectId: 'etherly-firebase',
     storageBucket: 'etherly-firebase.firebasestorage.app',
   );
+
 }

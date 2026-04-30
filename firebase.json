@@ -1,1 +1,22 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"etherly-firebase","appId":"1:285588016271:android:845c5d13001745da05b4fa","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"etherly-firebase","configurations":{"android":"1:285588016271:android:845c5d13001745da05b4fa","web":"1:285588016271:web:11cbdbfe15b5562705b4fa"}}}}}}
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "etherly-firebase",
+                    "appId": "1:285588016271:android:845c5d13001745da05b4fa",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "etherly-firebase",
+                    "configurations": {
+                        "android": "1:285588016271:android:845c5d13001745da05b4fa",
+                        "web": "1:285588016271:web:11cbdbfe15b5562705b4fa"
+                    }
+                }
+            }
+        }
+    }
+}
