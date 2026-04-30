@@ -32,18 +32,8 @@ class QualitySetting extends StatelessWidget {
         'enabled': station != null && station!.streamAAC.isNotEmpty,
       },
     ];
-
-    /// The stream quality selection dialog.
     return AlertDialog(
-      /// The title of the dialog.
-      title: Center(
-        child: Text(
-          loc?.translate('playerStreamQuality') ?? 'Stream Quality',
-          textAlign: TextAlign.center,
-        ),
-      ),
-
-      /// The content of the dialog.
+      title: Text(loc?.translate('playerStreamQuality') ?? 'Stream Quality'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -99,8 +89,6 @@ class QualitySetting extends StatelessWidget {
           }),
         ],
       ),
-
-      /// Close button.
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),

@@ -92,6 +92,9 @@ class MusicAppService {
     return available;
   }
 
+  /// Returns the cached available apps, if any.
+  List<Map<String, String>>? get cachedAvailableApps => _cachedAvailableApps;
+
   /// Returns the list of all supported apps, regardless of installation.
   List<Map<String, dynamic>> getAllSupportedApps() => List.from(_allApps);
 }

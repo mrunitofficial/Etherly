@@ -40,11 +40,9 @@ class _CastDevicesState extends State<CastDevices> {
     final loc = AppLocalizations.of(context);
 
     return AlertDialog(
-      title: Center(
-        child: Text(
-          loc?.translate('castDialogTitle') ?? 'Cast devices',
-          textAlign: TextAlign.center,
-        ),
+      title: Text(
+        loc?.translate('castDialogTitle') ?? 'Cast devices',
+        textAlign: TextAlign.center,
       ),
       content: Consumer<ChromeCastService>(
         builder: (context, cast, _) {

@@ -34,19 +34,13 @@ class SleepTimer extends StatelessWidget {
 
     /// The sleep timer dialog.
     return AlertDialog(
-      /// The title of the dialog.
-      title: Center(
-        child: Text(
-          loc?.translate('sleepTimerTitle') ?? 'Sleep timer',
-          textAlign: TextAlign.center,
-        ),
+      title: Text(
+        loc?.translate('sleepTimerTitle') ?? 'Sleep timer',
+        textAlign: TextAlign.center,
       ),
-
-      /// The content of the dialog.
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          /// Predefined timer options.
           ...options.map(
             (option) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -76,16 +70,12 @@ class SleepTimer extends StatelessWidget {
               ),
             ),
           ),
-
-          /// OR text devider.
           Center(
             child: Text(
               loc?.translate('sleepTimerOr') ?? 'or',
               style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 20),
             ),
           ),
-
-          /// Set exact time button.
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: SizedBox(
@@ -140,8 +130,6 @@ class SleepTimer extends StatelessWidget {
           ),
         ],
       ),
-
-      // Close button.
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
