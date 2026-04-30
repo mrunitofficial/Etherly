@@ -26,10 +26,11 @@ class StationGridItem extends StatelessWidget {
         message: station.name,
         child: Stack(
           children: [
-            StationArt(
-              artUrl: station.artURL,
-              size: double.infinity,
-              borderRadius: borderRadius,
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: borderRadius,
+                child: StationArt(artUrl: station.artURL),
+              ),
             ),
             Positioned.fill(
               child: Material(

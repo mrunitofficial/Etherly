@@ -47,7 +47,14 @@ class _FullPlayerContentState extends State<FullPlayerContent> {
               ),
               const SizedBox(height: 8),
               Center(
-                child: StationArt(artUrl: getSafeArtUrl(mediaItem), size: 280),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12.0),
+                  child: SizedBox(
+                    width: 280,
+                    height: 280,
+                    child: StationArt(artUrl: mediaItem.safeArtUrl),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               Padding(

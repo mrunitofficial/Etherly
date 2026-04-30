@@ -446,3 +446,11 @@ extension StationToMediaItem on Station {
     );
   }
 }
+
+/// Extension to handle safe artwork URLs from [MediaItem].
+extension MediaItemArt on MediaItem? {
+  String get safeArtUrl {
+    final uri = Uri.tryParse(this?.artUri?.toString() ?? '');
+    return uri != null && uri.scheme.startsWith('http') ? uri.toString() : '';
+  }
+}

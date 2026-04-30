@@ -28,7 +28,7 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
           _lastStationId = mediaItem?.id;
         }
 
-        final artUrl = getSafeArtUrl(mediaItem);
+        final artUrl = mediaItem.safeArtUrl;
         final theme = Theme.of(context);
         final loc = AppLocalizations.of(context);
         final stationName =
@@ -43,10 +43,13 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
             children: [
               IgnorePointer(
                 ignoring: true,
-                child: StationArt(
-                  artUrl: artUrl,
-                  size: 56.0,
-                  borderRadius: BorderRadius.circular(8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: SizedBox(
+                    width: 56.0,
+                    height: 56.0,
+                    child: StationArt(artUrl: artUrl),
+                  ),
                 ),
               ),
               const SizedBox(width: 16),

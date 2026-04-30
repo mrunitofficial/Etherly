@@ -35,10 +35,13 @@ class StationCardItem extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: Row(
                 children: [
-                  StationArt(
-                    artUrl: station.artURL,
-                    size: screenType.isLargeFormat ? 84.0 : 56.0,
+                  ClipRRect(
                     borderRadius: BorderRadius.circular(8.0),
+                    child: SizedBox(
+                      width: screenType.isLargeFormat ? 84.0 : 56.0,
+                      height: screenType.isLargeFormat ? 84.0 : 56.0,
+                      child: StationArt(artUrl: station.artURL),
+                    ),
                   ),
                   const SizedBox(width: 16.0),
                   Expanded(
