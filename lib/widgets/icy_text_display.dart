@@ -129,31 +129,37 @@ class IcyTextDisplay extends StatelessWidget {
       builder: (context, service, _) {
         if (service.isCasting) return const SizedBox.shrink();
 
-        final icy = service.icyService;
-        final text = icy.isLoading
-            ? (loc?.translate('playerLoadingSong') ?? 'Loading song...')
-            : (icy.text?.isNotEmpty == true ? icy.text! : null);
+        return ValueListenableBuilder(
+          valueListenable: service.icyState,
+          builder: (context, icy, _) {
+            final text = icy.loading
+                ? (loc?.translate('playerLoadingSong') ?? 'Loading song...')
+                : (icy.title?.isNotEmpty == true ? icy.title! : null);
 
-        if (text == null) return const SizedBox.shrink();
+            if (text == null) return const SizedBox.shrink();
 
-        final isSong = !icy.isLoading && icy.text?.isNotEmpty == true;
+            final isSong = !icy.loading && icy.title?.isNotEmpty == true;
 
-        return InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: isSong ? () => _searchSong(context, service, text) : null,
-          onLongPress: isSong ? () => _copyToClipboard(context, text) : null,
-          child: Padding(
-            padding: padding ?? const EdgeInsets.symmetric(horizontal: 8.0),
-            child: MarqueeText(
-              text: text,
-              style:
-                  style ??
-                  theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-              centerWhenFits: centerWhenFits,
-            ),
-          ),
+            return InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: isSong ? () => _searchSong(context, service, text) : null,
+              onLongPress: isSong
+                  ? () => _copyToClipboard(context, text)
+                  : null,
+              child: Padding(
+                padding: padding ?? const EdgeInsets.symmetric(horizontal: 8.0),
+                child: MarqueeText(
+                  text: text,
+                  style:
+                      style ??
+                      theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                  centerWhenFits: centerWhenFits,
+                ),
+              ),
+            );
+          },
         );
       },
     );

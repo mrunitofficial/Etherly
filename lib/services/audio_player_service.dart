@@ -7,7 +7,6 @@ import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:etherly/models/station.dart';
-import 'package:etherly/services/icy_service.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
 import 'package:etherly/services/my_audio_handler.dart';
 
@@ -15,7 +14,8 @@ import 'package:etherly/services/my_audio_handler.dart';
 class AudioPlayerService with ChangeNotifier {
   final AudioPlayer player = AudioPlayer();
   late final MyAudioHandler _audioHandler;
-  final IcyService icyService = IcyService();
+  final ValueNotifier<({String? title, bool loading})> icyState =
+      ValueNotifier((title: null, loading: false));
   final ChromeCastService? _castService;
   late final SharedPreferences _prefs;
 
@@ -106,17 +106,16 @@ class AudioPlayerService with ChangeNotifier {
     player.playingStream.listen((_) => notifyListeners());
     player.processingStateStream.listen((_) => notifyListeners());
 
-    // Sync ICY Metadata from just_audio natively!
-    player.icyMetadataStream.listen((meta) {
-      final info = meta?.info;
-      final title = info?.title?.trim();
-      if (title != null && title.isNotEmpty) {
-        icyService.setText(title);
-        _audioHandler.patchMediaItemMetadata(artist: title);
-      }
-    });
-
-    icyService.addListener(notifyListeners);
+    // Sync ICY Metadata from just_audio natively
+    player.icyMetadataStream
+        .map((m) => m?.info?.title?.trim())
+        .distinct()
+        .listen((title) {
+          if (title != null && title.isNotEmpty) {
+            icyState.value = (title: title, loading: false);
+            _audioHandler.patchMediaItemMetadata(artist: title);
+          }
+        });
 
     if (kIsWeb) {
       final savedVolume = _prefs.getDouble(_volumeKey) ?? 1.0;
@@ -168,14 +167,14 @@ class AudioPlayerService with ChangeNotifier {
     _setMediaItem(item);
 
     if (_castService != null && _castService.isConnected) {
-      icyService.setIdle();
+      icyState.value = (title: null, loading: false);
       await player.stop();
       await _castService.castAudio(mediaItem: item);
       notifyListeners();
       return;
     }
-
-    icyService.startLoading();
+ 
+    icyState.value = (title: null, loading: true);
     try {
       await player.stop();
       await _setAudioSource(item);
@@ -239,7 +238,7 @@ class AudioPlayerService with ChangeNotifier {
   /// Pauses playback.
   Future<void> pause() async {
     cancelAutoplayCountdown();
-    icyService.stopLoading();
+    icyState.value = (title: icyState.value.title, loading: false);
     if (_castService != null && _castService.isConnected) {
       await player.pause();
       await _castService.pause();
@@ -252,7 +251,7 @@ class AudioPlayerService with ChangeNotifier {
   /// Stops playback.
   Future<void> stop() async {
     cancelAutoplayCountdown();
-    icyService.stopLoading();
+    icyState.value = (title: icyState.value.title, loading: false);
     if (_castService != null && _castService.isConnected) {
       await player.stop();
       await _castService.pause();
