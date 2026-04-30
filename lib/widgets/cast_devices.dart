@@ -4,6 +4,7 @@ import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
+import '../services/theme_data.dart';
 
 /// Dialog to show available Cast devices and connect/disconnect.
 class CastDevices extends StatefulWidget {
@@ -40,6 +41,7 @@ class _CastDevicesState extends State<CastDevices> {
     final loc = AppLocalizations.of(context);
 
     return AlertDialog(
+      scrollable: true,
       title: Text(
         loc?.translate('castDialogTitle') ?? 'Cast devices',
         textAlign: TextAlign.center,
@@ -52,94 +54,49 @@ class _CastDevicesState extends State<CastDevices> {
             cast.init();
           }
           if (devices.isEmpty) {
-            return ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 480),
-              child: Text(
-                loc?.translate('castNoDevices') ?? 'No devices found',
-                textAlign: TextAlign.center,
-              ),
+            return Text(
+              loc?.translate('castNoDevices') ?? 'No devices found',
+              textAlign: TextAlign.center,
             );
           }
-          return ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 480),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              switchInCurve: Easing.emphasizedDecelerate,
-              switchOutCurve: Easing.emphasizedAccelerate,
-              transitionBuilder: (child, animation) =>
-                  FadeTransition(opacity: animation, child: child),
-              child: SingleChildScrollView(
-                key: ValueKey(devices.length),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ...devices.map((device) {
-                      final isSelected = connected?.uniqueID == device.uniqueID;
-                      final colorScheme = Theme.of(context).colorScheme;
-                      return Padding(
-                        key: ValueKey(device.uniqueID),
-                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                        child: FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: isSelected
-                                ? colorScheme.primaryContainer
-                                : colorScheme.secondaryContainer,
-                            foregroundColor: isSelected
-                                ? colorScheme.onPrimaryContainer
-                                : colorScheme.onSecondaryContainer,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 8,
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            switchInCurve: Easing.emphasizedDecelerate,
+            switchOutCurve: Easing.emphasizedAccelerate,
+            transitionBuilder: (child, animation) =>
+                FadeTransition(opacity: animation, child: child),
+            child: Column(
+              key: ValueKey(devices.length),
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ...devices.map((device) {
+                  final isSelected = connected?.uniqueID == device.uniqueID;
+                  final spacing = Theme.of(context).extension<Spacing>()!;
+
+                  return Padding(
+                    key: ValueKey(device.uniqueID),
+                    padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
+                    child: isSelected
+                        ? FilledButton.icon(
+                            onPressed: () => _onDevicePressed(device, cast),
+                            icon: const Icon(Icons.cast_connected),
+                            label: Text(
+                              device.friendlyName,
+                              textAlign: TextAlign.center,
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          )
+                        : FilledButton.tonalIcon(
+                            onPressed: () => _onDevicePressed(device, cast),
+                            icon: const Icon(Icons.cast),
+                            label: Text(
+                              device.friendlyName,
+                              textAlign: TextAlign.center,
                             ),
                           ),
-                          onPressed: () async {
-                            if (context.mounted) {
-                              Navigator.of(context).pop();
-                            }
-                            final audio = context.read<AudioPlayerService>();
-                            final mediaItem = audio.mediaItem;
-                            if (mediaItem == null) return;
-
-                            final selectedId = device.uniqueID;
-                            final currentDevice = cast.devices.firstWhere(
-                              (d) => d.uniqueID == selectedId,
-                              orElse: () => device,
-                            );
-
-                            try {
-                              await audio.stop();
-                              await cast.connectAndWait(currentDevice);
-                              await cast.castAudio(mediaItem: mediaItem);
-                            } catch (_) {
-                              // Connection or casting failed
-                            }
-                          },
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Icon(
-                                  isSelected
-                                      ? Icons.cast_connected
-                                      : Icons.cast,
-                                ),
-                              ),
-                              Text(
-                                device.friendlyName,
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
+                  );
+                }),
+              ],
             ),
           );
         },
@@ -164,5 +121,28 @@ class _CastDevicesState extends State<CastDevices> {
         ),
       ],
     );
+  }
+
+  void _onDevicePressed(dynamic device, ChromeCastService cast) async {
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+    final audio = context.read<AudioPlayerService>();
+    final mediaItem = audio.mediaItem;
+    if (mediaItem == null) return;
+
+    final selectedId = device.uniqueID;
+    final currentDevice = cast.devices.firstWhere(
+      (d) => d.uniqueID == selectedId,
+      orElse: () => device,
+    );
+
+    try {
+      await audio.stop();
+      await cast.connectAndWait(currentDevice);
+      await cast.castAudio(mediaItem: mediaItem);
+    } catch (_) {
+      // Connection or casting failed
+    }
   }
 }

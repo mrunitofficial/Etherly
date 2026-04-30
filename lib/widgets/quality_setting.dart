@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:etherly/models/station.dart';
 import 'package:etherly/localization/app_localizations.dart';
+import '../services/theme_data.dart';
 
 /// A dialog widget for selecting the streaming quality of a radio station.
 class QualitySetting extends StatelessWidget {
@@ -32,59 +33,42 @@ class QualitySetting extends StatelessWidget {
         'enabled': station != null && station!.streamAAC.isNotEmpty,
       },
     ];
+    final spacing = Theme.of(context).extension<Spacing>()!;
+
     return AlertDialog(
+      scrollable: true,
       title: Text(loc?.translate('playerStreamQuality') ?? 'Stream Quality'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ...options.map((opt) {
             final isSelected = selectedQuality == opt['key'];
             final isEnabled = opt['enabled'] as bool;
-            final colorScheme = Theme.of(context).colorScheme;
+
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: isSelected
-                        ? colorScheme.primaryContainer
-                        : colorScheme.secondaryContainer,
-                    foregroundColor: isSelected
-                        ? colorScheme.onPrimaryContainer
-                        : colorScheme.onSecondaryContainer,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
+              child: isSelected
+                  ? FilledButton.icon(
+                      onPressed: isEnabled
+                          ? () => onQualitySelected(opt['key'] as String)
+                          : null,
+                      icon: const Icon(Icons.radio_button_checked),
+                      label: Text(
+                        opt['label'] as String,
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : FilledButton.tonalIcon(
+                      onPressed: isEnabled
+                          ? () => onQualitySelected(opt['key'] as String)
+                          : null,
+                      icon: const Icon(Icons.radio_button_unchecked),
+                      label: Text(
+                        opt['label'] as String,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                  ),
-                  onPressed: isEnabled
-                      ? () => onQualitySelected(opt['key'] as String)
-                      : null,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Icon(
-                            isSelected
-                                ? Icons.radio_button_checked
-                                : Icons.radio_button_unchecked,
-                          ),
-                        ),
-                        Center(
-                          child: Text(
-                            opt['label'] as String,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
             );
           }),
         ],

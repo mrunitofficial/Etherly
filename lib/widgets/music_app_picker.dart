@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/music_app_service.dart';
 import '../localization/app_localizations.dart';
+import '../services/theme_data.dart';
 
 class MusicAppPicker extends StatefulWidget {
   const MusicAppPicker({super.key});
@@ -32,123 +33,55 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final spacing = Theme.of(context).extension<Spacing>()!;
+
     return AlertDialog(
+      scrollable: true,
       title: Text(
         loc?.translate('playerPickMusicApp') ?? 'Pick a music app',
         textAlign: TextAlign.center,
       ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_availableOptions != null) ...[
-              if (_availableOptions!.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    loc?.translate('playerNoMusicAppsInstalled') ??
-                        'No music apps installed',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                )
-              else
-                ..._availableOptions!.map((option) {
-                  String getAppLabel(String id, String defaultName) {
-                    final keyMap = {
-                      'youtube': 'settingsMusicAppYoutube',
-                      'ytmusic': 'settingsMusicAppYtMusic',
-                      'spotify': 'settingsMusicAppSpotify',
-                      'apple_music': 'settingsMusicAppAppleMusic',
-                      'tidal': 'settingsMusicAppTidal',
-                      'soundcloud': 'settingsMusicAppSoundcloud',
-                      'amazon': 'settingsMusicAppAmazon',
-                    };
-                    final key = keyMap[id];
-                    return (key != null ? loc?.translate(key) : null) ??
-                        defaultName;
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onSecondaryContainer,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop(option['id']);
-                        },
-                        child: Text(
-                          getAppLabel(option['id']!, option['name']!),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              const SizedBox(height: 8),
-              // OR divider
-              Center(
-                child: Text(
-                  loc?.translate('sleepTimerOr') ?? 'or',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 20,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-            // Search Internet Button
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer,
-                    foregroundColor: Theme.of(
-                      context,
-                    ).colorScheme.onPrimaryContainer,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_availableOptions?.isNotEmpty ?? false) ...[
+            ..._availableOptions!.map((option) {
+              return Padding(
+                padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
+                child: FilledButton.tonal(
                   onPressed: () {
-                    Navigator.of(context).pop('internet_search');
+                    Navigator.of(context).pop(option['id']);
                   },
                   child: Text(
-                    loc?.translate('playerSearchInternet') ?? 'Search internet',
+                    _getAppLabel(option['id']!, option['name']!, loc),
                     textAlign: TextAlign.center,
                   ),
                 ),
+              );
+            }),
+            SizedBox(height: spacing.small),
+            Center(
+              child: Text(
+                loc?.translate('sleepTimerOr') ?? 'or',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
+            SizedBox(height: spacing.small),
           ],
-        ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
+            child: FilledButton(
+              onPressed: () {
+                Navigator.of(context).pop('internet_search');
+              },
+              child: Text(
+                loc?.translate('playerSearchInternet') ?? 'Search internet',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ],
       ),
       actions: [
         TextButton(
@@ -157,5 +90,19 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
         ),
       ],
     );
+  }
+
+  String _getAppLabel(String id, String defaultName, AppLocalizations? loc) {
+    final keyMap = {
+      'youtube': 'settingsMusicAppYoutube',
+      'ytmusic': 'settingsMusicAppYtMusic',
+      'spotify': 'settingsMusicAppSpotify',
+      'apple_music': 'settingsMusicAppAppleMusic',
+      'tidal': 'settingsMusicAppTidal',
+      'soundcloud': 'settingsMusicAppSoundcloud',
+      'amazon': 'settingsMusicAppAmazon',
+    };
+    final key = keyMap[id];
+    return (key != null ? loc?.translate(key) : null) ?? defaultName;
   }
 }
