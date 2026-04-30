@@ -6,6 +6,7 @@ import 'package:etherly/widgets/category_row.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
+import 'package:etherly/services/theme_data.dart';
 
 const int _minTotalCategories = 8;
 
@@ -30,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _loadingTimer = Timer(const Duration(milliseconds: 200), () {
+    _loadingTimer = Timer(Theme.of(context).extension<Speed>()!.short1, () {
       if (mounted) {
         setState(() {
           _showLoading = true;
@@ -72,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen>
         slivers: [
           SliverToBoxAdapter(
             child: ScreenHeader(
-              title: loc?.translate('homeWelcome') ?? 'Welcome to Etherly!',
+              title: loc?.translate('homeWelcome') ?? 'Etherly',
             ),
           ),
           ...categorySlivers,

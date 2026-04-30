@@ -1,3 +1,4 @@
+import 'package:etherly/services/theme_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -113,7 +114,7 @@ class CategoryRow extends StatelessWidget {
                   builder: (context, station, _) {
                     if (station == null) return const SizedBox.shrink();
                     return AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
+                      duration: Theme.of(context).extension<Speed>()!.medium1,
                       switchInCurve: Curves.easeIn,
                       switchOutCurve: Curves.easeOut,
                       transitionBuilder: (child, animation) =>

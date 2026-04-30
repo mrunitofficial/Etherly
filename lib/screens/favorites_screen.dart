@@ -8,6 +8,7 @@ import 'package:etherly/widgets/station_grid_item.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:etherly/services/theme_data.dart';
 
 const double _miniPlayerHeight = 120.0;
 const String _favoritesViewTypeKey = 'favorites_view_type';
@@ -45,7 +46,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     super.initState();
     _viewTypeFuture = _loadViewType();
 
-    _loadingTimer = Timer(const Duration(milliseconds: 200), () {
+    _loadingTimer = Timer(Theme.of(context).extension<Speed>()!.short1, () {
       if (mounted) {
         setState(() => _showLoading = true);
       }
@@ -141,7 +142,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     );
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
+      duration: Theme.of(context).extension<Speed>()!.medium1,
       switchInCurve: Curves.easeIn,
       switchOutCurve: Curves.easeOut,
       transitionBuilder: (Widget child, Animation<double> animation) {

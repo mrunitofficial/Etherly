@@ -9,6 +9,7 @@ import 'package:etherly/widgets/small_player.dart';
 import 'package:etherly/widgets/play_button.dart';
 import 'package:etherly/widgets/sleep_timer.dart';
 import 'package:etherly/widgets/quality_setting.dart';
+import 'package:etherly/services/theme_data.dart';
 
 /// Radio player widget with draggable sheet for small screens.
 class RadioPlayer extends StatefulWidget {
@@ -16,8 +17,7 @@ class RadioPlayer extends StatefulWidget {
   const RadioPlayer({super.key, required this.screenType});
 
   static const double _minPlayerHeight = 120.0;
-  static const double _maxPlayerHeight = 620.0;
-  static const Duration _animationDuration = Duration(milliseconds: 300);
+  static const double _maxPlayerHeight = 640.0;
 
   @override
   State<RadioPlayer> createState() => _RadioPlayerState();
@@ -58,7 +58,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
       _controller
           .animateTo(
             _latestMinPlayerSize!,
-            duration: RadioPlayer._animationDuration,
+            duration: Theme.of(context).extension<Speed>()!.medium,
             curve: Curves.easeOut,
           )
           .catchError((error) {});
@@ -268,7 +268,8 @@ class _RadioPlayerState extends State<RadioPlayer> {
                             ? _controller
                                   .animateTo(
                                     minPlayerSize,
-                                    duration: RadioPlayer._animationDuration,
+                                    duration:
+                                        Theme.of(context).extension<Speed>()!.medium,
                                     curve: Curves.easeOut,
                                   )
                                   .catchError((_) {})
@@ -284,7 +285,8 @@ class _RadioPlayerState extends State<RadioPlayer> {
                               ? _controller
                                     .animateTo(
                                       maxPlayerSize,
-                                      duration: RadioPlayer._animationDuration,
+                                      duration:
+                                          Theme.of(context).extension<Speed>()!.medium,
                                       curve: Curves.easeOut,
                                     )
                                     .catchError((_) {})

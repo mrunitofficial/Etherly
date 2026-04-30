@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:etherly/services/theme_data.dart';
 
 /// A simple marquee text widget that scrolls text once, pauses, then resets.
 class MarqueeText extends StatefulWidget {
@@ -83,14 +84,14 @@ class _MarqueeTextState extends State<MarqueeText> {
         if (!mounted) break;
         // Fade out
         setState(() => _opacity = 0.0);
-        await Future.delayed(const Duration(milliseconds: 400));
+        await Future.delayed(Theme.of(context).extension<Speed>()!.long1);
         if (!mounted) break;
         if (_scrollController.hasClients) {
           _scrollController.jumpTo(0);
         }
         // Fade in
         setState(() => _opacity = 1.0);
-        await Future.delayed(const Duration(milliseconds: 400));
+        await Future.delayed(Theme.of(context).extension<Speed>()!.long1);
       }
     }
   }
@@ -150,7 +151,7 @@ class _MarqueeTextState extends State<MarqueeText> {
           width: textWidth > containerWidth ? double.infinity : null,
           child: AnimatedOpacity(
             opacity: _opacity,
-            duration: const Duration(milliseconds: 400),
+            duration: Theme.of(context).extension<Speed>()!.long1,
             curve: Curves.easeInOut,
             child: SingleChildScrollView(
               controller: _scrollController,

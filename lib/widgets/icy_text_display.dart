@@ -146,10 +146,7 @@ class IcyTextDisplay extends StatelessWidget {
         );
 
         if (centerWhenFits) {
-          return Align(
-            alignment: Alignment.center,
-            child: content,
-          );
+          return Align(alignment: Alignment.center, child: content);
         }
 
         return content;

@@ -74,7 +74,7 @@ class _MyAppState extends State<MyApp> {
 
   void _triggerFadeIn() {
     if (!_showApp) {
-      Future.delayed(const Duration(milliseconds: 400), () {
+      Future.delayed(Speed().long1, () {
         setState(() {
           _showApp = true;
         });
@@ -168,7 +168,7 @@ class _MyAppState extends State<MyApp> {
 
             return AnimatedOpacity(
               opacity: _showApp ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 400),
+              duration: Theme.of(context).extension<Speed>()!.long1,
               curve: Curves.easeIn,
               child: appContent,
             );

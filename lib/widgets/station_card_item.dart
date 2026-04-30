@@ -1,7 +1,7 @@
+import 'package:etherly/models/device.dart';
+import 'package:etherly/models/station.dart';
 import 'package:etherly/widgets/station_art.dart';
 import 'package:flutter/material.dart';
-import '../models/station.dart';
-import '../models/device.dart';
 
 /// A card item widget representing a radio station with artwork and favorite button.
 class StationCardItem extends StatelessWidget {
@@ -25,7 +25,6 @@ class StationCardItem extends StatelessWidget {
     return RepaintBoundary(
       child: Tooltip(
         message: station.name,
-        waitDuration: const Duration(milliseconds: 400),
         child: Card.filled(
           margin: EdgeInsets.zero,
           color: Theme.of(context).colorScheme.surfaceContainerHigh,
