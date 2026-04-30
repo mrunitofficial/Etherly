@@ -238,39 +238,7 @@ class FullPlayerControls extends StatelessWidget {
   }
 }
 
-/// Helper function to handle stream quality changes.
-void handleStreamQuality(BuildContext context) async {
-  final service = Provider.of<AudioPlayerService>(context, listen: false);
-  final mediaItem = service.mediaItem;
-  Station? station;
 
-  if (mediaItem != null && service.stations.isNotEmpty) {
-    station = service.stations.firstWhere(
-      (s) => s.id == mediaItem.id,
-      orElse: () => service.stations.first,
-    );
-  }
-
-  final prefQuality = service.prefs.getString('streamQuality') ?? 'mp3';
-  final selectedQuality = station != null && prefQuality == 'aac'
-      ? (station.streamAac.isNotEmpty ? 'aac' : 'mp3')
-      : 'mp3';
-
-  final newQuality = await showDialog<String>(
-    context: context,
-    builder: (context) => QualitySetting(
-      station: station,
-      selectedQuality: selectedQuality,
-      onQualitySelected: (q) => Navigator.of(context).pop(q),
-    ),
-  );
-
-  if (newQuality != null && station != null && newQuality != selectedQuality) {
-    service.prefs.setString('streamQuality', newQuality);
-    service.stop();
-    service.playMediaItem(station);
-  }
-}
 
 /// Quality button in the full player header (web only).
 class QualityButton extends StatelessWidget {
@@ -282,7 +250,7 @@ class QualityButton extends StatelessWidget {
     final loc = AppLocalizations.of(context);
 
     return IconButton(
-      onPressed: () => handleStreamQuality(context),
+      onPressed: () => QualitySetting.show(context),
       icon: Icon(
         Icons.high_quality_outlined,
         size: 28,
@@ -363,7 +331,7 @@ class PlayerMenuButton extends StatelessWidget {
       ],
       onSelected: (value) {
         if (value == 'stream_quality') {
-          handleStreamQuality(context);
+          QualitySetting.show(context);
         } else {
           // All other options navigate to settings screen.
           Navigator.of(context).push(

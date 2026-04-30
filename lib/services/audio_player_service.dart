@@ -190,23 +190,33 @@ class AudioPlayerService with ChangeNotifier {
     final quality = _prefs.getString('streamQuality') ?? 'mp3';
     final station = _stationMap[item.id] ?? stations.first;
 
-    final urlPriority = quality == 'aac'
-        ? [station.streamAac, station.streamMp3]
-        : [station.streamMp3, station.streamAac];
+    final availableStreams = station.streams;
+    if (availableStreams.isEmpty) throw Exception("No valid stream URL found");
 
-    final validUrls = urlPriority.where((u) => u.isNotEmpty).toList();
-    if (validUrls.isEmpty) throw Exception("No valid stream URL found");
+    // If only one stream is available, pick it regardless of preference.
+    if (availableStreams.length == 1) {
+      await player.setAudioSource(
+        AudioSource.uri(Uri.parse(availableStreams.values.first), tag: item),
+      );
+      return;
+    }
 
-    for (int i = 0; i < validUrls.length; i++) {
+    // Try preferred quality first, then fallback to any other available.
+    final urlPriority = [
+      if (availableStreams.containsKey(quality)) availableStreams[quality]!,
+      ...availableStreams.values.where((u) => u != availableStreams[quality]),
+    ];
+
+    for (int i = 0; i < urlPriority.length; i++) {
       try {
         await player.setAudioSource(
-          AudioSource.uri(Uri.parse(validUrls[i]), tag: item),
+          AudioSource.uri(Uri.parse(urlPriority[i]), tag: item),
         );
         return;
       } on PlayerInterruptedException {
         rethrow;
       } catch (e) {
-        if (i == validUrls.length - 1) return;
+        if (i == urlPriority.length - 1) return;
       }
     }
   }
@@ -442,7 +452,8 @@ class AudioPlayerService with ChangeNotifier {
 /// Extension to convert [Station] model to [MediaItem] for audio service.
 extension StationToMediaItem on Station {
   MediaItem toMediaItem({String? artist}) {
-    final url = streamMp3.isNotEmpty ? streamMp3 : streamAac;
+    // Pick first available stream if multiple exist, otherwise use the only one.
+    final url = streams.values.isNotEmpty ? streams.values.first : '';
     return MediaItem(
       id: id,
       title: name,

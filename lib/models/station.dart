@@ -4,8 +4,7 @@ class Station {
   final String id;
   final String name;
   final String slogan;
-  final String streamMp3;
-  final String streamAac;
+  final Map<String, String> streams;
   final String art;
   final String category;
   final int? rank;
@@ -17,8 +16,7 @@ class Station {
     required this.id,
     required this.name,
     required this.slogan,
-    required this.streamMp3,
-    required this.streamAac,
+    required this.streams,
     required this.art,
     required this.category,
     this.rank,
@@ -28,13 +26,20 @@ class Station {
   });
 
   factory Station.fromJson(Map<String, dynamic> json, {String? docId}) {
-    final streams = json['streams'] as Map<String, dynamic>? ?? {};
+    final Map<String, dynamic> rawStreams = json['streams'] as Map<String, dynamic>? ?? {};
+    final streams = rawStreams.map((key, value) => MapEntry(key.toLowerCase(), value.toString()));
+    
+    // Fallback for old schema if streams map is empty
+    if (streams.isEmpty) {
+      if (json['streamMP3'] != null) streams['mp3'] = json['streamMP3'];
+      if (json['streamAAC'] != null) streams['aac'] = json['streamAAC'];
+    }
+
     return Station(
       id: docId ?? json['ID'] ?? json['id'] ?? '',
       name: json['name'] ?? json['Name'] ?? '',
       slogan: json['slogan'] ?? json['Album'] ?? '',
-      streamMp3: streams['mp3'] ?? json['streamMP3'] ?? '',
-      streamAac: streams['aac'] ?? json['streamAAC'] ?? '',
+      streams: streams,
       art: json['art'] ?? json['ArtURL'] ?? '',
       category: json['category'] ?? json['Category'] ?? '',
       rank: json['rank'] is int
@@ -63,8 +68,7 @@ class Station {
     String? id,
     String? name,
     String? slogan,
-    String? streamMp3,
-    String? streamAac,
+    Map<String, String>? streams,
     String? art,
     String? category,
     int? rank,
@@ -76,8 +80,7 @@ class Station {
       id: id ?? this.id,
       name: name ?? this.name,
       slogan: slogan ?? this.slogan,
-      streamMp3: streamMp3 ?? this.streamMp3,
-      streamAac: streamAac ?? this.streamAac,
+      streams: streams ?? this.streams,
       art: art ?? this.art,
       category: category ?? this.category,
       rank: rank ?? this.rank,

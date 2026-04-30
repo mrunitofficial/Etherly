@@ -147,42 +147,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
                       backgroundColor: Theme.of(
                         context,
                       ).colorScheme.secondaryContainer,
-                      onPressed: () async {
-                        final mediaItem = service.mediaItem;
-                        Station? station;
-
-                        if (mediaItem != null && service.stations.isNotEmpty) {
-                          station = service.stations.firstWhere(
-                            (s) => s.id == mediaItem.id,
-                            orElse: () => service.stations.first,
-                          );
-                        }
-
-                        final prefQuality =
-                            service.prefs.getString('streamQuality') ?? 'mp3';
-                        final selectedQuality =
-                            station != null && prefQuality == 'aac'
-                            ? (station.streamAac.isNotEmpty ? 'aac' : 'mp3')
-                            : 'mp3';
-
-                        final newQuality = await showDialog<String>(
-                          context: context,
-                          builder: (context) => QualitySetting(
-                            station: station,
-                            selectedQuality: selectedQuality,
-                            onQualitySelected: (q) =>
-                                Navigator.of(context).pop(q),
-                          ),
-                        );
-
-                        if (newQuality != null &&
-                            station != null &&
-                            newQuality != selectedQuality) {
-                          service.prefs.setString('streamQuality', newQuality);
-                          service.stop();
-                          service.playMediaItem(station);
-                        }
-                      },
+                      onPressed: () => QualitySetting.show(context),
                       tooltip:
                           AppLocalizations.of(
                             context,
