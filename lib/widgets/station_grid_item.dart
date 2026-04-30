@@ -29,7 +29,7 @@ class StationGridItem extends StatelessWidget {
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: borderRadius,
-                child: StationArt(artUrl: station.artURL),
+                child: StationArt(artUrl: station.art),
               ),
             ),
             Positioned.fill(

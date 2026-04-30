@@ -23,14 +23,14 @@ class QualitySetting extends StatelessWidget {
       {
         'key': 'mp3',
         'label': loc?.translate('settingsStreamingQualityHigh') ?? 'High (MP3)',
-        'enabled': station != null && station!.streamMP3.isNotEmpty,
+        'enabled': station != null && station!.streamMp3.isNotEmpty,
       },
       {
         'key': 'aac',
         'label':
             loc?.translate('settingsStreamingQualityHighest') ??
             'Highest (AAC)',
-        'enabled': station != null && station!.streamAAC.isNotEmpty,
+        'enabled': station != null && station!.streamAac.isNotEmpty,
       },
     ];
     final spacing = Theme.of(context).extension<Spacing>()!;

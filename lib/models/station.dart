@@ -3,37 +3,39 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Station {
   final String id;
   final String name;
-  final String album;
-  final String streamMP3;
-  final String streamAAC;
-  final String artURL;
+  final String slogan;
+  final String streamMp3;
+  final String streamAac;
+  final String art;
   final String category;
   final int? rank;
   final List<String> tags;
+  final bool active;
   bool isFavorite;
 
   Station({
     required this.id,
     required this.name,
-    required this.album,
-    required this.streamMP3,
-    required this.streamAAC,
-    required this.artURL,
+    required this.slogan,
+    required this.streamMp3,
+    required this.streamAac,
+    required this.art,
     required this.category,
     this.rank,
     this.tags = const [],
+    this.active = true,
     this.isFavorite = false,
   });
 
   factory Station.fromJson(Map<String, dynamic> json, {String? docId}) {
     final streams = json['streams'] as Map<String, dynamic>? ?? {};
     return Station(
-      id: docId ?? json['ID'] ?? '',
+      id: docId ?? json['ID'] ?? json['id'] ?? '',
       name: json['name'] ?? json['Name'] ?? '',
-      album: json['slogan'] ?? json['Album'] ?? '',
-      streamMP3: streams['mp3'] ?? json['streamMP3'] ?? '',
-      streamAAC: streams['aac'] ?? json['streamAAC'] ?? '',
-      artURL: json['art'] ?? json['ArtURL'] ?? '',
+      slogan: json['slogan'] ?? json['Album'] ?? '',
+      streamMp3: streams['mp3'] ?? json['streamMP3'] ?? '',
+      streamAac: streams['aac'] ?? json['streamAAC'] ?? '',
+      art: json['art'] ?? json['ArtURL'] ?? '',
       category: json['category'] ?? json['Category'] ?? '',
       rank: json['rank'] is int
           ? json['rank']
@@ -44,6 +46,7 @@ class Station {
           (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
           (json['Tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
           [],
+      active: json['active'] ?? true,
       isFavorite: json['isFavorite'] ?? false,
     );
   }
@@ -59,25 +62,27 @@ class Station {
   Station copyWith({
     String? id,
     String? name,
-    String? album,
-    String? streamMP3,
-    String? streamAAC,
-    String? artURL,
+    String? slogan,
+    String? streamMp3,
+    String? streamAac,
+    String? art,
     String? category,
     int? rank,
     List<String>? tags,
+    bool? active,
     bool? isFavorite,
   }) {
     return Station(
       id: id ?? this.id,
       name: name ?? this.name,
-      album: album ?? this.album,
-      streamMP3: streamMP3 ?? this.streamMP3,
-      streamAAC: streamAAC ?? this.streamAAC,
-      artURL: artURL ?? this.artURL,
+      slogan: slogan ?? this.slogan,
+      streamMp3: streamMp3 ?? this.streamMp3,
+      streamAac: streamAac ?? this.streamAac,
+      art: art ?? this.art,
       category: category ?? this.category,
       rank: rank ?? this.rank,
       tags: tags ?? this.tags,
+      active: active ?? this.active,
       isFavorite: isFavorite ?? this.isFavorite,
     );
   }

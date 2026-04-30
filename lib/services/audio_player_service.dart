@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -193,8 +191,8 @@ class AudioPlayerService with ChangeNotifier {
     final station = _stationMap[item.id] ?? stations.first;
 
     final urlPriority = quality == 'aac'
-        ? [station.streamAAC, station.streamMP3]
-        : [station.streamMP3, station.streamAAC];
+        ? [station.streamAac, station.streamMp3]
+        : [station.streamMp3, station.streamAac];
 
     final validUrls = urlPriority.where((u) => u.isNotEmpty).toList();
     if (validUrls.isEmpty) throw Exception("No valid stream URL found");
@@ -289,9 +287,9 @@ class AudioPlayerService with ChangeNotifier {
   /// Pre-fetches all station art to improve UI responsiveness.
   Future<void> precacheAllStationArt(BuildContext context) async {
     for (final station in stations) {
-      if (station.artURL.isNotEmpty) {
+      if (station.art.isNotEmpty) {
         try {
-          await precacheImage(CachedNetworkImageProvider(station.artURL), context);
+          await precacheImage(CachedNetworkImageProvider(station.art), context);
         } catch (_) {}
       }
     }
@@ -352,7 +350,12 @@ class AudioPlayerService with ChangeNotifier {
 
     try {
       final snapshot = await FirebaseFirestore.instance.collection('stations').get();
-      stations = snapshot.docs.map((doc) => Station.fromFirestore(doc)).toList();
+      // Filter out inactive stations
+      final activeDocs = snapshot.docs.where((doc) {
+        final data = doc.data();
+        return data['active'] == true || data['active'] == null;
+      }).toList();
+      stations = activeDocs.map((doc) => Station.fromFirestore(doc)).toList();
       
       // Sort by rank if it exists, otherwise leave order or sort by name
       stations.sort((a, b) {
@@ -439,13 +442,13 @@ class AudioPlayerService with ChangeNotifier {
 /// Extension to convert [Station] model to [MediaItem] for audio service.
 extension StationToMediaItem on Station {
   MediaItem toMediaItem({String? artist}) {
-    final url = streamMP3.isNotEmpty ? streamMP3 : streamAAC;
+    final url = streamMp3.isNotEmpty ? streamMp3 : streamAac;
     return MediaItem(
       id: id,
       title: name,
-      artUri: Uri.tryParse(artURL),
+      artUri: Uri.tryParse(art),
       artist: artist ?? '',
-      album: album,
+      album: slogan,
       extras: {'url': url},
     );
   }

@@ -253,7 +253,7 @@ void handleStreamQuality(BuildContext context) async {
 
   final prefQuality = service.prefs.getString('streamQuality') ?? 'mp3';
   final selectedQuality = station != null && prefQuality == 'aac'
-      ? (station.streamAAC.isNotEmpty ? 'aac' : 'mp3')
+      ? (station.streamAac.isNotEmpty ? 'aac' : 'mp3')
       : 'mp3';
 
   final newQuality = await showDialog<String>(
