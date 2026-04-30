@@ -75,7 +75,6 @@ class PlayButton extends StatelessWidget {
       return SizedBox.square(
         dimension: baseSize,
         child: CircularProgressIndicator(
-          strokeWidth: baseSize / 10 + 0.5,
           valueColor: AlwaysStoppedAnimation(color),
         ),
       );

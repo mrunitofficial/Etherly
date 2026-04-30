@@ -8,23 +8,21 @@ class StationArt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (artUrl.isEmpty) {
-      return const AspectRatio(
-        aspectRatio: 1,
-        child: Center(child: Icon(Icons.radio_rounded)),
-      );
-    }
+    final fallback = ColoredBox(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: const Center(child: Icon(Icons.radio_rounded)),
+    );
 
     return AspectRatio(
       aspectRatio: 1,
-      child: CachedNetworkImage(
-        imageUrl: artUrl,
-        fit: BoxFit.cover,
-        placeholder: (context, url) =>
-            const Center(child: CircularProgressIndicator()),
-        errorWidget: (context, url, error) =>
-            const Center(child: Icon(Icons.radio_rounded)),
-      ),
+      child: artUrl.isEmpty
+          ? fallback
+          : CachedNetworkImage(
+              imageUrl: artUrl,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => fallback,
+              errorWidget: (context, url, error) => fallback,
+            ),
     );
   }
 }
