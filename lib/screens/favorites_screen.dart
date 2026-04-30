@@ -143,8 +143,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
 
     return AnimatedSwitcher(
       duration: Theme.of(context).extension<Speed>()!.medium1,
-      switchInCurve: Curves.easeIn,
-      switchOutCurve: Curves.easeOut,
+      switchInCurve: Easing.emphasizedDecelerate,
+      switchOutCurve: Easing.emphasizedAccelerate,
       transitionBuilder: (Widget child, Animation<double> animation) {
         return FadeTransition(opacity: animation, child: child);
       },
@@ -238,8 +238,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             final station = stations[index];
             return AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
-              switchInCurve: Curves.easeIn,
-              switchOutCurve: Curves.easeOut,
+              switchInCurve: Easing.emphasizedDecelerate,
+              switchOutCurve: Easing.emphasizedAccelerate,
               transitionBuilder: (child, animation) =>
                   FadeTransition(opacity: animation, child: child),
               child: Padding(
@@ -286,8 +286,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
-                    switchInCurve: Curves.easeIn,
-                    switchOutCurve: Curves.easeOut,
+                    switchInCurve: Easing.emphasizedDecelerate,
+                    switchOutCurve: Easing.emphasizedAccelerate,
                     transitionBuilder: (child, animation) =>
                         FadeTransition(opacity: animation, child: child),
                     child: StationCardItem(
@@ -305,8 +305,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   Expanded(
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 200),
-                      switchInCurve: Curves.easeIn,
-                      switchOutCurve: Curves.easeOut,
+                      switchInCurve: Easing.emphasizedDecelerate,
+                      switchOutCurve: Easing.emphasizedAccelerate,
                       transitionBuilder: (child, animation) =>
                           FadeTransition(opacity: animation, child: child),
                       child: StationCardItem(
@@ -348,8 +348,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           final station = stations[index];
           return AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
-            switchInCurve: Curves.easeIn,
-            switchOutCurve: Curves.easeOut,
+            switchInCurve: Easing.emphasizedDecelerate,
+            switchOutCurve: Easing.emphasizedAccelerate,
             transitionBuilder: (child, animation) =>
                 FadeTransition(opacity: animation, child: child),
             child: StationGridItem(

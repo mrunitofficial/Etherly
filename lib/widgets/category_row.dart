@@ -115,8 +115,8 @@ class CategoryRow extends StatelessWidget {
                     if (station == null) return const SizedBox.shrink();
                     return AnimatedSwitcher(
                       duration: Theme.of(context).extension<Speed>()!.medium1,
-                      switchInCurve: Curves.easeIn,
-                      switchOutCurve: Curves.easeOut,
+                      switchInCurve: Easing.emphasizedDecelerate,
+                      switchOutCurve: Easing.emphasizedAccelerate,
                       transitionBuilder: (child, animation) =>
                           FadeTransition(opacity: animation, child: child),
                       child: Padding(

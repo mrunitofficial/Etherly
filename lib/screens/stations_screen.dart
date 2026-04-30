@@ -141,8 +141,8 @@ class _StationsScreenState extends State<StationsScreen>
 
     return AnimatedSwitcher(
       duration: Theme.of(context).extension<Speed>()!.medium1,
-      switchInCurve: Curves.easeIn,
-      switchOutCurve: Curves.easeOut,
+      switchInCurve: Easing.emphasizedDecelerate,
+      switchOutCurve: Easing.emphasizedAccelerate,
       transitionBuilder: (Widget child, Animation<double> animation) {
         return FadeTransition(opacity: animation, child: child);
       },

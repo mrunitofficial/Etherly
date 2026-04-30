@@ -172,7 +172,7 @@ class _MyAppState extends State<MyApp> {
             return AnimatedOpacity(
               opacity: _showApp ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 450),
-              curve: Curves.easeIn,
+              curve: Curves.linear,
               child: appContent,
             );
           },

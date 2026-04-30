@@ -152,7 +152,7 @@ class _MarqueeTextState extends State<MarqueeText> {
           child: AnimatedOpacity(
             opacity: _opacity,
             duration: Theme.of(context).extension<Speed>()!.long1,
-            curve: Curves.easeInOut,
+            curve: Curves.linear,
             child: SingleChildScrollView(
               controller: _scrollController,
               scrollDirection: Axis.horizontal,

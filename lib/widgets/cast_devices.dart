@@ -66,8 +66,8 @@ class _CastDevicesState extends State<CastDevices> {
             constraints: const BoxConstraints(maxHeight: 480),
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
-              switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeIn,
+              switchInCurve: Easing.emphasizedDecelerate,
+              switchOutCurve: Easing.emphasizedAccelerate,
               transitionBuilder: (child, animation) =>
                   FadeTransition(opacity: animation, child: child),
               child: SingleChildScrollView(

@@ -48,7 +48,7 @@ class _AppScreenState extends State<AppScreen>
     );
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
-      curve: Curves.easeInOut,
+      curve: Easing.standard,
     );
     _fadeController.forward();
 
