@@ -37,7 +37,10 @@ class QualitySetting extends StatelessWidget {
 
     return AlertDialog(
       scrollable: true,
-      title: Text(loc?.translate('playerStreamQuality') ?? 'Stream Quality'),
+      title: Text(
+        loc?.translate('playerStreamQuality') ?? 'Stream Quality',
+        textAlign: TextAlign.center,
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -49,22 +52,20 @@ class QualitySetting extends StatelessWidget {
             return Padding(
               padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
               child: isSelected
-                  ? FilledButton.icon(
+                  ? FilledButton(
                       onPressed: isEnabled
                           ? () => onQualitySelected(opt['key'] as String)
                           : null,
-                      icon: const Icon(Icons.radio_button_checked),
-                      label: Text(
+                      child: Text(
                         opt['label'] as String,
                         textAlign: TextAlign.center,
                       ),
                     )
-                  : FilledButton.tonalIcon(
+                  : FilledButton.tonal(
                       onPressed: isEnabled
                           ? () => onQualitySelected(opt['key'] as String)
                           : null,
-                      icon: const Icon(Icons.radio_button_unchecked),
-                      label: Text(
+                      child: Text(
                         opt['label'] as String,
                         textAlign: TextAlign.center,
                       ),

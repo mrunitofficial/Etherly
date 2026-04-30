@@ -61,16 +61,14 @@ class SleepTimer extends StatelessWidget {
               ),
             );
           }),
-          SizedBox(height: spacing.small),
-          // OR divider
+          SizedBox(height: spacing.medium),
           Center(
             child: Text(
               loc?.translate('sleepTimerOr') ?? 'or',
               style: Theme.of(context).textTheme.titleLarge,
             ),
           ),
-          SizedBox(height: spacing.small),
-          // Set exact time button
+          SizedBox(height: spacing.medium),
           Padding(
             padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
             child: FilledButton(

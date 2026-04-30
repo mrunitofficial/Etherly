@@ -50,6 +50,8 @@ class _CastDevicesState extends State<CastDevices> {
         builder: (context, cast, _) {
           final devices = cast.devices;
           final connected = cast.connectedDevice;
+          final spacing = Theme.of(context).extension<Spacing>()!;
+
           if (!cast.initialized) {
             cast.init();
           }
@@ -59,45 +61,34 @@ class _CastDevicesState extends State<CastDevices> {
               textAlign: TextAlign.center,
             );
           }
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            switchInCurve: Easing.emphasizedDecelerate,
-            switchOutCurve: Easing.emphasizedAccelerate,
-            transitionBuilder: (child, animation) =>
-                FadeTransition(opacity: animation, child: child),
-            child: Column(
-              key: ValueKey(devices.length),
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ...devices.map((device) {
-                  final isSelected = connected?.uniqueID == device.uniqueID;
-                  final spacing = Theme.of(context).extension<Spacing>()!;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ...devices.map((device) {
+                final isSelected = connected?.uniqueID == device.uniqueID;
 
-                  return Padding(
-                    key: ValueKey(device.uniqueID),
-                    padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
-                    child: isSelected
-                        ? FilledButton.icon(
-                            onPressed: () => _onDevicePressed(device, cast),
-                            icon: const Icon(Icons.cast_connected),
-                            label: Text(
-                              device.friendlyName,
-                              textAlign: TextAlign.center,
-                            ),
-                          )
-                        : FilledButton.tonalIcon(
-                            onPressed: () => _onDevicePressed(device, cast),
-                            icon: const Icon(Icons.cast),
-                            label: Text(
-                              device.friendlyName,
-                              textAlign: TextAlign.center,
-                            ),
+                return Padding(
+                  key: ValueKey(device.uniqueID),
+                  padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
+                  child: isSelected
+                      ? FilledButton(
+                          onPressed: () => _onDevicePressed(device, cast),
+                          child: Text(
+                            device.friendlyName,
+                            textAlign: TextAlign.center,
                           ),
-                  );
-                }),
-              ],
-            ),
+                        )
+                      : FilledButton.tonal(
+                          onPressed: () => _onDevicePressed(device, cast),
+                          child: Text(
+                            device.friendlyName,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                );
+              }),
+            ],
           );
         },
       ),
