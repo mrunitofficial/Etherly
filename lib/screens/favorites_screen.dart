@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:etherly/services/theme_data.dart';
 
-const double _miniPlayerHeight = 120.0;
+
 const String _favoritesViewTypeKey = 'favorites_view_type';
 
 enum ViewType { list, grid }
@@ -20,10 +20,12 @@ typedef ContentLoadedCallback = void Function();
 class FavoritesScreen extends StatefulWidget {
   final ContentLoadedCallback? onContentLoaded;
   final ScreenType screenType;
+  final double bottomPadding;
   const FavoritesScreen({
     super.key,
     this.onContentLoaded,
     required this.screenType,
+    this.bottomPadding = 0.0,
   });
 
   @override
@@ -135,11 +137,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     }
 
     final loc = AppLocalizations.of(context);
-    final bottomPadding = EdgeInsets.only(
-      bottom: widget.screenType == ScreenType.desktop
-          ? 8.0
-          : (_miniPlayerHeight + 8.0),
-    );
+    final bottomPadding = EdgeInsets.only(bottom: widget.bottomPadding);
 
     return AnimatedSwitcher(
       duration: Theme.of(context).extension<Speed>()!.medium1,

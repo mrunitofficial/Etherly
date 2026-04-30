@@ -16,8 +16,8 @@ class RadioPlayer extends StatefulWidget {
   final ScreenType screenType;
   const RadioPlayer({super.key, required this.screenType});
 
-  static const double _minPlayerHeight = 120.0;
-  static const double _maxPlayerHeight = 640.0;
+  static const double minPlayerHeight = 120.0;
+  static const double maxPlayerHeight = 640.0;
 
   @override
   State<RadioPlayer> createState() => _RadioPlayerState();
@@ -223,8 +223,8 @@ class _RadioPlayerState extends State<RadioPlayer> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenHeight = constraints.maxHeight;
-        final minPlayerSize = RadioPlayer._minPlayerHeight / screenHeight;
-        final maxPlayerSize = RadioPlayer._maxPlayerHeight / screenHeight;
+        final minPlayerSize = RadioPlayer.minPlayerHeight / screenHeight;
+        final maxPlayerSize = RadioPlayer.maxPlayerHeight / screenHeight;
         _latestMinPlayerSize = minPlayerSize;
 
         return DraggableScrollableSheet(
@@ -237,9 +237,9 @@ class _RadioPlayerState extends State<RadioPlayer> {
           builder: (context, scrollController) => LayoutBuilder(
             builder: (context, constraints) {
               final progress =
-                  ((constraints.maxHeight - RadioPlayer._minPlayerHeight) /
-                          (RadioPlayer._maxPlayerHeight -
-                              RadioPlayer._minPlayerHeight))
+                  ((constraints.maxHeight - RadioPlayer.minPlayerHeight) /
+                          (RadioPlayer.maxPlayerHeight -
+                              RadioPlayer.minPlayerHeight))
                       .clamp(0.0, 1.0);
               final miniPlayerOpacity = (1.0 - (progress / 0.3)).clamp(
                 0.0,

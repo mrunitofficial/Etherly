@@ -80,22 +80,30 @@ class _AppScreenState extends State<AppScreen>
   }
 
   /// Builds the appropriate screen widget based on the selected index.
-  Widget _buildScreen(int index, ScreenType screenType) {
+  Widget _buildScreen(int index, ScreenType screenType, double bottomPadding) {
     switch (index) {
       case 0:
-        return HomeScreen(onContentLoaded: widget.onHomeContentLoaded);
+        return HomeScreen(
+          onContentLoaded: widget.onHomeContentLoaded,
+          bottomPadding: bottomPadding,
+        );
       case 1:
         return StationsScreen(
           onContentLoaded: widget.onHomeContentLoaded,
           screenType: screenType,
+          bottomPadding: bottomPadding,
         );
       case 2:
         return FavoritesScreen(
           onContentLoaded: widget.onHomeContentLoaded,
           screenType: screenType,
+          bottomPadding: bottomPadding,
         );
       default:
-        return HomeScreen(onContentLoaded: widget.onHomeContentLoaded);
+        return HomeScreen(
+          onContentLoaded: widget.onHomeContentLoaded,
+          bottomPadding: bottomPadding,
+        );
     }
   }
 
@@ -103,6 +111,10 @@ class _AppScreenState extends State<AppScreen>
   @override
   Widget build(BuildContext context) {
     final screenType = ScreenType.fromContext(context);
+    final spacing = Theme.of(context).extension<Spacing>()!;
+    final playerBottomPadding = screenType.isLargeFormat
+        ? spacing.small
+        : RadioPlayer.minPlayerHeight + spacing.small;
 
     // Common AppBar widget
     final appBar = AppBar(
@@ -230,9 +242,9 @@ class _AppScreenState extends State<AppScreen>
                 index: _selectedIndex,
                 sizing: StackFit.expand,
                 children: [
-                  _buildScreen(0, screenType),
-                  _buildScreen(1, screenType),
-                  _buildScreen(2, screenType),
+                  _buildScreen(0, screenType, playerBottomPadding),
+                  _buildScreen(1, screenType, playerBottomPadding),
+                  _buildScreen(2, screenType, playerBottomPadding),
                 ],
               ),
             ),

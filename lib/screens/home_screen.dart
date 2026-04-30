@@ -14,7 +14,12 @@ typedef ContentLoadedCallback = void Function();
 
 class HomeScreen extends StatefulWidget {
   final ContentLoadedCallback? onContentLoaded;
-  const HomeScreen({super.key, this.onContentLoaded});
+  final double bottomPadding;
+  const HomeScreen({
+    super.key,
+    this.onContentLoaded,
+    this.bottomPadding = 0.0,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -77,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           ...categorySlivers,
-          const SliverPadding(padding: EdgeInsets.only(bottom: 128.0)),
+          SliverPadding(padding: EdgeInsets.only(bottom: widget.bottomPadding)),
         ],
       ),
     );
