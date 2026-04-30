@@ -96,8 +96,9 @@ class _MarqueeTextState extends State<MarqueeText> {
   }
 
   (double, double)? _measureWidths() {
+    final effectiveStyle = widget.style ?? DefaultTextStyle.of(context).style;
     final textPainter = TextPainter(
-      text: TextSpan(text: widget.text, style: widget.style),
+      text: TextSpan(text: widget.text, style: effectiveStyle),
       maxLines: 1,
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: double.infinity);
@@ -112,14 +113,15 @@ class _MarqueeTextState extends State<MarqueeText> {
   /// Builds the widget tree for the marquee text.
   @override
   Widget build(BuildContext context) {
+    final effectiveStyle = widget.style ?? DefaultTextStyle.of(context).style;
     final height =
         widget.height ??
-        (widget.style?.fontSize != null ? widget.style!.fontSize! * 1.4 : 28);
+        (effectiveStyle.fontSize != null ? effectiveStyle.fontSize! * 1.4 : 28);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final painter = TextPainter(
-          text: TextSpan(text: widget.text, style: widget.style),
+          text: TextSpan(text: widget.text, style: effectiveStyle),
           maxLines: 1,
           textDirection: TextDirection.ltr,
         )..layout(maxWidth: double.infinity);

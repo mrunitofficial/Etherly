@@ -51,28 +51,27 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IgnorePointer(
-                      ignoring: true,
-                      child: MarqueeText(
+                child: IgnorePointer(
+                  ignoring: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      MarqueeText(
                         text: stationName,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.onSurface,
                         ),
                       ),
-                    ),
-                    IcyTextDisplay(
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                      IcyTextDisplay(
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        centerWhenFits: false,
                       ),
-                      centerWhenFits: false,
-                      padding: EdgeInsets.zero,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 16),

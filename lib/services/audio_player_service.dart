@@ -14,8 +14,9 @@ import 'package:etherly/services/my_audio_handler.dart';
 class AudioPlayerService with ChangeNotifier {
   final AudioPlayer player = AudioPlayer();
   late final MyAudioHandler _audioHandler;
-  final ValueNotifier<({String? title, bool loading})> icyState =
-      ValueNotifier((title: null, loading: false));
+  final ValueNotifier<({String? title, bool loading})> icyState = ValueNotifier(
+    (title: null, loading: false),
+  );
   final ChromeCastService? _castService;
   late final SharedPreferences _prefs;
 
@@ -173,7 +174,7 @@ class AudioPlayerService with ChangeNotifier {
       notifyListeners();
       return;
     }
- 
+
     icyState.value = (title: null, loading: true);
     try {
       await player.stop();
