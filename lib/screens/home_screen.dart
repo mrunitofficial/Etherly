@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'package:etherly/models/station.dart';
-import 'package:etherly/services/radio_player_service.dart';
+import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/screen_header.dart';
 import 'package:etherly/widgets/category_row.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
+import 'package:etherly/services/theme_data.dart';
 
 const int _minTotalCategories = 8;
 
@@ -13,7 +14,12 @@ typedef ContentLoadedCallback = void Function();
 
 class HomeScreen extends StatefulWidget {
   final ContentLoadedCallback? onContentLoaded;
-  const HomeScreen({super.key, this.onContentLoaded});
+  final double bottomPadding;
+  const HomeScreen({
+    super.key,
+    this.onContentLoaded,
+    this.bottomPadding = 0.0,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -30,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _loadingTimer = Timer(const Duration(milliseconds: 200), () {
+    _loadingTimer = Timer(Speed().short1, () {
       if (mounted) {
         setState(() {
           _showLoading = true;
@@ -72,11 +78,11 @@ class _HomeScreenState extends State<HomeScreen>
         slivers: [
           SliverToBoxAdapter(
             child: ScreenHeader(
-              title: loc?.translate('homeWelcome') ?? 'Welcome to Etherly!',
+              title: loc?.translate('homeWelcome') ?? 'Etherly',
             ),
           ),
           ...categorySlivers,
-          const SliverPadding(padding: EdgeInsets.only(bottom: 128.0)),
+          SliverPadding(padding: EdgeInsets.only(bottom: widget.bottomPadding)),
         ],
       ),
     );

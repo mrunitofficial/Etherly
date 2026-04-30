@@ -1,6 +1,6 @@
+import 'package:etherly/models/station.dart';
 import 'package:etherly/widgets/station_art.dart';
 import 'package:flutter/material.dart';
-import '../models/station.dart';
 
 /// A grid item widget representing a radio station with artwork and favorite button.
 class StationGridItem extends StatelessWidget {
@@ -24,13 +24,13 @@ class StationGridItem extends StatelessWidget {
     return RepaintBoundary(
       child: Tooltip(
         message: station.name,
-        waitDuration: const Duration(milliseconds: 400),
         child: Stack(
           children: [
-            StationArt(
-              artUrl: station.artURL,
-              size: double.infinity,
-              borderRadius: borderRadius,
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: borderRadius,
+                child: StationArt(artUrl: station.art),
+              ),
             ),
             Positioned.fill(
               child: Material(

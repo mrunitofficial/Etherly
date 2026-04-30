@@ -3,6 +3,32 @@
 ## Project Overview
 Etherly is a Dutch radio streaming app built with Flutter, featuring Material 3 design, multi-platform support, and sophisticated audio streaming capabilities. The app provides a clean interface for browsing and playing Dutch radio stations with favorites, recents, and category-based organization.
 
+## 🚨 MATERIAL DESIGN 3 & TOKEN SYSTEM (CRITICAL) 🚨
+
+**WARNING: NEVER use hardcoded pixels, magic numbers, or manual fallback values for sizing, colors, shapes, or typography.** 
+This application strictly adheres to the Material Design 3 (M3) token system provided by Flutter. You must leverage the `Theme` and contextual widget behaviors to derive UI properties.
+
+### 1. Sizing and Spacing
+- **Do NOT** hardcode icon sizes (e.g., `size: 24.0`).
+- **ALWAYS** inherit sizes contextually: e.g., use `IconTheme.of(context).size!` or trust parent widgets (like `FloatingActionButton`) to pass down the correct Official Material tokens.
+- **Do NOT** wrap standard components in `SizedBox` merely to force a dimension. Use the official widget constructors designed for variations (e.g., `FloatingActionButton.large()`).
+
+### 2. Colors
+- **Do NOT** hardcode colors using `Colors.white`, arbitrary hex codes, or manual fallbacks.
+- **ALWAYS** use semantic color tokens: `Theme.of(context).colorScheme` (e.g., `colorScheme.onPrimaryContainer`, `colorScheme.surface`).
+- For child elements (like Icons or text inside a button), inherit colors from `IconTheme.of(context).color` when available so they match the parent container's state and active theme mappings automatically.
+
+### 3. Typography
+- **Do NOT** set custom font sizes manually (e.g., `TextStyle(fontSize: 18)`).
+- **ALWAYS** use `Theme.of(context).textTheme` with the correct semantic scale (e.g., `textTheme.headlineLarge`, `textTheme.titleMedium`).
+
+### 4. Shapes & Global Theming
+- Define global shapes or component behaviors in `main.dart` within `ThemeData` (e.g., `floatingActionButtonTheme: FloatingActionButtonThemeData(shape: const CircleBorder())`).
+- **Do NOT** override shapes and styles on individual widget instances if they can be handled by global theme extensions.
+- Use official M3 widget variants to achieve design goals rather than building custom containers from scratch.
+
+---
+
 ## Architecture Patterns
 
 ### Core Structure
@@ -41,12 +67,6 @@ final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
 - **Category-based organization**: Dynamic category display with minimum 8 categories
 - **Popular stations**: Hardcoded list in `home_screen.dart` for featured content
 - **Persistence**: SharedPreferences for favorites, recents, last played, and settings
-
-### UI Patterns
-- **Consistent theming**: Material 3 with dynamic color support (currently disabled)
-- **Custom components**: `StationArt`, `StationCardItem`, `StationGridItem` for reusable station display
-- **Error handling**: Safe URL parsing, graceful image loading with fallbacks
-- **Navigation**: Bottom navigation with settings in app bar
 
 ## Development Conventions
 
@@ -97,6 +117,14 @@ await _player.setAudioSource(AudioSource.uri(sourceUrl, tag: mediaItem));
 
 ## Common Tasks
 
+### UI Modifications
+- **STRICT ENFORCEMENT:** Follow Material 3 design system patterns strictly. Do not use hardcoded values!
+- Use `Theme.of(context).colorScheme` for consistent colors.
+- Use `Theme.of(context).textTheme` for fonts.
+- Inherit properties from parent contexts (e.g. `IconTheme.of(context)`) to maintain component consistency without magic numbers.
+- Implement responsive design across screen sizes.
+- Test drag interactions in radio player component.
+
 ### Adding New Features
 - Extend `AudioPlayerService` for business logic
 - Create widgets in appropriate screen size directory
@@ -109,10 +137,4 @@ await _player.setAudioSource(AudioSource.uri(sourceUrl, tag: mediaItem));
 - Verify stream URLs in `assets/stations.json`
 - Test with different network conditions for buffering behavior
 
-### UI Modifications
-- Follow Material 3 design system patterns
-- Use `Theme.of(context).colorScheme` for consistent colors
-- Implement responsive design across screen sizes
-- Test drag interactions in radio player component
-
-This architecture prioritizes audio reliability, smooth user experience, and maintainable Dutch radio content management.
+This architecture prioritizes aesthetics strictly aligned with Material Design 3, audio reliability, smooth user experience, and maintainable Dutch radio content management.

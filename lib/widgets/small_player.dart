@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
-import 'package:etherly/services/radio_player_service.dart';
+import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/station_art.dart';
 import 'package:etherly/widgets/marquee_text.dart';
 import 'package:etherly/widgets/play_button.dart';
@@ -28,13 +28,13 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
           _lastStationId = mediaItem?.id;
         }
 
-        final artUrl = getSafeArtUrl(mediaItem);
+        final artUrl = mediaItem.safeArtUrl;
         final theme = Theme.of(context);
         final loc = AppLocalizations.of(context);
         final stationName =
             mediaItem?.title ??
             (loc?.translate('playerLoadingStation') ?? 'Loading station...');
-        final processingState = service.playbackState.processingState;
+        final processingState = service.player.processingState;
         final isPlaying = service.isPlaying;
 
         return Padding(
@@ -43,36 +43,38 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
             children: [
               IgnorePointer(
                 ignoring: true,
-                child: StationArt(
-                  artUrl: artUrl,
-                  size: 56.0,
-                  borderRadius: BorderRadius.circular(8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: SizedBox(
+                    width: 56.0,
+                    height: 56.0,
+                    child: StationArt(artUrl: artUrl),
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IgnorePointer(
-                      ignoring: true,
-                      child: MarqueeText(
+                child: IgnorePointer(
+                  ignoring: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      MarqueeText(
                         text: stationName,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.onSurface,
                         ),
                       ),
-                    ),
-                    IcyTextDisplay(
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                      IcyTextDisplay(
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        centerWhenFits: false,
                       ),
-                      centerWhenFits: false,
-                      padding: EdgeInsets.zero,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -84,7 +86,7 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                     countdown: countdown,
                     processingState: processingState,
                     isPlaying: isPlaying,
-                    small: true,
+                    size: PlayButtonSize.medium,
                     heroTag: "mini_player_fab",
                     elevation: 0,
                     tooltip: isPlaying

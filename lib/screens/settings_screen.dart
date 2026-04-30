@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import '../services/music_app_service.dart';
-import '../../main.dart' show dynamicColorNotifier;
+import '../services/theme_data.dart' show dynamicColorNotifier;
 
 /// Easy options menu item builder for dropdown settings.
 extension on ThemeMode {
@@ -69,7 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) {
       setState(() {
         _availableAppIds = apps.map((a) => a['id']!).toList();
-        
+
         final isSpecialOption =
             _selectedMusicApp == 'always_ask' ||
             _selectedMusicApp == 'internet_search';
@@ -89,7 +89,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _autoPlay = _prefs!.getBool('autoPlay') ?? false;
         _forceDefaultColor = _prefs!.getBool('forceDefaultColor') ?? false;
         _selectedQuality = _prefs!.getString('streamQuality') ?? 'mp3';
-        _selectedMusicApp = _prefs!.getString('favoriteMusicApp') ?? 'always_ask';
+        _selectedMusicApp =
+            _prefs!.getString('favoriteMusicApp') ?? 'always_ask';
       });
       dynamicColorNotifier.value = !_forceDefaultColor;
     }
@@ -109,7 +110,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _saveTheme(ThemeMode themeMode) async {
     if (_prefs != null) {
-      await _prefs!.setString('theme', themeMode.toString());
+      await _prefs!.setString('theme', themeMode.name);
     }
   }
 
@@ -360,8 +361,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Safety check to prevent DropdownButton from crashing if the selected value is missing
     final String safeMusicAppValue =
         musicAppOptions.any((opt) => opt['key'] == _selectedMusicApp)
-            ? _selectedMusicApp
-            : 'always_ask';
+        ? _selectedMusicApp
+        : 'always_ask';
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
       title: Text(loc.translate('settingsPreferredMusicApp')),

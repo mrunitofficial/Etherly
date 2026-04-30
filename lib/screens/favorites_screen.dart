@@ -1,15 +1,16 @@
 import 'dart:async';
 import 'package:etherly/models/device.dart';
 import 'package:etherly/localization/app_localizations.dart';
-import 'package:etherly/services/radio_player_service.dart';
+import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/screen_header.dart';
 import 'package:etherly/widgets/station_card_item.dart';
 import 'package:etherly/widgets/station_grid_item.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:etherly/services/theme_data.dart';
 
-const double _miniPlayerHeight = 120.0;
+
 const String _favoritesViewTypeKey = 'favorites_view_type';
 
 enum ViewType { list, grid }
@@ -19,17 +20,20 @@ typedef ContentLoadedCallback = void Function();
 class FavoritesScreen extends StatefulWidget {
   final ContentLoadedCallback? onContentLoaded;
   final ScreenType screenType;
+  final double bottomPadding;
   const FavoritesScreen({
     super.key,
     this.onContentLoaded,
     required this.screenType,
+    this.bottomPadding = 0.0,
   });
 
   @override
   State<FavoritesScreen> createState() => _FavoritesScreenState();
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAliveClientMixin {
+class _FavoritesScreenState extends State<FavoritesScreen>
+    with AutomaticKeepAliveClientMixin {
   late final Future<ViewType> _viewTypeFuture;
   ViewType _viewType = ViewType.list;
 
@@ -44,7 +48,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
     super.initState();
     _viewTypeFuture = _loadViewType();
 
-    _loadingTimer = Timer(const Duration(milliseconds: 200), () {
+    _loadingTimer = Timer(Speed().short1, () {
       if (mounted) {
         setState(() => _showLoading = true);
       }
@@ -133,14 +137,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
     }
 
     final loc = AppLocalizations.of(context);
-    final bottomPadding = EdgeInsets.only(
-      bottom: widget.screenType == ScreenType.desktop ? 8.0 : (_miniPlayerHeight + 8.0),
-    );
+    final bottomPadding = EdgeInsets.only(bottom: widget.bottomPadding);
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      switchInCurve: Curves.easeIn,
-      switchOutCurve: Curves.easeOut,
+      duration: Theme.of(context).extension<Speed>()!.medium1,
+      switchInCurve: Easing.emphasizedDecelerate,
+      switchOutCurve: Easing.emphasizedAccelerate,
       transitionBuilder: (Widget child, Animation<double> animation) {
         return FadeTransition(opacity: animation, child: child);
       },
@@ -234,13 +236,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
             final station = stations[index];
             return AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
-              switchInCurve: Curves.easeIn,
-              switchOutCurve: Curves.easeOut,
+              switchInCurve: Easing.emphasizedDecelerate,
+              switchOutCurve: Easing.emphasizedAccelerate,
               transitionBuilder: (child, animation) =>
                   FadeTransition(opacity: animation, child: child),
               child: Padding(
                 key: ValueKey(station.id),
-                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12.0,
+                  vertical: 4.0,
+                ),
                 child: StationCardItem(
                   station: station,
                   isFavorite: station.isFavorite,
@@ -270,50 +275,52 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
               : null;
 
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12.0,
+              vertical: 4.0,
+            ),
             child: Row(
               children: [
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    switchInCurve: Easing.emphasizedDecelerate,
+                    switchOutCurve: Easing.emphasizedAccelerate,
+                    transitionBuilder: (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
+                    child: StationCardItem(
+                      key: ValueKey(leftStation.id),
+                      station: leftStation,
+                      isFavorite: leftStation.isFavorite,
+                      onTap: () => service.playMediaItem(leftStation),
+                      onFavorite: () => service.toggleFavorite(leftStation),
+                      screenType: widget.screenType,
+                    ),
+                  ),
+                ),
+                if (rightStation != null) ...[
+                  const SizedBox(width: 8.0),
                   Expanded(
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 200),
-                      switchInCurve: Curves.easeIn,
-                      switchOutCurve: Curves.easeOut,
+                      switchInCurve: Easing.emphasizedDecelerate,
+                      switchOutCurve: Easing.emphasizedAccelerate,
                       transitionBuilder: (child, animation) =>
                           FadeTransition(opacity: animation, child: child),
                       child: StationCardItem(
-                        key: ValueKey(leftStation.id),
-                        station: leftStation,
-                        isFavorite: leftStation.isFavorite,
-                        onTap: () => service.playMediaItem(leftStation),
-                        onFavorite: () => service.toggleFavorite(leftStation),
+                        key: ValueKey(rightStation.id),
+                        station: rightStation,
+                        isFavorite: rightStation.isFavorite,
+                        onTap: () => service.playMediaItem(rightStation),
+                        onFavorite: () => service.toggleFavorite(rightStation),
                         screenType: widget.screenType,
                       ),
                     ),
                   ),
-                  if (rightStation != null) ...[
-                    const SizedBox(width: 8.0),
-                    Expanded(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        switchInCurve: Curves.easeIn,
-                        switchOutCurve: Curves.easeOut,
-                        transitionBuilder: (child, animation) =>
-                            FadeTransition(opacity: animation, child: child),
-                        child: StationCardItem(
-                          key: ValueKey(rightStation.id),
-                          station: rightStation,
-                          isFavorite: rightStation.isFavorite,
-                          onTap: () => service.playMediaItem(rightStation),
-                          onFavorite: () =>
-                              service.toggleFavorite(rightStation),
-                          screenType: widget.screenType,
-                        ),
-                      ),
-                    ),
-                  ] else
-                    const Expanded(child: SizedBox.shrink()),
-                ],
-              ),
+                ] else
+                  const Expanded(child: SizedBox.shrink()),
+              ],
+            ),
           );
         },
       ),
@@ -339,8 +346,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
           final station = stations[index];
           return AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
-            switchInCurve: Curves.easeIn,
-            switchOutCurve: Curves.easeOut,
+            switchInCurve: Easing.emphasizedDecelerate,
+            switchOutCurve: Easing.emphasizedAccelerate,
             transitionBuilder: (child, animation) =>
                 FadeTransition(opacity: animation, child: child),
             child: StationGridItem(

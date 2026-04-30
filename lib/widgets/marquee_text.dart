@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:etherly/services/theme_data.dart';
 
 /// A simple marquee text widget that scrolls text once, pauses, then resets.
 class MarqueeText extends StatefulWidget {
@@ -83,21 +84,22 @@ class _MarqueeTextState extends State<MarqueeText> {
         if (!mounted) break;
         // Fade out
         setState(() => _opacity = 0.0);
-        await Future.delayed(const Duration(milliseconds: 400));
+        await Future.delayed(Theme.of(context).extension<Speed>()!.long1);
         if (!mounted) break;
         if (_scrollController.hasClients) {
           _scrollController.jumpTo(0);
         }
         // Fade in
         setState(() => _opacity = 1.0);
-        await Future.delayed(const Duration(milliseconds: 400));
+        await Future.delayed(Theme.of(context).extension<Speed>()!.long1);
       }
     }
   }
 
   (double, double)? _measureWidths() {
+    final effectiveStyle = widget.style ?? DefaultTextStyle.of(context).style;
     final textPainter = TextPainter(
-      text: TextSpan(text: widget.text, style: widget.style),
+      text: TextSpan(text: widget.text, style: effectiveStyle),
       maxLines: 1,
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: double.infinity);
@@ -112,14 +114,15 @@ class _MarqueeTextState extends State<MarqueeText> {
   /// Builds the widget tree for the marquee text.
   @override
   Widget build(BuildContext context) {
+    final effectiveStyle = widget.style ?? DefaultTextStyle.of(context).style;
     final height =
         widget.height ??
-        (widget.style?.fontSize != null ? widget.style!.fontSize! * 1.4 : 28);
+        (effectiveStyle.fontSize != null ? effectiveStyle.fontSize! * 1.4 : 28);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final painter = TextPainter(
-          text: TextSpan(text: widget.text, style: widget.style),
+          text: TextSpan(text: widget.text, style: effectiveStyle),
           maxLines: 1,
           textDirection: TextDirection.ltr,
         )..layout(maxWidth: double.infinity);
@@ -132,15 +135,12 @@ class _MarqueeTextState extends State<MarqueeText> {
         if (widget.centerWhenFits && textWidth <= containerWidth) {
           return SizedBox(
             height: height,
-            width: double.infinity,
-            child: Center(
-              child: Text(
-                widget.text,
-                style: widget.style,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-                textAlign: TextAlign.center,
-              ),
+            child: Text(
+              widget.text,
+              style: widget.style,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              textAlign: TextAlign.center,
             ),
           );
         }
@@ -148,11 +148,11 @@ class _MarqueeTextState extends State<MarqueeText> {
         // Scrollable marquee
         return SizedBox(
           height: height,
-          width: double.infinity,
+          width: textWidth > containerWidth ? double.infinity : null,
           child: AnimatedOpacity(
             opacity: _opacity,
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeInOut,
+            duration: Theme.of(context).extension<Speed>()!.long1,
+            curve: Curves.linear,
             child: SingleChildScrollView(
               controller: _scrollController,
               scrollDirection: Axis.horizontal,

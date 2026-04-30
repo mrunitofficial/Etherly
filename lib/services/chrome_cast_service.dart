@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
 
@@ -8,7 +7,7 @@ class ChromeCastService with ChangeNotifier {
   bool isCastSupported({bool horizontalWeb = false}) {
     if (horizontalWeb) return false;
     if (kIsWeb) return false;
-    return Platform.isAndroid;
+    return defaultTargetPlatform == TargetPlatform.android;
   }
 
   bool _disposed = false;
@@ -141,7 +140,7 @@ class ChromeCastService with ChangeNotifier {
     if (!isConnected) throw StateError('No Cast device connected');
 
     _setLoading(true);
-    
+
     // Small delay to ensure UI can update before loading starts
     await Future.delayed(const Duration(milliseconds: 50));
 
@@ -217,10 +216,9 @@ class ChromeCastService with ChangeNotifier {
         const Duration(seconds: 1),
         onTimeout: () {},
       );
-      await GoogleCastSessionManager.instance.endSessionAndStopCasting().timeout(
-        const Duration(seconds: 1),
-        onTimeout: () => false,
-      );
+      await GoogleCastSessionManager.instance
+          .endSessionAndStopCasting()
+          .timeout(const Duration(seconds: 1), onTimeout: () => false);
     } catch (_) {
       // Ignore cleanup errors.
     }
@@ -243,7 +241,7 @@ class ChromeCastService with ChangeNotifier {
       if (startTime != null) {
         final elapsed = DateTime.now().difference(startTime);
         final remaining = const Duration(milliseconds: 400) - elapsed;
-        
+
         if (remaining > Duration.zero) {
           // Delay turning off the loading state
           _loadingTimeout?.cancel();
@@ -256,7 +254,7 @@ class ChromeCastService with ChangeNotifier {
           return;
         }
       }
-      
+
       _loadingTimeout?.cancel();
       _loadingTimeout = null;
       _loadingStartTime = null;

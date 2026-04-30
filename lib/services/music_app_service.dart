@@ -56,7 +56,9 @@ class MusicAppService {
 
   List<Map<String, String>>? _cachedAvailableApps;
 
-  Future<List<Map<String, String>>> getAvailableApps({bool forceRefresh = false}) async {
+  Future<List<Map<String, String>>> getAvailableApps({
+    bool forceRefresh = false,
+  }) async {
     if (_cachedAvailableApps != null && !forceRefresh) {
       return _cachedAvailableApps!;
     }
@@ -89,6 +91,9 @@ class MusicAppService {
     _cachedAvailableApps = available;
     return available;
   }
+
+  /// Returns the cached available apps, if any.
+  List<Map<String, String>>? get cachedAvailableApps => _cachedAvailableApps;
 
   /// Returns the list of all supported apps, regardless of installation.
   List<Map<String, dynamic>> getAllSupportedApps() => List.from(_allApps);

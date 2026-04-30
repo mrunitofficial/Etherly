@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:audio_service/audio_service.dart';
-import 'package:etherly/services/radio_player_service.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:etherly/services/audio_player_service.dart';
 
-/// A reusable play/pause button widget that handles loading, countdown, and play states
+enum PlayButtonSize { medium, large }
+
 class PlayButton extends StatelessWidget {
   const PlayButton({
     super.key,
@@ -10,67 +11,83 @@ class PlayButton extends StatelessWidget {
     required this.processingState,
     required this.isPlaying,
     required this.countdown,
-    required this.small,
+    this.size = PlayButtonSize.medium,
     this.tooltip,
     this.heroTag,
     this.elevation,
   });
 
   final AudioPlayerService service;
-  final AudioProcessingState processingState;
+  final ProcessingState processingState;
   final bool isPlaying;
   final int countdown;
-  final bool small;
+  final PlayButtonSize size;
   final String? tooltip;
   final String? heroTag;
   final double? elevation;
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton(
-      heroTag: heroTag,
-      elevation: elevation,
-      tooltip: tooltip,
-      onPressed: () => _handlePlayPause(),
-      child: _buildButtonContent(context),
+    final Widget content = Builder(
+      builder: (context) => _buildButtonContent(context),
     );
+
+    switch (size) {
+      case PlayButtonSize.large:
+        return FloatingActionButton.large(
+          heroTag: heroTag,
+          elevation: elevation,
+          tooltip: tooltip,
+          onPressed: _handlePlayPause,
+          child: content,
+        );
+      case PlayButtonSize.medium:
+        return FloatingActionButton(
+          heroTag: heroTag,
+          elevation: elevation,
+          tooltip: tooltip,
+          onPressed: _handlePlayPause,
+          child: content,
+        );
+    }
   }
 
-  // This determines the icon to show when the player is loading, buffering, or playing
   Widget _buildButtonContent(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final iconTheme = IconTheme.of(context);
+    final baseSize = iconTheme.size!;
+    final color = iconTheme.color;
 
     if (countdown > 0) {
+      final textStyle = switch (size) {
+        PlayButtonSize.large => theme.textTheme.headlineLarge,
+        PlayButtonSize.medium => theme.textTheme.titleLarge,
+      };
+
       return Text(
         countdown.toString(),
-        style: TextStyle(
-          fontSize: small ? 24.0 : 48.0,
-          fontWeight: FontWeight.bold,
-          color: colorScheme.onPrimaryContainer,
-        ),
+        style: textStyle?.copyWith(fontWeight: FontWeight.bold, color: color),
       );
     }
 
-    if ((processingState == AudioProcessingState.buffering) ||
-        processingState == AudioProcessingState.loading) {
+    if (processingState == ProcessingState.buffering ||
+        processingState == ProcessingState.loading) {
       return SizedBox.square(
-        dimension: small ? 24.0 : 48.0,
+        dimension: baseSize,
         child: CircularProgressIndicator(
-          strokeWidth: small ? 2.0 : 4.0,
-          valueColor: AlwaysStoppedAnimation(colorScheme.onPrimaryContainer),
+          valueColor: AlwaysStoppedAnimation(color),
         ),
       );
     }
 
-    return Icon(
-      isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-      size: small ? 24.0 : 48.0,
-    );
+    return Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded);
   }
 
-  // This handles the play/pause logic
   void _handlePlayPause() {
-    if (countdown > 0 || isPlaying) {
+    if (processingState == ProcessingState.buffering ||
+        processingState == ProcessingState.loading) {
+      service.stop();
+    } else if (countdown > 0 || isPlaying) {
       service.pause();
     } else {
       service.play();

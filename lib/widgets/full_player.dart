@@ -2,16 +2,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
-import 'package:etherly/models/station.dart';
-import 'package:etherly/services/radio_player_service.dart';
+
+import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/screens/settings_screen.dart';
-import 'package:etherly/main.dart' show themeNotifier;
+import 'package:etherly/services/theme_data.dart' show themeNotifier;
 import 'package:etherly/widgets/sleep_timer.dart';
 import 'package:etherly/widgets/station_art.dart';
 import 'package:etherly/widgets/quality_setting.dart';
 import 'package:etherly/widgets/marquee_text.dart';
 import 'package:etherly/widgets/play_button.dart';
 import 'package:etherly/widgets/icy_text_display.dart';
+
 /// Full player content shown in the expanded state of the radio player.
 class FullPlayerContent extends StatefulWidget {
   const FullPlayerContent({super.key, this.scrollController, this.onClose});
@@ -46,7 +47,14 @@ class _FullPlayerContentState extends State<FullPlayerContent> {
               ),
               const SizedBox(height: 8),
               Center(
-                child: StationArt(artUrl: getSafeArtUrl(mediaItem), size: 280),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12.0),
+                  child: SizedBox(
+                    width: 280,
+                    height: 280,
+                    child: StationArt(artUrl: mediaItem.safeArtUrl),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               Padding(
@@ -65,10 +73,7 @@ class _FullPlayerContentState extends State<FullPlayerContent> {
                       centerWhenFits: true,
                     ),
                     if (!kIsWeb)
-                      const SizedBox(
-                        height: 28,
-                        child: IcyTextDisplay(),
-                      ),
+                      const SizedBox(height: 28, child: IcyTextDisplay()),
                   ],
                 ),
               ),
@@ -144,9 +149,9 @@ class FullPlayerControls extends StatelessWidget {
         final loc = AppLocalizations.of(context);
         final station = service.mediaItem == null
             ? null
-            : service.stations.cast<Station?>().firstWhere(
-                (s) => s?.id == service.mediaItem!.id,
-                orElse: () => null,
+            : service.stations.firstWhere(
+                (s) => s.id == service.mediaItem!.id,
+                orElse: () => service.stations.first,
               );
         final isFavorite = station?.isFavorite ?? false;
 
@@ -191,21 +196,17 @@ class FullPlayerControls extends StatelessWidget {
               const SizedBox(width: 32),
               ValueListenableBuilder<int>(
                 valueListenable: service.autoplayCountdownNotifier,
-                builder: (context, countdown, _) => SizedBox(
-                  width: 80,
-                  height: 80,
-                  child: PlayButton(
-                    service: service,
-                    countdown: countdown,
-                    processingState: service.playbackState.processingState,
-                    isPlaying: service.isPlaying,
-                    heroTag: "full_player_fab",
-                    elevation: 0,
-                    tooltip: service.isPlaying
-                        ? (loc?.translate('playerPause') ?? 'Pause')
-                        : (loc?.translate('playerPlay') ?? 'Play'),
-                    small: false,
-                  ),
+                builder: (context, countdown, _) => PlayButton(
+                  service: service,
+                  countdown: countdown,
+                  processingState: service.player.processingState,
+                  isPlaying: service.isPlaying,
+                  heroTag: "full_player_fab",
+                  elevation: 0,
+                  tooltip: service.isPlaying
+                      ? (loc?.translate('playerPause') ?? 'Pause')
+                      : (loc?.translate('playerPlay') ?? 'Play'),
+                  size: PlayButtonSize.large,
                 ),
               ),
               const SizedBox(width: 32),
@@ -237,39 +238,7 @@ class FullPlayerControls extends StatelessWidget {
   }
 }
 
-/// Helper function to handle stream quality changes.
-void handleStreamQuality(BuildContext context) async {
-  final service = Provider.of<AudioPlayerService>(context, listen: false);
-  final mediaItem = service.mediaItem;
-  Station? station;
 
-  if (mediaItem != null && service.stations.isNotEmpty) {
-    station = service.stations.firstWhere(
-      (s) => s.id == mediaItem.id,
-      orElse: () => service.stations.first,
-    );
-  }
-
-  final prefQuality = service.prefs.getString('streamQuality') ?? 'mp3';
-  final selectedQuality = station != null && prefQuality == 'aac'
-      ? (station.streamAAC.isNotEmpty ? 'aac' : 'mp3')
-      : 'mp3';
-
-  final newQuality = await showDialog<String>(
-    context: context,
-    builder: (context) => QualitySetting(
-      station: station,
-      selectedQuality: selectedQuality,
-      onQualitySelected: (q) => Navigator.of(context).pop(q),
-    ),
-  );
-
-  if (newQuality != null && station != null && newQuality != selectedQuality) {
-    service.prefs.setString('streamQuality', newQuality);
-    service.stop();
-    service.playMediaItem(station);
-  }
-}
 
 /// Quality button in the full player header (web only).
 class QualityButton extends StatelessWidget {
@@ -281,7 +250,7 @@ class QualityButton extends StatelessWidget {
     final loc = AppLocalizations.of(context);
 
     return IconButton(
-      onPressed: () => handleStreamQuality(context),
+      onPressed: () => QualitySetting.show(context),
       icon: Icon(
         Icons.high_quality_outlined,
         size: 28,
@@ -362,7 +331,7 @@ class PlayerMenuButton extends StatelessWidget {
       ],
       onSelected: (value) {
         if (value == 'stream_quality') {
-          handleStreamQuality(context);
+          QualitySetting.show(context);
         } else {
           // All other options navigate to settings screen.
           Navigator.of(context).push(
