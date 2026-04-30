@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:etherly/models/station.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
 import 'package:etherly/services/my_audio_handler.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Service that manages the [AudioPlayer] instance, station list, and playback logic.
 class AudioPlayerService with ChangeNotifier {
@@ -289,7 +290,7 @@ class AudioPlayerService with ChangeNotifier {
     for (final station in stations) {
       if (station.artURL.isNotEmpty) {
         try {
-          await precacheImage(NetworkImage(station.artURL), context);
+          await precacheImage(CachedNetworkImageProvider(station.artURL), context);
         } catch (_) {}
       }
     }
