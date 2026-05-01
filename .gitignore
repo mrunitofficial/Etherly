@@ -42,5 +42,17 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Custom / AI related
-ai-instructions.md
+# Firebase / Google Services
+lib/firebase_options.dart
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# Local / Sensitive
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+.env*
+service-account.json
+
+

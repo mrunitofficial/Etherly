@@ -20,14 +20,20 @@ import 'screens/app_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    debugPrint('Firebase initialization issue: $e');
+  }
 
+  try {
     // Initialize App Check (Firebase).
+    // Uses Play Integrity in production and Debug Provider in development.
     await FirebaseAppCheck.instance.activate(
-      providerAndroid: AndroidDebugProvider(),
-      providerWeb: ReCaptchaV3Provider('recaptcha-v3-site-key'),
+      providerAndroid: kDebugMode ? AndroidDebugProvider() : AndroidPlayIntegrityProvider(),
     );
 
     // Enable Firestore persistence for web (Firebase).
@@ -38,9 +44,7 @@ Future<void> main() async {
       );
     }
   } catch (e) {
-    debugPrint(
-      'Firebase initialization failed. Make sure to run `flutterfire configure`: $e',
-    );
+    debugPrint('Firebase feature initialization failed: $e');
   }
 
   // Configure image cache.
