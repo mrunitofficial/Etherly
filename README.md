@@ -8,7 +8,7 @@ A modern Netherlands-based radio streaming app built with Flutter.
 
 ## What is Etherly?
 
-Etherly is a free, open-source radio streaming application designed specifically for radio enthusiasts who like an experience that "just works". The end goal is to provide a seamless listening experience across multiple Android based platforms (Android, Web, Google TV, Fuchsia) with a clean, intuitive interface that follows Material 3 design principles (and later Material 3 Expressive when official support is ever coming to Flutter).
+Etherly is a free radio streaming application designed specifically for radio enthusiasts who like an experience that "just works". The end goal is to provide a seamless listening experience across multiple Android based platforms (Android, Web, Google TV, Fuchsia) with a clean, intuitive interface that follows Material 3 design principles (and later Material 3 Expressive when official support is ever coming to Flutter).
 
 Right now the app offers instant access to a curated collection of Dutch radio stations, but the end goal is to provide a very flexible application that can play any radio station lists (including M3U and M3U8) at some point. Etherly is hosted on Firebase.
 
@@ -103,7 +103,7 @@ Support for M3U and M3U8 files and other sources is planned, but currently not a
 The option to suggest stations using the official website might come in the future.
 
 ## License
-This project is open-source. See the LICENSE file for details.
+This project currently does not have a license. 
 
 ## Disclaimer
 - This project was created by an internet radio enthusiast without extensive developing experience
