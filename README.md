@@ -97,7 +97,7 @@ lib/
 └── localization/           # App translations
 ```
 
-### Adding New Stations
+## Adding New Stations
 Right now stations are highly currated and only the most common Dutch radio stations are supported. 
 Support for M3U and M3U8 files and other sources is planned, but currently not available. 
 The option to suggest stations using the official website might come in the future.
