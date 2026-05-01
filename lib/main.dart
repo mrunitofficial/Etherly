@@ -46,7 +46,6 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('Firebase feature initialization failed: $e');
   }
-
   // Configure image cache.
   PaintingBinding.instance.imageCache.maximumSize = 4000;
   PaintingBinding.instance.imageCache.maximumSizeBytes = 1000 << 20;

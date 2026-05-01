@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "285588016271",
+    "project_id": "etherly-firebase",
+    "storage_bucket": "etherly-firebase.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:285588016271:android:845c5d13001745da05b4fa",
+        "android_client_info": {
+          "package_name": "com.example.etherly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC97cru4LT-C_tJXry3yQLM7SnHtbK-I4k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
