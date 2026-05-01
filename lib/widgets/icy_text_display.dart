@@ -87,7 +87,6 @@ class IcyTextDisplay extends StatelessWidget {
   }
 
   Future<void> _copyToClipboard(BuildContext context, String text) async {
-    await HapticFeedback.mediumImpact();
     await Clipboard.setData(ClipboardData(text: text));
   }
 
@@ -128,7 +127,6 @@ class IcyTextDisplay extends StatelessWidget {
           child: InkWell(
             onTap: isSong
                 ? () {
-                    HapticFeedback.lightImpact();
                     _searchSong(context, service, text);
                   }
                 : null,
