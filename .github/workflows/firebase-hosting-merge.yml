@@ -9,6 +9,9 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: Production
+      url: https://etherly-firebase.web.app
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2

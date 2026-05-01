@@ -26,9 +26,12 @@ class Station {
   });
 
   factory Station.fromJson(Map<String, dynamic> json, {String? docId}) {
-    final Map<String, dynamic> rawStreams = json['streams'] as Map<String, dynamic>? ?? {};
-    final streams = rawStreams.map((key, value) => MapEntry(key.toLowerCase(), value.toString()));
-    
+    final Map<String, dynamic> rawStreams =
+        json['streams'] as Map<String, dynamic>? ?? {};
+    final streams = rawStreams.map(
+      (key, value) => MapEntry(key.toLowerCase(), value.toString()),
+    );
+
     // Fallback for old schema if streams map is empty
     if (streams.isEmpty) {
       if (json['streamMP3'] != null) streams['mp3'] = json['streamMP3'];
