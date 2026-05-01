@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 import 'firebase_options.dart';
 import 'localization/app_localizations.dart';
@@ -18,13 +20,32 @@ import 'screens/app_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
   } catch (e) {
-    debugPrint('Firebase initialization failed. Make sure to run `flutterfire configure`: $e');
+    debugPrint('Firebase initialization issue: $e');
   }
 
+  try {
+    // Initialize App Check (Firebase).
+    // Uses Play Integrity in production and Debug Provider in development.
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: kDebugMode ? AndroidDebugProvider() : AndroidPlayIntegrityProvider(),
+    );
+
+    // Enable Firestore persistence for web (Firebase).
+    if (kIsWeb) {
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+        webPersistentTabManager: WebPersistentMultipleTabManager(),
+      );
+    }
+  } catch (e) {
+    debugPrint('Firebase feature initialization failed: $e');
+  }
   // Configure image cache.
   PaintingBinding.instance.imageCache.maximumSize = 4000;
   PaintingBinding.instance.imageCache.maximumSizeBytes = 1000 << 20;

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,7 +19,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="A modern Material 3 radio application for Dutch radio stations.">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <!-- iOS meta tags & icons -->
@@ -28,7 +29,8 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="assets/icon_base.svg"/>
+  <link rel="icon" type="image/svg+xml" href="assets/icon_base.svg" />
+  <link rel="alternate icon" type="image/png" href="favicon.png" />
 
   <title>etherly</title>
   <link rel="manifest" href="manifest.json">
@@ -42,22 +44,26 @@
       height: 100vh;
       font-family: 'Roboto', sans-serif;
     }
+
     @media (prefers-color-scheme: dark) {
       body {
         background-color: #1c1b1f;
       }
     }
+
     #loading {
       display: flex;
       flex-direction: row;
       align-items: center;
       gap: 24px;
     }
+
     #loading img {
       width: 96px;
       height: 96px;
       border-radius: 20px;
     }
+
     #loading h1 {
       margin: 0;
       margin-top: 24px;
@@ -65,6 +71,7 @@
       font-weight: 400;
       color: #1c1b1f;
     }
+
     @media (prefers-color-scheme: dark) {
       #loading h1 {
         color: #e7e2e2;
@@ -72,6 +79,7 @@
     }
   </style>
 </head>
+
 <body>
   <div id="loading">
     <img src="assets/icon_base.svg" alt="Etherly">
@@ -79,4 +87,5 @@
   </div>
   <script src="flutter_bootstrap.js" async></script>
 </body>
+
 </html>

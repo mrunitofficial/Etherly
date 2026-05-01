@@ -1,0 +1,17 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Allow anyone to read the 'stations' collection, and block all other actions
+    match /stations/{stationId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Default deny for everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

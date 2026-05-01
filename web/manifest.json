@@ -1,11 +1,11 @@
 {
-    "name": "etherly",
-    "short_name": "etherly",
+    "name": "Etherly",
+    "short_name": "Etherly",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#e7e2e2",
+    "theme_color": "#0057CC",
+    "description": "A modern Material 3 radio application for Dutch radio stations.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
