@@ -24,14 +24,13 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
-    // Initialize App Check.
+    // Initialize App Check (Firebase).
     await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.debug,
-      appleProvider: AppleProvider.debug,
-      webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
+      providerAndroid: AndroidDebugProvider(),
+      providerWeb: ReCaptchaV3Provider('recaptcha-v3-site-key'),
     );
 
-    // Enable Firestore persistence for web.
+    // Enable Firestore persistence for web (Firebase).
     if (kIsWeb) {
       FirebaseFirestore.instance.settings = const Settings(
         persistenceEnabled: true,
