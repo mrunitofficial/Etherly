@@ -7,15 +7,15 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:285588016271:android:845c5d13001745da05b4fa",
+        "mobilesdk_app_id": "1:285588016271:android:7e2481d1f7e5f04c05b4fa",
         "android_client_info": {
-          "package_name": "com.example.etherly"
+          "package_name": "com.mrunit.etherly"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC97cru4LT-C_tJXry3yQLM7SnHtbK-I4k"
+          "current_key": "AIzaSyBjMv7H1MlMgoJFZKzPDc2zlq-7DQPOFDM"
         }
       ],
       "services": {

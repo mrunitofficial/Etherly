@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 import 'firebase_options.dart';
 import 'localization/app_localizations.dart';
@@ -21,8 +23,25 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
+    // Initialize App Check.
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug,
+      appleProvider: AppleProvider.debug,
+      webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
+    );
+
+    // Enable Firestore persistence for web.
+    if (kIsWeb) {
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+        webPersistentTabManager: WebPersistentMultipleTabManager(),
+      );
+    }
   } catch (e) {
-    debugPrint('Firebase initialization failed. Make sure to run `flutterfire configure`: $e');
+    debugPrint(
+      'Firebase initialization failed. Make sure to run `flutterfire configure`: $e',
+    );
   }
 
   // Configure image cache.
