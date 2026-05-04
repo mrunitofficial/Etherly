@@ -35,6 +35,7 @@ class StationGridItem extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final sizes = theme.extension<Sizes>()!;
+                final spacing = theme.extension<Spacing>()!;
                 final showFavorite =
                     constraints.maxWidth >= sizes.largeIncreased;
                 return Stack(
@@ -43,15 +44,20 @@ class StationGridItem extends StatelessWidget {
                     if (showFavorite)
                       Align(
                         alignment: Alignment.topRight,
-                        child: IconButton.filledTonal(
-                          onPressed: onFavorite,
-                          style: IconButton.styleFrom(
-                            backgroundColor: theme.colorScheme.surface
-                                .withAlpha(40),
-                          ),
-                          icon: Icon(
-                            isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: theme.colorScheme.onSurface,
+                        child: Padding(
+                          padding: EdgeInsets.all(spacing.extraSmall),
+                          child: IconButton.filledTonal(
+                            onPressed: onFavorite,
+                            style: IconButton.styleFrom(
+                              backgroundColor:
+                                  theme.colorScheme.surface.withAlpha(40),
+                            ),
+                            icon: Icon(
+                              isFavorite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                         ),
                       ),

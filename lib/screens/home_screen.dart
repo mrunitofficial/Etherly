@@ -167,8 +167,6 @@ class _HomeScreenState extends State<HomeScreen>
           child: CategoryRow(
             title: loc?.translate('homeFavoritesTitle') ?? 'Favorites',
             stations: favoriteStations,
-            audioPlayerService: audioPlayerService,
-            screenWidth: screenWidth,
           ),
         ),
       );
@@ -188,8 +186,6 @@ class _HomeScreenState extends State<HomeScreen>
           child: CategoryRow(
             title: loc?.translate('homeRecentsTitle') ?? 'Recents',
             stations: recentStations,
-            audioPlayerService: audioPlayerService,
-            screenWidth: screenWidth,
           ),
         ),
       );
@@ -209,8 +205,6 @@ class _HomeScreenState extends State<HomeScreen>
           child: CategoryRow(
             title: loc?.translate('homeCategoriesTitle') ?? 'Popular',
             stations: popularStations,
-            audioPlayerService: audioPlayerService,
-            screenWidth: screenWidth,
           ),
         ),
       );
@@ -252,8 +246,6 @@ class _HomeScreenState extends State<HomeScreen>
             child: CategoryRow(
               title: '$moreFrom $category',
               stations: suggestedStations,
-              audioPlayerService: audioPlayerService,
-              screenWidth: screenWidth,
             ),
           ),
         );
@@ -292,8 +284,6 @@ class _HomeScreenState extends State<HomeScreen>
             child: CategoryRow(
               title: '$moreFrom $category',
               stations: stations,
-              audioPlayerService: audioPlayerService,
-              screenWidth: screenWidth,
             ),
           ),
         );
