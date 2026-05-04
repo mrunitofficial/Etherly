@@ -23,8 +23,6 @@ class StationGridItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final spacing = theme.extension<Spacing>()!;
-
     return RepaintBoundary(
       child: Tooltip(
         message: station.name,
@@ -39,7 +37,6 @@ class StationGridItem extends StatelessWidget {
                 final sizes = theme.extension<Sizes>()!;
                 final showFavorite =
                     constraints.maxWidth >= sizes.largeIncreased;
-
                 return Stack(
                   children: [
                     Positioned.fill(child: StationArt(artUrl: station.art)),
