@@ -57,3 +57,6 @@ service-account.json
 
 # Custom / AI related
 ai-instructions.md
+
+# Importer scripts
+/scripts/
