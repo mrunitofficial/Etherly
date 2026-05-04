@@ -56,6 +56,7 @@ class AppTheme {
 
 /// Material 3 Spacing tokens (until added officialy to Flutter SDK)
 class Spacing extends ThemeExtension<Spacing> {
+  final double extraExtraSmall = 2.0;
   final double extraSmall = 4.0;
   final double small = 8.0;
   final double medium = 16.0;
@@ -91,12 +92,6 @@ class Shapes extends ThemeExtension<Shapes> {
 
 /// Material 3 Speed tokens (until added officialy to Flutter SDK)
 class Speed extends ThemeExtension<Speed> {
-  final Duration extraSmall = const Duration(milliseconds: 100);
-  final Duration small = const Duration(milliseconds: 200);
-  final Duration medium = const Duration(milliseconds: 300);
-  final Duration large = const Duration(milliseconds: 400);
-  final Duration extraLarge = const Duration(milliseconds: 500);
-
   final Duration short1 = const Duration(milliseconds: 50);
   final Duration short2 = const Duration(milliseconds: 100);
   final Duration short3 = const Duration(milliseconds: 150);
@@ -128,6 +123,9 @@ class Sizes extends ThemeExtension<Sizes> {
   final double normal = 56.0;
   final double medium = 80.0;
   final double large = 96.0;
+  final double largeIncreased = 120.0;
+  final double extraLarge = 136.0;
+  final double extraLargeIncreased = 160.0;
 
   @override
   Sizes copyWith() => this;

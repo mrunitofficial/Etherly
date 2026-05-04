@@ -57,8 +57,6 @@ class StationCardItem extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    padding: EdgeInsets.all(spacing.small),
-                    constraints: const BoxConstraints(),
                     icon: Icon(
                       isFavorite ? Icons.favorite : Icons.favorite_border,
                       color: theme.colorScheme.onSurface,

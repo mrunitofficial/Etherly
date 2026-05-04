@@ -58,7 +58,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
       _controller
           .animateTo(
             _latestMinPlayerSize!,
-            duration: Theme.of(context).extension<Speed>()!.medium,
+            duration: Theme.of(context).extension<Speed>()!.long3,
             curve: Easing.standard,
           )
           .catchError((error) {});
@@ -235,7 +235,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
                                     minPlayerSize,
                                     duration: Theme.of(
                                       context,
-                                    ).extension<Speed>()!.medium,
+                                    ).extension<Speed>()!.long3,
                                     curve: Easing.standard,
                                   )
                                   .catchError((_) {})
@@ -253,7 +253,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
                                       maxPlayerSize,
                                       duration: Theme.of(
                                         context,
-                                      ).extension<Speed>()!.medium,
+                                      ).extension<Speed>()!.long3,
                                       curve: Easing.standard,
                                     )
                                     .catchError((_) {})
