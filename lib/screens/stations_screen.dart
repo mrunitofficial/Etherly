@@ -365,7 +365,7 @@ class _StationsScreenState extends State<StationsScreen>
             isFavorite: station.isFavorite,
             onTap: () => service.playMediaItem(station),
             onFavorite: () => service.toggleFavorite(station),
-            borderRadius: BorderRadius.circular(12.0),
+            borderRadius: Theme.of(context).extension<Shapes>()!.medium,
           );
         },
       ),

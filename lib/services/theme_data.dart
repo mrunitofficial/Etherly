@@ -11,11 +11,12 @@ class AppTheme {
   static final _shapes = Shapes();
   static final _spacing = Spacing();
   static final _speed = Speed();
+  static final _sizes = Sizes();
 
   static ThemeData getLight(ColorScheme colorScheme) {
     return ThemeData(
       colorScheme: colorScheme,
-      extensions: [_shapes, _spacing, _speed],
+      extensions: [_shapes, _spacing, _speed, _sizes],
       scaffoldBackgroundColor: colorScheme.surfaceContainer,
       appBarTheme: const AppBarTheme(toolbarHeight: 80, titleSpacing: 0.0),
       tooltipTheme: TooltipThemeData(waitDuration: _speed.long1),
@@ -35,7 +36,7 @@ class AppTheme {
   static ThemeData getDark(ColorScheme colorScheme) {
     return ThemeData(
       colorScheme: colorScheme,
-      extensions: [_shapes, _spacing, _speed],
+      extensions: [_shapes, _spacing, _speed, _sizes],
       scaffoldBackgroundColor: colorScheme.surfaceContainer,
       appBarTheme: const AppBarTheme(toolbarHeight: 80, titleSpacing: 0.0),
       tooltipTheme: TooltipThemeData(waitDuration: _speed.long1),
@@ -119,4 +120,19 @@ class Speed extends ThemeExtension<Speed> {
   Speed lerp(ThemeExtension<Speed>? other, double t) => this;
 
   // Usage: Duration: Theme.of(context).extension<Speed>()!.medium2
+}
+
+/// Material 3 Size tokens (until added officialy to Flutter SDK)
+class Sizes extends ThemeExtension<Sizes> {
+  final double small = 40.0;
+  final double normal = 56.0;
+  final double medium = 80.0;
+  final double large = 96.0;
+
+  @override
+  Sizes copyWith() => this;
+  @override
+  Sizes lerp(ThemeExtension<Sizes>? other, double t) => this;
+
+  // Usage: width: Theme.of(context).extension<Sizes>()!.medium
 }

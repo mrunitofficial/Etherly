@@ -27,9 +27,9 @@ class StationGridItem extends StatelessWidget {
         child: Stack(
           children: [
             Positioned.fill(
-              child: ClipRRect(
+              child: StationArt(
+                artUrl: station.art,
                 borderRadius: borderRadius,
-                child: StationArt(artUrl: station.art),
               ),
             ),
             Positioned.fill(
