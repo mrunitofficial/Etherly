@@ -29,7 +29,6 @@ class StationCardItem extends StatelessWidget {
           margin: EdgeInsets.zero,
           color: Theme.of(context).colorScheme.surfaceContainerHigh,
           child: InkWell(
-            borderRadius: BorderRadius.circular(12.0),
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.all(8.0),

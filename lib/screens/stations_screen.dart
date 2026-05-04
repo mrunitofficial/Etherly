@@ -11,7 +11,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:etherly/services/theme_data.dart';
 
-
 const String _radioViewTypeKey = 'radio_view_type';
 
 enum ViewType { list, grid }
