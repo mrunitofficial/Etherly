@@ -27,8 +27,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with AutomaticKeepAliveClientMixin {
+  bool _isInitialized = false;
   bool _showLoading = false;
   Timer? _loadingTimer;
+  Future<void>? _initializationFuture;
 
   @override
   bool get wantKeepAlive => true;
@@ -36,13 +38,25 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
+    _initializationFuture =
+        context.read<AudioPlayerService>().initializationFuture;
+
     _loadingTimer = Timer(Speed().short1, () {
       if (mounted) {
-        setState(() {
-          _showLoading = true;
-        });
+        setState(() => _showLoading = true);
       }
     });
+
+    _initScreen();
+  }
+
+  Future<void> _initScreen() async {
+    await _initializationFuture;
+    _loadingTimer?.cancel();
+    if (mounted) {
+      setState(() => _isInitialized = true);
+      widget.onContentLoaded?.call();
+    }
   }
 
   @override
@@ -54,241 +68,154 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final bool stationsAreEmpty = context.select(
-      (AudioPlayerService s) => s.stations.isEmpty,
-    );
 
-    if (!stationsAreEmpty && widget.onContentLoaded != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.onContentLoaded?.call();
-      });
+    final loc = AppLocalizations.of(context);
+    final spacing = Theme.of(context).extension<Spacing>()!;
+
+    if (!_isInitialized) {
+      return _showLoading
+          ? const Center(child: CircularProgressIndicator())
+          : const SizedBox.shrink();
     }
 
-    if (stationsAreEmpty && _showLoading) {
-      return const SizedBox.shrink();
-    } else if (stationsAreEmpty) {
-      return const SizedBox.shrink();
-    }
+    final audioService = context.watch<AudioPlayerService>();
+    final allStations = audioService.stations;
 
-    final AppLocalizations? loc = AppLocalizations.of(context);
-    final List<Widget> categorySlivers = _buildContentSlivers(context);
+    final sections = _getSections(context, allStations, audioService);
 
     return SafeArea(
       child: CustomScrollView(
+        cacheExtent: 4000.0,
         slivers: [
           SliverToBoxAdapter(
             child: ScreenHeader(
               title: loc?.translate('homeWelcome') ?? 'Etherly',
             ),
           ),
-          ...categorySlivers,
-          SliverPadding(padding: EdgeInsets.only(bottom: widget.bottomPadding)),
+          if (sections.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.radio_outlined,
+                      size: Theme.of(context).extension<Sizes>()!.large * 1.5,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withAlpha(128), // 0.5 opacity
+                    ),
+                    SizedBox(height: spacing.medium),
+                    Text(
+                      loc?.translate('homeEmptySubtitle') ??
+                          'No radio stations available',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    // Add bottom padding to balance the vertical center
+                    SizedBox(height: spacing.large * 2),
+                  ],
+                ),
+              ),
+            )
+          else
+            ...sections.map((section) => SliverToBoxAdapter(
+                  child: CategoryRow(
+                    title: section.title,
+                    stations: section.stations,
+                  ),
+                )),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom: widget.bottomPadding + spacing.medium,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  List<Widget> _buildContentSlivers(BuildContext context) {
-    final audioPlayerService = context.read<AudioPlayerService>();
-    final AppLocalizations? loc = AppLocalizations.of(context);
-    final double screenWidth = MediaQuery.sizeOf(context).width;
+  List<({String title, List<Station> stations})> _getSections(
+    BuildContext context,
+    List<Station> allStations,
+    AudioPlayerService audioService,
+  ) {
+    final loc = AppLocalizations.of(context);
+    final List<({String title, List<Station> stations})> sections = [];
+    final Set<String> displayedCategories = {};
 
-    final List<Station> allStations = context.select(
-      (AudioPlayerService s) => List<Station>.from(s.stations),
-    );
-    final List<Station> favoriteStations = allStations
-        .where((s) => s.isFavorite)
-        .toList();
-    final List<Station> recentStations = audioPlayerService.recentStations;
-    final List<Station> popularStations =
-        allStations.where((s) => s.rank != null).toList()
-          ..sort((a, b) => (a.rank ?? 999).compareTo(b.rank ?? 999));
-
-    final List<Widget> contentSlivers = [];
-    final Set<String> displayedCategoryNames = {};
-
-    _addFavorites(
-      contentSlivers: contentSlivers,
-      favoriteStations: favoriteStations,
-      audioPlayerService: audioPlayerService,
-      screenWidth: screenWidth,
-      loc: loc,
-    );
-
-    _addRecents(
-      contentSlivers: contentSlivers,
-      recentStations: recentStations,
-      audioPlayerService: audioPlayerService,
-      screenWidth: screenWidth,
-      loc: loc,
-    );
-
-    _addPopular(
-      contentSlivers: contentSlivers,
-      popularStations: popularStations,
-      audioPlayerService: audioPlayerService,
-      screenWidth: screenWidth,
-      loc: loc,
-    );
-
-    _addDynamicCategories(
-      contentSlivers: contentSlivers,
-      displayedCategoryNames: displayedCategoryNames,
-      recentStations: recentStations,
-      popularStations: popularStations,
-      allStations: allStations,
-      audioPlayerService: audioPlayerService,
-      screenWidth: screenWidth,
-      loc: loc,
-    );
-
-    _addFallbackCategories(
-      contentSlivers: contentSlivers,
-      displayedCategoryNames: displayedCategoryNames,
-      allStations: allStations,
-      audioPlayerService: audioPlayerService,
-      screenWidth: screenWidth,
-      loc: loc,
-    );
-
-    return contentSlivers;
-  }
-
-  void _addFavorites({
-    required List<Widget> contentSlivers,
-    required List<Station> favoriteStations,
-    required AudioPlayerService audioPlayerService,
-    required double screenWidth,
-    required AppLocalizations? loc,
-  }) {
-    if (favoriteStations.isNotEmpty) {
-      contentSlivers.add(
-        SliverToBoxAdapter(
-          child: CategoryRow(
-            title: loc?.translate('homeFavoritesTitle') ?? 'Favorites',
-            stations: favoriteStations,
-          ),
-        ),
-      );
+    // 1. Favorites
+    final favorites = allStations.where((s) => s.isFavorite).toList();
+    if (favorites.isNotEmpty) {
+      sections.add((
+        title: loc?.translate('homeFavoritesTitle') ?? 'Favorites',
+        stations: favorites,
+      ));
     }
-  }
 
-  void _addRecents({
-    required List<Widget> contentSlivers,
-    required List<Station> recentStations,
-    required AudioPlayerService audioPlayerService,
-    required double screenWidth,
-    required AppLocalizations? loc,
-  }) {
-    if (recentStations.isNotEmpty) {
-      contentSlivers.add(
-        SliverToBoxAdapter(
-          child: CategoryRow(
-            title: loc?.translate('homeRecentsTitle') ?? 'Recents',
-            stations: recentStations,
-          ),
-        ),
-      );
+    // 2. Recents
+    final recents = audioService.recentStations;
+    if (recents.isNotEmpty) {
+      sections.add((
+        title: loc?.translate('homeRecentsTitle') ?? 'Recents',
+        stations: recents,
+      ));
     }
-  }
 
-  void _addPopular({
-    required List<Widget> contentSlivers,
-    required List<Station> popularStations,
-    required AudioPlayerService audioPlayerService,
-    required double screenWidth,
-    required AppLocalizations? loc,
-  }) {
-    if (popularStations.isNotEmpty) {
-      contentSlivers.add(
-        SliverToBoxAdapter(
-          child: CategoryRow(
-            title: loc?.translate('homeCategoriesTitle') ?? 'Popular',
-            stations: popularStations,
-          ),
-        ),
-      );
+    // 3. Popular
+    final popular = allStations.where((s) => s.rank != null).toList()
+      ..sort((a, b) => (a.rank ?? 999).compareTo(b.rank ?? 999));
+    if (popular.isNotEmpty) {
+      sections.add((
+        title: loc?.translate('homeCategoriesTitle') ?? 'Popular',
+        stations: popular,
+      ));
     }
-  }
 
-  void _addDynamicCategories({
-    required List<Widget> contentSlivers,
-    required Set<String> displayedCategoryNames,
-    required List<Station> recentStations,
-    required List<Station> popularStations,
-    required List<Station> allStations,
-    required AudioPlayerService audioPlayerService,
-    required double screenWidth,
-    required AppLocalizations? loc,
-  }) {
-    final Set<String> sourceCategories =
-        (recentStations.isNotEmpty ? recentStations : popularStations)
-            .map((s) => s.category)
-            .toSet();
+    // 4. Dynamic Categories (based on recents or popular)
+    final sourceStations = recents.isNotEmpty ? recents : popular;
+    final recentIds = recents.map((s) => s.id).toSet();
+    final String moreFromPrefix = loc?.translate('homeMoreFrom') ?? 'More from';
 
-    final Set<String> recentStationIds = recentStations
-        .map((s) => s.id)
-        .toSet();
+    for (final station in sourceStations) {
+      final category = station.category;
+      if (displayedCategories.contains(category)) continue;
 
-    for (final category in sourceCategories) {
-      if (displayedCategoryNames.contains(category)) continue;
-
-      final suggestedStations = allStations
-          .where(
-            (s) => s.category == category && !recentStationIds.contains(s.id),
-          )
+      final categoryStations = allStations
+          .where((s) => s.category == category && !recentIds.contains(s.id))
           .toList();
 
-      if (suggestedStations.length > 2) {
-        final String moreFrom = loc?.translate('homeMoreFrom') ?? 'More from';
-        contentSlivers.add(
-          SliverToBoxAdapter(
-            child: CategoryRow(
-              title: '$moreFrom $category',
-              stations: suggestedStations,
-            ),
-          ),
-        );
-        displayedCategoryNames.add(category);
+      if (categoryStations.length > 2) {
+        sections.add((
+          title: '$moreFromPrefix $category',
+          stations: categoryStations,
+        ));
+        displayedCategories.add(category);
       }
     }
-  }
 
-  void _addFallbackCategories({
-    required List<Widget> contentSlivers,
-    required Set<String> displayedCategoryNames,
-    required List<Station> allStations,
-    required AudioPlayerService audioPlayerService,
-    required double screenWidth,
-    required AppLocalizations? loc,
-  }) {
-    if (contentSlivers.length >= _minTotalCategories) return;
+    // 5. Fallback Categories to fill up
+    if (sections.length < _minTotalCategories) {
+      final allCategories = allStations.map((s) => s.category).toSet().toList()
+        ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
-    final List<String> allOtherCategories =
-        allStations.map((s) => s.category).toSet().toList()
-          ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+      for (final category in allCategories) {
+        if (sections.length >= _minTotalCategories) break;
+        if (displayedCategories.contains(category)) continue;
 
-    final String moreFrom = loc?.translate('homeMoreFrom') ?? 'More from';
-
-    for (final category in allOtherCategories) {
-      if (contentSlivers.length >= _minTotalCategories) break;
-      if (displayedCategoryNames.contains(category)) continue;
-
-      final stations = allStations
-          .where((s) => s.category == category)
-          .toList();
-
-      if (stations.length > 1) {
-        contentSlivers.add(
-          SliverToBoxAdapter(
-            child: CategoryRow(
-              title: '$moreFrom $category',
-              stations: stations,
-            ),
-          ),
-        );
-        displayedCategoryNames.add(category);
+        final stations = allStations.where((s) => s.category == category).toList();
+        if (stations.length > 1) {
+          sections.add((
+            title: '$moreFromPrefix $category',
+            stations: stations,
+          ));
+          displayedCategories.add(category);
+        }
       }
     }
+
+    return sections;
   }
 }
+

@@ -21,6 +21,9 @@ class AudioPlayerService with ChangeNotifier {
   late final SharedPreferences _prefs;
 
   final ValueNotifier<bool> isReady = ValueNotifier(false);
+  final Completer<void> _initializationCompleter = Completer<void>();
+  Future<void> get initializationFuture => _initializationCompleter.future;
+
   final ValueNotifier<bool> _radioPlayerShouldClose = ValueNotifier(false);
   ValueNotifier<bool> get radioPlayerShouldClose => _radioPlayerShouldClose;
 
@@ -126,6 +129,9 @@ class AudioPlayerService with ChangeNotifier {
     await _loadStations();
     await _checkAutoplay();
     isReady.value = true;
+    if (!_initializationCompleter.isCompleted) {
+      _initializationCompleter.complete();
+    }
   }
 
   /// Updates the player volume (Web only).

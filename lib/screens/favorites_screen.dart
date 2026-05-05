@@ -37,9 +37,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     with AutomaticKeepAliveClientMixin {
   ViewType _viewType = ViewType.list;
   bool _isInitialized = false;
-
   bool _showLoading = false;
   Timer? _loadingTimer;
+  Future<void>? _initializationFuture;
 
   @override
   bool get wantKeepAlive => true;
@@ -47,19 +47,27 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   @override
   void initState() {
     super.initState();
-    _initViewType();
+    _initializationFuture =
+        context.read<AudioPlayerService>().initializationFuture;
 
     _loadingTimer = Timer(Speed().short1, () {
       if (mounted) {
         setState(() => _showLoading = true);
       }
     });
+
+    _initScreen();
   }
 
-  Future<void> _initViewType() async {
+  Future<void> _initScreen() async {
     await _loadViewType();
+    await _initializationFuture;
+
+    _loadingTimer?.cancel();
+
     if (mounted) {
       setState(() => _isInitialized = true);
+      widget.onContentLoaded?.call();
     }
   }
 
@@ -93,7 +101,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     super.build(context);
 
     if (!_isInitialized) {
-      return const SizedBox.shrink();
+      return _showLoading
+          ? const Center(child: CircularProgressIndicator())
+          : const SizedBox.shrink();
     }
 
     return _buildContent(context);
@@ -105,22 +115,12 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     final favoriteStations = stations.where((s) => s.isFavorite).toList();
     final spacing = Theme.of(context).extension<Spacing>()!;
 
-    if (stations.isEmpty) {
-      return _showLoading
-          ? const Center(child: CircularProgressIndicator())
-          : const SizedBox.shrink();
-    }
-
-    if (widget.onContentLoaded != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.onContentLoaded?.call();
-      });
-    }
-
-    _loadingTimer?.cancel();
-
     final loc = AppLocalizations.of(context);
-    final bottomPadding = EdgeInsets.only(bottom: widget.bottomPadding);
+    final contentPadding = EdgeInsets.only(
+      left: spacing.medium,
+      right: spacing.medium,
+      bottom: widget.bottomPadding + spacing.medium,
+    );
 
     return SafeArea(
       child: CustomScrollView(
@@ -180,14 +180,14 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             _buildListSlivers(
               favoriteStations,
               audioPlayerService,
-              bottomPadding,
+              contentPadding,
               spacing,
             )
           else
             _buildSliverGrid(
               favoriteStations,
               audioPlayerService,
-              bottomPadding,
+              contentPadding,
               spacing,
             ),
         ],
@@ -208,7 +208,10 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     final cardHeight = artSize + (spacing.medium);
 
     return SliverPadding(
-      padding: EdgeInsets.symmetric(horizontal: spacing.small),
+      padding: padding.copyWith(
+        left: spacing.medium,
+        right: spacing.medium,
+      ),
       sliver: SliverGrid.builder(
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 600.0,
@@ -240,8 +243,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   ) {
     return SliverPadding(
       padding: padding.copyWith(
-        left: spacing.small,
-        right: spacing.small,
         top: spacing.extraSmall,
       ),
       sliver: SliverGrid.builder(
