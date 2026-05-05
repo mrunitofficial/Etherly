@@ -66,76 +66,72 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     super.build(context);
 
-    final loc = AppLocalizations.of(context);
-    final spacing = Theme.of(context).extension<Spacing>()!;
-
     if (!_isInitialized) {
       return _showLoading
           ? const Center(child: CircularProgressIndicator())
           : const SizedBox.shrink();
     }
 
+    final loc = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final sizes = theme.extension<Sizes>()!;
+
     final audioService = context.watch<AudioPlayerService>();
-    final allStations = audioService.stations;
+    final sections = _getSections(context, audioService.stations, audioService);
 
-    final sections = _getSections(context, allStations, audioService);
-
-    return SafeArea(
-      child: CustomScrollView(
-        cacheExtent: 4000.0,
-        slivers: [
-          SliverToBoxAdapter(
-            child: ScreenHeader(
-              title: loc?.translate('homeWelcome') ?? 'Etherly',
-            ),
+    return CustomScrollView(
+      cacheExtent: 4000.0,
+      slivers: [
+        SliverToBoxAdapter(
+          child: ScreenHeader(
+            title: loc?.translate('homeWelcome') ?? 'Etherly',
           ),
-          if (sections.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.radio_outlined,
-                      size: Theme.of(context).extension<Sizes>()!.large * 1.5,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withAlpha(128), // 0.5 opacity
-                    ),
-                    SizedBox(height: spacing.medium),
-                    Text(
-                      loc?.translate('homeEmptyTitle') ?? 'No stations',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    SizedBox(height: spacing.small),
-                    Text(
-                      loc?.translate('homeEmptySubtitle') ??
-                          'No radio stations available',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    // Add bottom padding to balance the vertical center
-                    SizedBox(height: spacing.large),
-                  ],
-                ),
-              ),
-            )
-          else
-            ...sections.map(
-              (section) => SliverToBoxAdapter(
-                child: CategoryRow(
-                  title: section.title,
-                  stations: section.stations,
-                ),
+        ),
+        if (sections.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.radio_outlined,
+                    size: sizes.large,
+                    color: theme.colorScheme.primary.withAlpha(128),
+                  ),
+                  SizedBox(height: spacing.medium),
+                  Text(
+                    loc?.translate('homeEmptyTitle') ?? 'No stations',
+                    style: theme.textTheme.headlineMedium,
+                  ),
+                  SizedBox(height: spacing.small),
+                  Text(
+                    loc?.translate('homeEmptySubtitle') ??
+                        'No radio stations available',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  SizedBox(height: spacing.large),
+                ],
               ),
             ),
-          SliverPadding(
-            padding: EdgeInsets.only(
-              bottom: widget.bottomPadding + spacing.medium,
+          )
+        else
+          ...sections.map(
+            (section) => SliverToBoxAdapter(
+              child: CategoryRow(
+                title: section.title,
+                stations: section.stations,
+              ),
             ),
           ),
-        ],
-      ),
+        // Unified bottom padding sliver
+        SliverPadding(
+          padding: EdgeInsets.only(
+            bottom: widget.bottomPadding + spacing.medium,
+          ),
+        ),
+      ],
     );
   }
 
@@ -176,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen>
       ));
     }
 
-    // 4. Dynamic Categories (based on recents or popular)
+    // 4. Dynamic Categories
     final sourceStations = recents.isNotEmpty ? recents : popular;
     final recentIds = recents.map((s) => s.id).toSet();
     final String moreFromPrefix = loc?.translate('homeMoreFrom') ?? 'More from';
@@ -198,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen>
       }
     }
 
-    // 5. Fallback Categories to fill up
+    // 5. Fallback Categories
     if (sections.length < _minTotalCategories) {
       final allCategories = allStations.map((s) => s.category).toSet().toList()
         ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));

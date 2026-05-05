@@ -17,7 +17,6 @@ enum ViewType { list, grid }
 
 typedef ContentLoadedCallback = void Function();
 
-/// A screen that displays a list or grid of all radio stations.
 class StationsScreen extends StatefulWidget {
   final ContentLoadedCallback? onContentLoaded;
   final ScreenType screenType;
@@ -44,7 +43,6 @@ class _StationsScreenState extends State<StationsScreen>
   @override
   bool get wantKeepAlive => true;
 
-  /// Initializes and disposes resources.
   @override
   void initState() {
     super.initState();
@@ -79,7 +77,6 @@ class _StationsScreenState extends State<StationsScreen>
     super.dispose();
   }
 
-  /// Loads the saved view type from shared preferences.
   Future<ViewType> _loadViewType() async {
     final prefs = await SharedPreferences.getInstance();
     final viewTypeName =
@@ -107,7 +104,6 @@ class _StationsScreenState extends State<StationsScreen>
     return grouped;
   }
 
-  /// Builds the station screen UI.
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -118,118 +114,103 @@ class _StationsScreenState extends State<StationsScreen>
           : const SizedBox.shrink();
     }
 
-    return _buildContent(context);
-  }
-
-  Widget _buildContent(BuildContext context) {
     final audioPlayerService = context.watch<AudioPlayerService>();
     final stations = audioPlayerService.stations;
-    final spacing = Theme.of(context).extension<Spacing>()!;
 
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final sizes = theme.extension<Sizes>()!;
+    final shapes = theme.extension<Shapes>()!;
     final loc = AppLocalizations.of(context);
-    final contentPadding = EdgeInsets.symmetric(horizontal: spacing.medium);
 
-    return SafeArea(
-      child: CustomScrollView(
-        cacheExtent: 4000.0,
-        slivers: [
-          SliverToBoxAdapter(
-            child: ScreenHeader(
-              title: loc?.translate('stationsTitle') ?? 'All channels',
-              actions: stations.isEmpty
-                  ? null
-                  : SegmentedButton<ViewType>(
-                      segments: const [
-                        ButtonSegment(
-                          value: ViewType.list,
-                          icon: Icon(Icons.list),
-                        ),
-                        ButtonSegment(
-                          value: ViewType.grid,
-                          icon: Icon(Icons.grid_view),
-                        ),
-                      ],
-                      selected: {_viewType},
-                      onSelectionChanged: (Set<ViewType> newSelection) {
-                        final newViewType = newSelection.first;
-                        setState(() => _viewType = newViewType);
-                        _saveViewType(newViewType);
-                      },
-                    ),
-            ),
+    return CustomScrollView(
+      cacheExtent: 4000.0,
+      slivers: [
+        SliverToBoxAdapter(
+          child: ScreenHeader(
+            title: loc?.translate('stationsTitle') ?? 'All channels',
+            actions: stations.isEmpty
+                ? null
+                : SegmentedButton<ViewType>(
+                    segments: const [
+                      ButtonSegment(
+                        value: ViewType.list,
+                        icon: Icon(Icons.list),
+                      ),
+                      ButtonSegment(
+                        value: ViewType.grid,
+                        icon: Icon(Icons.grid_view),
+                      ),
+                    ],
+                    selected: {_viewType},
+                    onSelectionChanged: (Set<ViewType> newSelection) {
+                      final newViewType = newSelection.first;
+                      setState(() => _viewType = newViewType);
+                      _saveViewType(newViewType);
+                    },
+                  ),
           ),
-          if (stations.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.radio,
-                      size: Theme.of(context).extension<Sizes>()!.large * 1.5,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withAlpha(128), // 0.5 opacity
-                    ),
-                    SizedBox(height: spacing.medium),
-                    Text(
-                      loc?.translate('stationsEmptyTitle') ?? 'No stations',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    SizedBox(height: spacing.small),
-                    Text(
-                      loc?.translate('stationsEmptySubtitle') ??
-                          'No radio stations found',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    // Add bottom padding to balance the vertical center
-                    SizedBox(height: spacing.large),
-                  ],
-                ),
+        ),
+        if (stations.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.radio,
+                    size: sizes.large,
+                    color: theme.colorScheme.primary.withAlpha(128),
+                  ),
+                  SizedBox(height: spacing.medium),
+                  Text(
+                    loc?.translate('stationsEmptyTitle') ?? 'No stations',
+                    style: theme.textTheme.headlineMedium,
+                  ),
+                  SizedBox(height: spacing.small),
+                  Text(
+                    loc?.translate('stationsEmptySubtitle') ??
+                        'No radio stations found',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  SizedBox(height: spacing.large),
+                ],
               ),
-            )
-          else if (_viewType == ViewType.list)
-            ..._buildListSlivers(
-              _getGroupedStations(stations),
-              audioPlayerService,
-              contentPadding,
-              spacing,
-            )
-          else
-            _buildSliverGrid(
-              stations,
-              audioPlayerService,
-              contentPadding,
-              spacing,
             ),
-          SliverPadding(
-            padding: EdgeInsets.only(
-              bottom: widget.bottomPadding + spacing.medium,
-            ),
+          )
+        else if (_viewType == ViewType.list)
+          ..._buildListSlivers(
+            _getGroupedStations(stations),
+            audioPlayerService,
+            spacing,
+            sizes,
+          )
+        else
+          _buildSliverGrid(stations, audioPlayerService, spacing, shapes),
+
+        SliverPadding(
+          padding: EdgeInsets.only(
+            bottom: widget.bottomPadding + spacing.medium,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  /// Builds a list of slivers for the categorized stations.
   List<Widget> _buildListSlivers(
     Map<String, List<Station>> grouped,
     AudioPlayerService service,
-    EdgeInsets padding,
     Spacing spacing,
+    Sizes sizes,
   ) {
     final slivers = <Widget>[];
-
-    final sizes = Theme.of(context).extension<Sizes>()!;
     final artSize = widget.screenType.isLargeFormat
         ? sizes.large
         : sizes.normal;
-    final cardHeight = artSize + (spacing.medium);
+    final cardHeight = artSize + spacing.medium;
 
     grouped.forEach((category, stations) {
-      // Category Header
       slivers.add(
         SliverToBoxAdapter(
           child: Padding(
@@ -244,7 +225,6 @@ class _StationsScreenState extends State<StationsScreen>
         ),
       );
 
-      // Stations responsive Grid (acts as a list on mobile)
       slivers.add(
         SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: spacing.medium),
@@ -272,20 +252,22 @@ class _StationsScreenState extends State<StationsScreen>
       );
     });
 
-    // Add final padding
-
     return slivers;
   }
 
-  /// Builds a sliver grid with station items.
   Widget _buildSliverGrid(
     List<Station> stations,
     AudioPlayerService service,
-    EdgeInsets padding,
     Spacing spacing,
+    Shapes shapes,
   ) {
     return SliverPadding(
-      padding: padding.copyWith(top: spacing.extraSmall),
+      padding: EdgeInsets.fromLTRB(
+        spacing.medium,
+        spacing.extraSmall,
+        spacing.medium,
+        0,
+      ),
       sliver: SliverGrid.builder(
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 128.0,
@@ -301,7 +283,7 @@ class _StationsScreenState extends State<StationsScreen>
             isFavorite: station.isFavorite,
             onTap: () => service.playMediaItem(station),
             onFavorite: () => service.toggleFavorite(station),
-            borderRadius: Theme.of(context).extension<Shapes>()!.medium,
+            borderRadius: shapes.medium,
           );
         },
       ),

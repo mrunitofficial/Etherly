@@ -106,121 +106,111 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           : const SizedBox.shrink();
     }
 
-    return _buildContent(context);
-  }
-
-  Widget _buildContent(BuildContext context) {
     final audioPlayerService = context.watch<AudioPlayerService>();
-    final stations = audioPlayerService.stations;
-    final favoriteStations = stations.where((s) => s.isFavorite).toList();
-    final spacing = Theme.of(context).extension<Spacing>()!;
-    final sizes = Theme.of(context).extension<Sizes>()!;
+    final favoriteStations = audioPlayerService.stations
+        .where((s) => s.isFavorite)
+        .toList();
 
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final sizes = theme.extension<Sizes>()!;
+    final shapes = theme.extension<Shapes>()!;
     final loc = AppLocalizations.of(context);
-    final contentPadding = EdgeInsets.only(
-      left: spacing.medium,
-      right: spacing.medium,
-    );
 
-    return SafeArea(
-      child: CustomScrollView(
-        cacheExtent: 4000.0,
-        slivers: [
-          SliverToBoxAdapter(
-            child: ScreenHeader(
-              title: loc?.translate('favoritesTitle') ?? 'Favorites',
-              actions: favoriteStations.isEmpty
-                  ? null
-                  : SegmentedButton<ViewType>(
-                      segments: const [
-                        ButtonSegment(
-                          value: ViewType.list,
-                          icon: Icon(Icons.list),
-                        ),
-                        ButtonSegment(
-                          value: ViewType.grid,
-                          icon: Icon(Icons.grid_view),
-                        ),
-                      ],
-                      selected: {_viewType},
-                      onSelectionChanged: (Set<ViewType> newSelection) {
-                        final newViewType = newSelection.first;
-                        setState(() => _viewType = newViewType);
-                        _saveViewType(newViewType);
-                      },
-                    ),
-            ),
+    return CustomScrollView(
+      cacheExtent: 4000.0,
+      slivers: [
+        SliverToBoxAdapter(
+          child: ScreenHeader(
+            title: loc?.translate('favoritesTitle') ?? 'Favorites',
+            actions: favoriteStations.isEmpty
+                ? null
+                : SegmentedButton<ViewType>(
+                    segments: const [
+                      ButtonSegment(
+                        value: ViewType.list,
+                        icon: Icon(Icons.list),
+                      ),
+                      ButtonSegment(
+                        value: ViewType.grid,
+                        icon: Icon(Icons.grid_view),
+                      ),
+                    ],
+                    selected: {_viewType},
+                    onSelectionChanged: (Set<ViewType> newSelection) {
+                      final newViewType = newSelection.first;
+                      setState(() => _viewType = newViewType);
+                      _saveViewType(newViewType);
+                    },
+                  ),
           ),
-          if (favoriteStations.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.favorite_border,
-                      size: sizes.large * 1.5,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withAlpha(128),
-                    ),
-                    SizedBox(height: spacing.medium),
-                    Text(
-                      loc?.translate('favoritesEmptyTitle') ??
-                          'No favorite stations yet',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    SizedBox(height: spacing.small),
-                    Text(
-                      loc?.translate('favoritesEmptySubtitle') ??
-                          'Favorite a radio station first',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    // Add bottom padding to balance the vertical center
-                    SizedBox(height: spacing.large),
-                  ],
-                ),
+        ),
+        if (favoriteStations.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.favorite_border,
+                    size: sizes.large,
+                    color: theme.colorScheme.primary.withAlpha(128),
+                  ),
+                  SizedBox(height: spacing.medium),
+                  Text(
+                    loc?.translate('favoritesEmptyTitle') ??
+                        'No favorite stations yet',
+                    style: theme.textTheme.headlineMedium,
+                  ),
+                  SizedBox(height: spacing.small),
+                  Text(
+                    loc?.translate('favoritesEmptySubtitle') ??
+                        'Favorite a radio station first',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  SizedBox(height: spacing.large),
+                ],
               ),
-            )
-          else if (_viewType == ViewType.list)
-            _buildListSlivers(
-              favoriteStations,
-              audioPlayerService,
-              contentPadding,
-              spacing,
-            )
-          else
-            _buildSliverGrid(
-              favoriteStations,
-              audioPlayerService,
-              contentPadding,
-              spacing,
             ),
-          SliverPadding(
-            padding: EdgeInsets.only(
-              bottom: widget.bottomPadding + spacing.medium,
-            ),
+          )
+        else if (_viewType == ViewType.list)
+          _buildListSlivers(
+            favoriteStations,
+            audioPlayerService,
+            spacing,
+            sizes,
+          )
+        else
+          _buildSliverGrid(
+            favoriteStations,
+            audioPlayerService,
+            spacing,
+            shapes,
           ),
-        ],
-      ),
+
+        SliverPadding(
+          padding: EdgeInsets.only(
+            bottom: widget.bottomPadding + spacing.medium,
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildListSlivers(
     List<Station> stations,
     AudioPlayerService service,
-    EdgeInsets padding,
     Spacing spacing,
+    Sizes sizes,
   ) {
-    final sizes = Theme.of(context).extension<Sizes>()!;
     final artSize = widget.screenType.isLargeFormat
         ? sizes.large
         : sizes.normal;
-    final cardHeight = artSize + (spacing.medium);
+    final cardHeight = artSize + spacing.medium;
 
     return SliverPadding(
-      padding: padding.copyWith(left: spacing.medium, right: spacing.medium),
+      padding: EdgeInsets.symmetric(horizontal: spacing.medium),
       sliver: SliverGrid.builder(
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 600.0,
@@ -247,11 +237,16 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   Widget _buildSliverGrid(
     List<Station> stations,
     AudioPlayerService service,
-    EdgeInsets padding,
     Spacing spacing,
+    Shapes shapes,
   ) {
     return SliverPadding(
-      padding: padding.copyWith(top: spacing.extraSmall),
+      padding: EdgeInsets.fromLTRB(
+        spacing.medium,
+        spacing.extraSmall,
+        spacing.medium,
+        0,
+      ),
       sliver: SliverGrid.builder(
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 128.0,
@@ -267,7 +262,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             isFavorite: station.isFavorite,
             onTap: () => service.playMediaItem(station),
             onFavorite: () => service.toggleFavorite(station),
-            borderRadius: Theme.of(context).extension<Shapes>()!.medium,
+            borderRadius: shapes.medium,
           );
         },
       ),
