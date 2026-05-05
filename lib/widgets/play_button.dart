@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:etherly/services/audio_player_service.dart';
@@ -70,8 +71,9 @@ class PlayButton extends StatelessWidget {
       );
     }
 
-    if (processingState == ProcessingState.buffering ||
-        processingState == ProcessingState.loading) {
+    if (processingState == ProcessingState.loading ||
+        (processingState == ProcessingState.buffering &&
+            (!kIsWeb || !isPlaying))) {
       return SizedBox.square(
         dimension: baseSize,
         child: CircularProgressIndicator(
