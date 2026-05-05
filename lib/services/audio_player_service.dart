@@ -47,6 +47,12 @@ class AudioPlayerService with ChangeNotifier {
       .whereType<Station>()
       .toList();
 
+  /// List of favorite stations in the user's custom order.
+  List<Station> get favoriteStations => _favoriteStationIds
+      .map((id) => _stationMap[id])
+      .whereType<Station>()
+      .toList();
+
   /// Autoplay countdown timer.
   Timer? _autoplayTimer;
   bool _autoplayCancelled = false;
@@ -350,6 +356,18 @@ class AudioPlayerService with ChangeNotifier {
     }
     await _prefs.setStringList(_favoriteStationIdsKey, _favoriteStationIds);
     notifyListeners();
+  }
+
+  /// Reorders the favorite stations and persists the new order.
+  Future<void> reorderFavorites(int oldIndex, int newIndex) async {
+    if (oldIndex < 0 || oldIndex >= _favoriteStationIds.length) return;
+    if (newIndex < 0 || newIndex >= _favoriteStationIds.length) return;
+
+    final String id = _favoriteStationIds.removeAt(oldIndex);
+    _favoriteStationIds.insert(newIndex, id);
+
+    notifyListeners();
+    await _prefs.setStringList(_favoriteStationIdsKey, _favoriteStationIds);
   }
 
   /// Schedules the player to stop after a given duration.

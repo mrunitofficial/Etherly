@@ -145,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen>
     final Set<String> displayedCategories = {};
 
     // 1. Favorites
-    final favorites = allStations.where((s) => s.isFavorite).toList();
+    final favorites = audioService.favoriteStations;
     if (favorites.isNotEmpty) {
       sections.add((
         title: loc?.translate('homeFavoritesTitle') ?? 'Favorites',

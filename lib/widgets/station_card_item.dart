@@ -31,6 +31,7 @@ class StationCardItem extends StatelessWidget {
     return RepaintBoundary(
       child: Tooltip(
         message: station.name,
+        triggerMode: TooltipTriggerMode.manual,
         child: Card.filled(
           margin: EdgeInsets.zero,
           color: theme.colorScheme.surfaceContainerHigh,

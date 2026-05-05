@@ -9,6 +9,7 @@ import 'package:etherly/widgets/station_card_item.dart';
 import 'package:etherly/widgets/station_grid_item.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:reorderable_grid/reorderable_grid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String _favoritesViewTypeKey = 'favorites_view_type';
@@ -107,9 +108,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     }
 
     final audioPlayerService = context.watch<AudioPlayerService>();
-    final favoriteStations = audioPlayerService.stations
-        .where((s) => s.isFavorite)
-        .toList();
+    final favoriteStations = audioPlayerService.favoriteStations;
 
     final theme = Theme.of(context);
     final spacing = theme.extension<Spacing>()!;
@@ -210,24 +209,37 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     final cardHeight = artSize + spacing.medium;
 
     return SliverPadding(
-      padding: EdgeInsets.symmetric(horizontal: spacing.medium),
-      sliver: SliverGrid.builder(
-        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 600.0,
-          mainAxisExtent: cardHeight,
-          mainAxisSpacing: spacing.small,
-          crossAxisSpacing: spacing.small,
-        ),
+      padding: EdgeInsets.fromLTRB(
+        spacing.medium,
+        spacing.extraSmall,
+        spacing.medium,
+        0,
+      ),
+      sliver: SliverReorderableList(
         itemCount: stations.length,
+        onReorder: (oldIndex, newIndex) {
+          int adjustedNewIndex = newIndex;
+          if (oldIndex < newIndex) {
+            adjustedNewIndex -= 1;
+          }
+          service.reorderFavorites(oldIndex, adjustedNewIndex);
+          setState(() {});
+        },
         itemBuilder: (context, index) {
           final station = stations[index];
-          return StationCardItem(
+          return Padding(
             key: ValueKey(station.id),
-            station: station,
-            isFavorite: station.isFavorite,
-            onTap: () => service.playMediaItem(station),
-            onFavorite: () => service.toggleFavorite(station),
-            screenType: widget.screenType,
+            padding: EdgeInsets.only(bottom: spacing.small),
+            child: ReorderableDelayedDragStartListener(
+              index: index,
+              child: StationCardItem(
+                station: station,
+                isFavorite: station.isFavorite,
+                onTap: () => service.playMediaItem(station),
+                onFavorite: () => service.toggleFavorite(station),
+                screenType: widget.screenType,
+              ),
+            ),
           );
         },
       ),
@@ -247,22 +259,29 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         spacing.medium,
         0,
       ),
-      sliver: SliverGrid.builder(
+      sliver: SliverReorderableGrid(
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 128.0,
           crossAxisSpacing: spacing.small,
           mainAxisSpacing: spacing.small,
         ),
         itemCount: stations.length,
+        onReorder: (oldIndex, newIndex) {
+          service.reorderFavorites(oldIndex, newIndex);
+          setState(() {});
+        },
         itemBuilder: (context, index) {
           final station = stations[index];
-          return StationGridItem(
+          return ReorderableGridDelayedDragStartListener(
             key: ValueKey(station.id),
-            station: station,
-            isFavorite: station.isFavorite,
-            onTap: () => service.playMediaItem(station),
-            onFavorite: () => service.toggleFavorite(station),
-            borderRadius: shapes.medium,
+            index: index,
+            child: StationGridItem(
+              station: station,
+              isFavorite: station.isFavorite,
+              onTap: () => service.playMediaItem(station),
+              onFavorite: () => service.toggleFavorite(station),
+              borderRadius: shapes.medium,
+            ),
           );
         },
       ),
