@@ -109,6 +109,11 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     SizedBox(height: spacing.medium),
                     Text(
+                      loc?.translate('homeEmptyTitle') ?? 'No stations',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    SizedBox(height: spacing.small),
+                    Text(
                       loc?.translate('homeEmptySubtitle') ??
                           'No radio stations available',
                       style: Theme.of(context).textTheme.bodyMedium,

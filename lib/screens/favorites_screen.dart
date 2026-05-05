@@ -114,12 +114,12 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     final stations = audioPlayerService.stations;
     final favoriteStations = stations.where((s) => s.isFavorite).toList();
     final spacing = Theme.of(context).extension<Spacing>()!;
+    final sizes = Theme.of(context).extension<Sizes>()!;
 
     final loc = AppLocalizations.of(context);
     final contentPadding = EdgeInsets.only(
       left: spacing.medium,
       right: spacing.medium,
-      bottom: widget.bottomPadding + spacing.medium,
     );
 
     return SafeArea(
@@ -158,6 +158,15 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    Icon(
+                      Icons.favorite_border,
+                      size: sizes.large * 1.5,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withAlpha(128),
+                    ),
+                    SizedBox(height: spacing.medium),
                     Text(
                       loc?.translate('favoritesEmptyTitle') ??
                           'No favorite stations yet',
@@ -170,7 +179,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     // Add bottom padding to balance the vertical center
-                    // since the header takes up top space.
                     SizedBox(height: spacing.large * 2),
                   ],
                 ),
@@ -190,6 +198,11 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               contentPadding,
               spacing,
             ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom: widget.bottomPadding + spacing.medium,
+            ),
+          ),
         ],
       ),
     );

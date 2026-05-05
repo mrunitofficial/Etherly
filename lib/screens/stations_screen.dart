@@ -48,8 +48,9 @@ class _StationsScreenState extends State<StationsScreen>
   @override
   void initState() {
     super.initState();
-    _initializationFuture =
-        context.read<AudioPlayerService>().initializationFuture;
+    _initializationFuture = context
+        .read<AudioPlayerService>()
+        .initializationFuture;
 
     _loadingTimer = Timer(Speed().short1, () {
       if (mounted) {
@@ -126,11 +127,7 @@ class _StationsScreenState extends State<StationsScreen>
     final spacing = Theme.of(context).extension<Spacing>()!;
 
     final loc = AppLocalizations.of(context);
-    final contentPadding = EdgeInsets.only(
-      left: spacing.medium,
-      right: spacing.medium,
-      bottom: widget.bottomPadding + spacing.medium,
-    );
+    final contentPadding = EdgeInsets.symmetric(horizontal: spacing.medium);
 
     return SafeArea(
       child: CustomScrollView(
@@ -142,20 +139,23 @@ class _StationsScreenState extends State<StationsScreen>
               actions: stations.isEmpty
                   ? null
                   : SegmentedButton<ViewType>(
-                segments: const [
-                  ButtonSegment(value: ViewType.list, icon: Icon(Icons.list)),
-                  ButtonSegment(
-                    value: ViewType.grid,
-                    icon: Icon(Icons.grid_view),
-                  ),
-                ],
-                selected: {_viewType},
-                onSelectionChanged: (Set<ViewType> newSelection) {
-                  final newViewType = newSelection.first;
-                  setState(() => _viewType = newViewType);
-                  _saveViewType(newViewType);
-                },
-              ),
+                      segments: const [
+                        ButtonSegment(
+                          value: ViewType.list,
+                          icon: Icon(Icons.list),
+                        ),
+                        ButtonSegment(
+                          value: ViewType.grid,
+                          icon: Icon(Icons.grid_view),
+                        ),
+                      ],
+                      selected: {_viewType},
+                      onSelectionChanged: (Set<ViewType> newSelection) {
+                        final newViewType = newSelection.first;
+                        setState(() => _viewType = newViewType);
+                        _saveViewType(newViewType);
+                      },
+                    ),
             ),
           ),
           if (stations.isEmpty)
@@ -168,12 +168,16 @@ class _StationsScreenState extends State<StationsScreen>
                     Icon(
                       Icons.radio,
                       size: Theme.of(context).extension<Sizes>()!.large * 1.5,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withAlpha(128), // 0.5 opacity
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withAlpha(128), // 0.5 opacity
                     ),
                     SizedBox(height: spacing.medium),
+                    Text(
+                      loc?.translate('stationsEmptyTitle') ?? 'No stations',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    SizedBox(height: spacing.small),
                     Text(
                       loc?.translate('stationsEmptySubtitle') ??
                           'No radio stations found',
@@ -199,6 +203,11 @@ class _StationsScreenState extends State<StationsScreen>
               contentPadding,
               spacing,
             ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom: widget.bottomPadding + spacing.medium,
+            ),
+          ),
         ],
       ),
     );
@@ -264,7 +273,6 @@ class _StationsScreenState extends State<StationsScreen>
     });
 
     // Add final padding
-    slivers.add(SliverPadding(padding: padding.copyWith(left: 0, right: 0)));
 
     return slivers;
   }
@@ -277,9 +285,7 @@ class _StationsScreenState extends State<StationsScreen>
     Spacing spacing,
   ) {
     return SliverPadding(
-      padding: padding.copyWith(
-        top: spacing.extraSmall,
-      ),
+      padding: padding.copyWith(top: spacing.extraSmall),
       sliver: SliverGrid.builder(
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 128.0,
