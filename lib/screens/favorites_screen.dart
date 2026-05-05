@@ -8,6 +8,7 @@ import 'package:etherly/widgets/screen_header.dart';
 import 'package:etherly/widgets/station_card_item.dart';
 import 'package:etherly/widgets/station_grid_item.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:reorderable_grid/reorderable_grid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -210,6 +211,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       ),
       sliver: SliverReorderableList(
         itemCount: stations.length,
+        onReorderStart: (index) => HapticFeedback.heavyImpact(),
         onReorder: (oldIndex, newIndex) {
           int adjustedNewIndex = newIndex;
           if (oldIndex < newIndex) {
@@ -259,6 +261,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           mainAxisSpacing: spacing.small,
         ),
         itemCount: stations.length,
+        onReorderStart: (index) => HapticFeedback.heavyImpact(),
         onReorder: (oldIndex, newIndex) {
           service.reorderFavorites(oldIndex, newIndex);
           setState(() {});
