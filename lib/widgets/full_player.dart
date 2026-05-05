@@ -77,7 +77,7 @@ class FullPlayerContent extends StatelessWidget {
               SizedBox(height: spacing.large),
               const FullPlayerControls(),
               if (kIsWeb) ...[
-                SizedBox(height: spacing.extraLarge),
+                SizedBox(height: spacing.medium),
                 const VolumeSlider(),
               ],
             ],
@@ -373,7 +373,8 @@ class VolumeSlider extends StatelessWidget {
                       ? Icons.volume_off_rounded
                       : Icons.volume_mute_rounded,
                 ),
-                tooltip: AppLocalizations.of(context)?.translate('playerMute') ??
+                tooltip:
+                    AppLocalizations.of(context)?.translate('playerMute') ??
                     'Mute',
               ),
               Expanded(
@@ -385,9 +386,10 @@ class VolumeSlider extends StatelessWidget {
               IconButton(
                 onPressed: () => service.setVolume(1.0),
                 icon: const Icon(Icons.volume_up_rounded),
-                tooltip: AppLocalizations.of(context)?.translate(
-                      'playerMaxVolume',
-                    ) ??
+                tooltip:
+                    AppLocalizations.of(
+                      context,
+                    )?.translate('playerMaxVolume') ??
                     'Max Volume',
               ),
             ],
