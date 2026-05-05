@@ -34,6 +34,8 @@ class AudioPlayerService with ChangeNotifier {
   static const String _favoriteStationIdsKey = 'favorite_station_ids';
   static const String _recentStationIdsKey = 'recent_station_ids';
   static const String _volumeKey = 'volume';
+  static const String _isMutedKey = 'is_muted';
+  static const String _preMuteVolumeKey = 'pre_mute_volume';
   static const int _maxRecentStations = 10;
   static const int _autoPlayCountdownStart = 3;
 
@@ -66,6 +68,11 @@ class AudioPlayerService with ChangeNotifier {
   /// Current media item.
   MediaItem? _currentMediaItem;
   MediaItem? get mediaItem => _currentMediaItem;
+
+  /// Mute state for web.
+  bool _isMuted = false;
+  double _preMuteVolume = 1.0;
+  bool get isMuted => _isMuted;
 
   /// Preferences.
   SharedPreferences get prefs => _prefs;
@@ -130,8 +137,15 @@ class AudioPlayerService with ChangeNotifier {
         });
 
     if (kIsWeb) {
+      _preMuteVolume = _prefs.getDouble(_preMuteVolumeKey) ?? 1.0;
+      _isMuted = _prefs.getBool(_isMutedKey) ?? false;
       final savedVolume = _prefs.getDouble(_volumeKey) ?? 1.0;
-      setVolume(savedVolume);
+      
+      if (_isMuted) {
+        player.setVolume(0.0);
+      } else {
+        player.setVolume(savedVolume);
+      }
     }
 
     await _loadStations();
@@ -148,6 +162,29 @@ class AudioPlayerService with ChangeNotifier {
       final clamped = value.clamp(0.0, 1.0);
       player.setVolume(clamped);
       _prefs.setDouble(_volumeKey, clamped);
+      
+      // If manually setting volume > 0, unmute
+      if (clamped > 0 && _isMuted) {
+        _isMuted = false;
+        _prefs.setBool(_isMutedKey, false);
+      }
+      
+      notifyListeners();
+    }
+  }
+
+  /// Toggles mute state (Web only).
+  void toggleMute() {
+    if (kIsWeb) {
+      _isMuted = !_isMuted;
+      if (_isMuted) {
+        _preMuteVolume = volume;
+        _prefs.setDouble(_preMuteVolumeKey, _preMuteVolume);
+        player.setVolume(0.0);
+      } else {
+        player.setVolume(_preMuteVolume > 0 ? _preMuteVolume : 1.0);
+      }
+      _prefs.setBool(_isMutedKey, _isMuted);
       notifyListeners();
     }
   }
