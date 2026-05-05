@@ -33,6 +33,7 @@ class StationCardItem extends StatelessWidget {
         message: station.name,
         triggerMode: TooltipTriggerMode.manual,
         child: Card.filled(
+          clipBehavior: Clip.hardEdge,
           margin: EdgeInsets.zero,
           color: theme.colorScheme.surfaceContainerHigh,
           child: InkWell(

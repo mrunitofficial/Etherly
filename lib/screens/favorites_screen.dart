@@ -178,7 +178,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             favoriteStations,
             audioPlayerService,
             spacing,
-            sizes,
           )
         else
           _buildSliverGrid(
@@ -201,13 +200,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     List<Station> stations,
     AudioPlayerService service,
     Spacing spacing,
-    Sizes sizes,
   ) {
-    final artSize = widget.screenType.isLargeFormat
-        ? sizes.large
-        : sizes.normal;
-    final cardHeight = artSize + spacing.medium;
-
     return SliverPadding(
       padding: EdgeInsets.fromLTRB(
         spacing.medium,
