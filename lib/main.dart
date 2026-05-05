@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -176,6 +177,7 @@ class _MyAppState extends State<MyApp> {
               theme: AppTheme.getLight(lightColorScheme),
               darkTheme: AppTheme.getDark(darkColorScheme),
               themeMode: themeNotifier.value,
+              scrollBehavior: AppScrollBehavior(),
               home: Builder(
                 builder: (context) {
                   if (!_localizationsLoaded ||
@@ -212,4 +214,14 @@ class _MyAppState extends State<MyApp> {
       },
     );
   }
+}
+
+/// Custom scroll behavior to enable mouse drag scrolling on web and desktop.
+class AppScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+      };
 }
