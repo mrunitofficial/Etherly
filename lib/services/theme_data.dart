@@ -119,6 +119,7 @@ class Speed extends ThemeExtension<Speed> {
 
 /// Material 3 Size tokens (until added officialy to Flutter SDK)
 class Sizes extends ThemeExtension<Sizes> {
+  final double extraSmall = 16.0;
   final double small = 40.0;
   final double normal = 56.0;
   final double medium = 80.0;

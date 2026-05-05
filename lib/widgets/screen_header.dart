@@ -11,6 +11,8 @@ class ScreenHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final spacing = Theme.of(context).extension<Spacing>()!;
+    final sizes = Theme.of(context).extension<Sizes>()!;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         spacing.medium,
@@ -18,18 +20,21 @@ class ScreenHeader extends StatelessWidget {
         spacing.medium,
         spacing.small,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.headlineMedium,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: sizes.normal),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
             ),
-          ),
-          ?actions,
-        ],
+            ?actions,
+          ],
+        ),
       ),
     );
   }

@@ -184,7 +184,7 @@ class _StationsScreenState extends State<StationsScreen>
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     // Add bottom padding to balance the vertical center
-                    SizedBox(height: spacing.large * 2),
+                    SizedBox(height: spacing.large),
                   ],
                 ),
               ),

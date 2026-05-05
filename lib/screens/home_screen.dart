@@ -15,11 +15,7 @@ typedef ContentLoadedCallback = void Function();
 class HomeScreen extends StatefulWidget {
   final ContentLoadedCallback? onContentLoaded;
   final double bottomPadding;
-  const HomeScreen({
-    super.key,
-    this.onContentLoaded,
-    this.bottomPadding = 0.0,
-  });
+  const HomeScreen({super.key, this.onContentLoaded, this.bottomPadding = 0.0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -38,8 +34,9 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _initializationFuture =
-        context.read<AudioPlayerService>().initializationFuture;
+    _initializationFuture = context
+        .read<AudioPlayerService>()
+        .initializationFuture;
 
     _loadingTimer = Timer(Speed().short1, () {
       if (mounted) {
@@ -102,10 +99,9 @@ class _HomeScreenState extends State<HomeScreen>
                     Icon(
                       Icons.radio_outlined,
                       size: Theme.of(context).extension<Sizes>()!.large * 1.5,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withAlpha(128), // 0.5 opacity
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withAlpha(128), // 0.5 opacity
                     ),
                     SizedBox(height: spacing.medium),
                     Text(
@@ -119,18 +115,20 @@ class _HomeScreenState extends State<HomeScreen>
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     // Add bottom padding to balance the vertical center
-                    SizedBox(height: spacing.large * 2),
+                    SizedBox(height: spacing.large),
                   ],
                 ),
               ),
             )
           else
-            ...sections.map((section) => SliverToBoxAdapter(
-                  child: CategoryRow(
-                    title: section.title,
-                    stations: section.stations,
-                  ),
-                )),
+            ...sections.map(
+              (section) => SliverToBoxAdapter(
+                child: CategoryRow(
+                  title: section.title,
+                  stations: section.stations,
+                ),
+              ),
+            ),
           SliverPadding(
             padding: EdgeInsets.only(
               bottom: widget.bottomPadding + spacing.medium,
@@ -209,7 +207,9 @@ class _HomeScreenState extends State<HomeScreen>
         if (sections.length >= _minTotalCategories) break;
         if (displayedCategories.contains(category)) continue;
 
-        final stations = allStations.where((s) => s.category == category).toList();
+        final stations = allStations
+            .where((s) => s.category == category)
+            .toList();
         if (stations.length > 1) {
           sections.add((
             title: '$moreFromPrefix $category',
@@ -223,4 +223,3 @@ class _HomeScreenState extends State<HomeScreen>
     return sections;
   }
 }
-

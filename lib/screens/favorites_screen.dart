@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 const String _favoritesViewTypeKey = 'favorites_view_type';
 
 enum ViewType { list, grid }
@@ -47,8 +46,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   @override
   void initState() {
     super.initState();
-    _initializationFuture =
-        context.read<AudioPlayerService>().initializationFuture;
+    _initializationFuture = context
+        .read<AudioPlayerService>()
+        .initializationFuture;
 
     _loadingTimer = Timer(Speed().short1, () {
       if (mounted) {
@@ -161,10 +161,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                     Icon(
                       Icons.favorite_border,
                       size: sizes.large * 1.5,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withAlpha(128),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withAlpha(128),
                     ),
                     SizedBox(height: spacing.medium),
                     Text(
@@ -179,7 +178,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     // Add bottom padding to balance the vertical center
-                    SizedBox(height: spacing.large * 2),
+                    SizedBox(height: spacing.large),
                   ],
                 ),
               ),
@@ -221,10 +220,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     final cardHeight = artSize + (spacing.medium);
 
     return SliverPadding(
-      padding: padding.copyWith(
-        left: spacing.medium,
-        right: spacing.medium,
-      ),
+      padding: padding.copyWith(left: spacing.medium, right: spacing.medium),
       sliver: SliverGrid.builder(
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 600.0,
@@ -255,9 +251,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     Spacing spacing,
   ) {
     return SliverPadding(
-      padding: padding.copyWith(
-        top: spacing.extraSmall,
-      ),
+      padding: padding.copyWith(top: spacing.extraSmall),
       sliver: SliverGrid.builder(
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 128.0,
