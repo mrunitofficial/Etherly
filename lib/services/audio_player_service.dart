@@ -14,6 +14,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 class AudioPlayerService with ChangeNotifier {
   final AudioPlayer player = AudioPlayer();
   late final MyAudioHandler _audioHandler;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _stationsSubscription;
   final ValueNotifier<({String? title, bool loading})> icyState = ValueNotifier(
     (title: null, loading: false),
   );
@@ -150,6 +151,7 @@ class AudioPlayerService with ChangeNotifier {
     _castService?.isRemotePlaying.removeListener(notifyListeners);
     _castService?.isRemoteLoading.removeListener(notifyListeners);
     _castService?.isCastingActive.removeListener(_onCastingStateChanged);
+    _stationsSubscription?.cancel();
     _audioHandler.customAction('dispose');
     _autoplayTimer?.cancel();
     _sleepTimer?.cancel();
@@ -364,46 +366,63 @@ class AudioPlayerService with ChangeNotifier {
 
   /// Loads the station list from the remote repository.
   Future<void> _loadStations() async {
-    bool loaded = false;
+    final completer = Completer<void>();
+    _stationsSubscription?.cancel();
 
-    try {
-      final snapshot = await FirebaseFirestore.instance.collection('stations').get();
-      // Filter out inactive stations
-      final activeDocs = snapshot.docs.where((doc) {
-        final data = doc.data();
-        return data['active'] == true || data['active'] == null;
-      }).toList();
-      stations = activeDocs.map((doc) => Station.fromFirestore(doc)).toList();
-      
-      // Sort by rank if it exists, otherwise leave order or sort by name
-      stations.sort((a, b) {
-        if (a.rank != null && b.rank != null) return a.rank!.compareTo(b.rank!);
-        if (a.rank != null) return -1;
-        if (b.rank != null) return 1;
-        return a.name.compareTo(b.name);
-      });
+    _stationsSubscription = FirebaseFirestore.instance
+        .collection('stations')
+        .snapshots()
+        .listen(
+          (snapshot) async {
+            // Filter out inactive stations
+            final activeDocs = snapshot.docs.where((doc) {
+              final data = doc.data();
+              return data['active'] == true || data['active'] == null;
+            }).toList();
 
-      loaded = true;
-    } catch (e) {
-      if (kDebugMode) print('Error loading stations from Firebase: $e');
-    }
+            stations =
+                activeDocs.map((doc) => Station.fromFirestore(doc)).toList();
 
-    if (loaded) {
-      _favoriteStationIds = _prefs.getStringList(_favoriteStationIdsKey) ?? [];
-      _recentStationIds = _prefs.getStringList(_recentStationIdsKey) ?? [];
+            // Sort by rank if it exists, otherwise leave order or sort by name
+            stations.sort((a, b) {
+              if (a.rank != null && b.rank != null) {
+                return a.rank!.compareTo(b.rank!);
+              }
+              if (a.rank != null) return -1;
+              if (b.rank != null) return 1;
+              return a.name.compareTo(b.name);
+            });
 
-      stations = stations
-          .map(
-            (s) => _favoriteStationIds.contains(s.id)
-                ? s.copyWith(isFavorite: true)
-                : s,
-          )
-          .toList();
-      _stationMap = {for (var s in stations) s.id: s};
+            _favoriteStationIds =
+                _prefs.getStringList(_favoriteStationIdsKey) ?? [];
+            _recentStationIds =
+                _prefs.getStringList(_recentStationIdsKey) ?? [];
 
-      await _loadLastStation();
-    }
-    notifyListeners();
+            stations = stations
+                .map(
+                  (s) => _favoriteStationIds.contains(s.id)
+                      ? s.copyWith(isFavorite: true)
+                      : s,
+                )
+                .toList();
+            _stationMap = {for (var s in stations) s.id: s};
+
+            await _loadLastStation();
+
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+            notifyListeners();
+          },
+          onError: (e) {
+            if (kDebugMode) print('Error loading stations from Firebase: $e');
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+          },
+        );
+
+    return completer.future;
   }
 
   /// Adds a station to the recently played history.
