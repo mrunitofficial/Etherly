@@ -119,9 +119,11 @@ class _MyAppState extends State<MyApp> {
     try {
       _chromeCastService ??= ChromeCastService();
 
-      // Only initialize Chromecast if not web
+      // Initialize Chromecast in the background so it doesn't block UI rendering.
       if (!kIsWeb) {
-        await _chromeCastService!.init();
+        _chromeCastService!.init().catchError((e) {
+          debugPrint('Chromecast initialization error: $e');
+        });
       }
 
       _audioPlayerService = AudioPlayerService(castService: _chromeCastService);
