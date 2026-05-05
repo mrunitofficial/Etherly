@@ -14,7 +14,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 class AudioPlayerService with ChangeNotifier {
   final AudioPlayer player = AudioPlayer();
   late final MyAudioHandler _audioHandler;
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _stationsSubscription;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+  _stationsSubscription;
   final ValueNotifier<({String? title, bool loading})> icyState = ValueNotifier(
     (title: null, loading: false),
   );
@@ -190,6 +191,8 @@ class AudioPlayerService with ChangeNotifier {
       player.play().catchError((_) {});
     } catch (e) {
       if (kDebugMode) print('Error playing media item: $e');
+      await player.stop();
+      icyState.value = (title: null, loading: false);
     }
   }
 
@@ -226,7 +229,7 @@ class AudioPlayerService with ChangeNotifier {
       } on PlayerInterruptedException {
         rethrow;
       } catch (e) {
-        if (i == entriesPriority.length - 1) return;
+        if (i == entriesPriority.length - 1) rethrow;
       }
     }
   }
@@ -380,8 +383,9 @@ class AudioPlayerService with ChangeNotifier {
               return data['active'] == true || data['active'] == null;
             }).toList();
 
-            stations =
-                activeDocs.map((doc) => Station.fromFirestore(doc)).toList();
+            stations = activeDocs
+                .map((doc) => Station.fromFirestore(doc))
+                .toList();
 
             // Sort by rank if it exists, otherwise leave order or sort by name
             stations.sort((a, b) {
