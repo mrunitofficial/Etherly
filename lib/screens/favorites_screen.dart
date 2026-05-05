@@ -118,7 +118,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     final loc = AppLocalizations.of(context);
 
     return CustomScrollView(
-      cacheExtent: 4000.0,
+      cacheExtent: 1000.0,
       slivers: [
         SliverToBoxAdapter(
           child: ScreenHeader(

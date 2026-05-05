@@ -27,25 +27,19 @@ class StationArt extends StatelessWidget {
             fit: BoxFit.cover,
             placeholder: (context, url) => fallback,
             errorWidget: (context, url, error) => fallback,
+            // Optimize memory by decoding at a size close to display resolution
+            memCacheWidth: size != null ? (size! * 2).toInt() : 300,
+            memCacheHeight: size != null ? (size! * 2).toInt() : 300,
           );
 
     if (borderRadius != null) {
-      art = ClipRRect(
-        borderRadius: borderRadius!,
-        child: art,
-      );
+      art = ClipRRect(borderRadius: borderRadius!, child: art);
     }
 
     if (size != null) {
-      return SizedBox.square(
-        dimension: size,
-        child: art,
-      );
+      return SizedBox.square(dimension: size, child: art);
     }
 
-    return AspectRatio(
-      aspectRatio: 1,
-      child: art,
-    );
+    return AspectRatio(aspectRatio: 1, child: art);
   }
 }

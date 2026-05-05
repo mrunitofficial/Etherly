@@ -312,8 +312,24 @@ class AudioPlayerService with ChangeNotifier {
     for (final station in stations) {
       if (station.art.isNotEmpty) {
         try {
-          await precacheImage(CachedNetworkImageProvider(station.art), context);
-        } catch (_) {}
+          // Using ResizeImage and errorListener to handle memory and network issues gracefully
+          final provider = CachedNetworkImageProvider(
+            station.art,
+            errorListener: (error) {
+              // Silently catch errors (like EncodingError) to prevent console flood
+            },
+          );
+
+          await precacheImage(
+            ResizeImage(provider, width: 300, height: 300),
+            context,
+          );
+
+          // Small delay to avoid overwhelming the network stack/DNS resolver
+          await Future.delayed(const Duration(milliseconds: 50));
+        } catch (_) {
+          // Silent catch for any other precaching issues
+        }
       }
     }
   }
