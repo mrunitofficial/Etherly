@@ -98,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen>
                   Icon(
                     Icons.radio_outlined,
                     size: sizes.large,
-                    color: theme.colorScheme.primary.withAlpha(128),
+                    color: theme.colorScheme.primary,
                   ),
                   SizedBox(height: spacing.medium),
                   Text(

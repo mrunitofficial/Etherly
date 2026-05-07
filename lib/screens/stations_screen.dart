@@ -161,7 +161,7 @@ class _StationsScreenState extends State<StationsScreen>
                   Icon(
                     Icons.radio,
                     size: sizes.large,
-                    color: theme.colorScheme.primary.withAlpha(128),
+                    color: theme.colorScheme.primary,
                   ),
                   SizedBox(height: spacing.medium),
                   Text(

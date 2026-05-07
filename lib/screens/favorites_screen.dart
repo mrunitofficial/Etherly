@@ -155,7 +155,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   Icon(
                     Icons.favorite_border,
                     size: sizes.large,
-                    color: theme.colorScheme.primary.withAlpha(128),
+                    color: theme.colorScheme.primary,
                   ),
                   SizedBox(height: spacing.medium),
                   Text(
@@ -175,11 +175,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             ),
           )
         else if (_viewType == ViewType.list)
-          _buildListSlivers(
-            favoriteStations,
-            audioPlayerService,
-            spacing,
-          )
+          _buildListSlivers(favoriteStations, audioPlayerService, spacing)
         else
           _buildSliverGrid(
             favoriteStations,
