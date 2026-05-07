@@ -163,7 +163,7 @@ class _AppScreenState extends State<AppScreen>
       },
       leading: screenType.isLargeFormat
           ? null
-          : _LogoButton(onPressed: () => _onTabSelected(0)),
+          : Center(child: _LogoButton(onPressed: () => _onTabSelected(0))),
       title: const StationSearchBar(),
       actions: [
         if (context.read<ChromeCastService>().isCastSupported())
@@ -295,17 +295,15 @@ class _LogoButton extends StatelessWidget {
     final spacing = Theme.of(context).extension<Spacing>()!;
     final effectiveSize = size ?? spacing.large;
 
-    return Center(
-      child: IconButton(
-        iconSize: effectiveSize,
-        icon: SvgPicture.asset(
-          'assets/icon_base.svg',
-          width: effectiveSize,
-          height: effectiveSize,
-        ),
-        tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
-        onPressed: onPressed,
+    return IconButton(
+      iconSize: effectiveSize,
+      icon: SvgPicture.asset(
+        'assets/icon_base.svg',
+        width: effectiveSize,
+        height: effectiveSize,
       ),
+      tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
+      onPressed: onPressed,
     );
   }
 }
