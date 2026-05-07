@@ -17,7 +17,7 @@ class RadioPlayer extends StatefulWidget {
   const RadioPlayer({super.key, required this.screenType});
 
   static const double minPlayerHeight = 120.0;
-  static const double maxPlayerHeight = 640.0;
+  static const double maxPlayerHeight = 660.0;
 
   @override
   State<RadioPlayer> createState() => _RadioPlayerState();
