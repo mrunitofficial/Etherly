@@ -147,7 +147,7 @@ class _AppScreenState extends State<AppScreen>
           ? theme.colorScheme.surfaceContainer
           : null,
       scrolledUnderElevation: screenType.isLargeFormat ? 0 : null,
-      actionsPadding: EdgeInsets.symmetric(horizontal: spacing.extraSmall),
+      actionsPadding: EdgeInsets.symmetric(horizontal: spacing.small),
       animateColor: true,
       notificationPredicate: (notification) {
         final context = notification.context;
