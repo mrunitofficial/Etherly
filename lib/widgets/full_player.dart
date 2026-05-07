@@ -286,7 +286,10 @@ class PlayerMenuButton extends StatelessWidget {
     final loc = AppLocalizations.of(context);
 
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert_rounded),
+      icon: Icon(
+        Icons.more_vert_rounded,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
       color: theme.colorScheme.surfaceContainerHigh,
       itemBuilder: (context) => [
         _buildMenuItem(
