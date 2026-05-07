@@ -118,8 +118,10 @@ class FullPlayerHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (!kIsWeb) PlayerCloseButton(onClose: onClose),
-          if (kIsWeb) const QualityButton(),
+          if (onClose != null)
+            PlayerCloseButton(onClose: onClose)
+          else
+            const QualityButton(),
           Expanded(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: spacing.small),
@@ -136,7 +138,7 @@ class FullPlayerHeader extends StatelessWidget {
                     ),
             ),
           ),
-          const PlayerMenuButton(),
+          PlayerMenuButton(showQualityInMenu: onClose != null),
         ],
       ),
     );
@@ -278,7 +280,9 @@ class PlayerCloseButton extends StatelessWidget {
 
 /// Menu button in the full player header.
 class PlayerMenuButton extends StatelessWidget {
-  const PlayerMenuButton({super.key});
+  const PlayerMenuButton({super.key, required this.showQualityInMenu});
+
+  final bool showQualityInMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -298,7 +302,7 @@ class PlayerMenuButton extends StatelessWidget {
           loc?.translate('playerSettings') ?? 'Settings',
           'settings',
         ),
-        if (!kIsWeb)
+        if (showQualityInMenu)
           _buildMenuItem(
             context,
             Icons.high_quality_outlined,
