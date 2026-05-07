@@ -7,6 +7,7 @@ import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/widgets/screen_header.dart';
 import 'package:etherly/widgets/station_card_item.dart';
 import 'package:etherly/widgets/station_grid_item.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -218,19 +219,31 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         },
         itemBuilder: (context, index) {
           final station = stations[index];
+          final bool useQuickDrag = kIsWeb ||
+              defaultTargetPlatform == TargetPlatform.linux ||
+              defaultTargetPlatform == TargetPlatform.macOS ||
+              defaultTargetPlatform == TargetPlatform.windows;
+
+          final item = StationCardItem(
+            station: station,
+            isFavorite: station.isFavorite,
+            onTap: () => service.playMediaItem(station),
+            onFavorite: () => service.toggleFavorite(station),
+            screenType: widget.screenType,
+          );
+
           return Padding(
             key: ValueKey(station.id),
             padding: EdgeInsets.only(bottom: spacing.small),
-            child: ReorderableDelayedDragStartListener(
-              index: index,
-              child: StationCardItem(
-                station: station,
-                isFavorite: station.isFavorite,
-                onTap: () => service.playMediaItem(station),
-                onFavorite: () => service.toggleFavorite(station),
-                screenType: widget.screenType,
-              ),
-            ),
+            child: useQuickDrag
+                ? ReorderableDragStartListener(
+                    index: index,
+                    child: item,
+                  )
+                : ReorderableDelayedDragStartListener(
+                    index: index,
+                    child: item,
+                  ),
           );
         },
       ),
@@ -264,16 +277,31 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         },
         itemBuilder: (context, index) {
           final station = stations[index];
+          final bool useQuickDrag = kIsWeb ||
+              defaultTargetPlatform == TargetPlatform.linux ||
+              defaultTargetPlatform == TargetPlatform.macOS ||
+              defaultTargetPlatform == TargetPlatform.windows;
+
+          final item = StationGridItem(
+            station: station,
+            isFavorite: station.isFavorite,
+            onTap: () => service.playMediaItem(station),
+            onFavorite: () => service.toggleFavorite(station),
+            borderRadius: shapes.medium,
+          );
+
+          if (useQuickDrag) {
+            return ReorderableGridDragStartListener(
+              key: ValueKey(station.id),
+              index: index,
+              child: item,
+            );
+          }
+
           return ReorderableGridDelayedDragStartListener(
             key: ValueKey(station.id),
             index: index,
-            child: StationGridItem(
-              station: station,
-              isFavorite: station.isFavorite,
-              onTap: () => service.playMediaItem(station),
-              onFavorite: () => service.toggleFavorite(station),
-              borderRadius: shapes.medium,
-            ),
+            child: item,
           );
         },
       ),
