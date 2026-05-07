@@ -188,7 +188,9 @@ class _AppScreenState extends State<AppScreen>
     final mainContent = Align(
       alignment: Alignment.topCenter,
       child: ClipRRect(
-        borderRadius: screenType.isLargeFormat ? shapes.large : BorderRadius.zero,
+        borderRadius: screenType.isLargeFormat
+            ? shapes.large
+            : BorderRadius.zero,
         child: Container(
           color: theme.colorScheme.surface,
           child: SafeArea(
@@ -198,7 +200,10 @@ class _AppScreenState extends State<AppScreen>
                 index: _selectedIndex,
                 sizing: StackFit.expand,
                 children: _destinations
-                    .map((d) => d.builder(context, screenType, playerBottomPadding))
+                    .map(
+                      (d) =>
+                          d.builder(context, screenType, playerBottomPadding),
+                    )
                     .toList(),
               ),
             ),
@@ -216,7 +221,10 @@ class _AppScreenState extends State<AppScreen>
             onDestinationSelected: _onTabSelected,
             labelType: NavigationRailLabelType.all,
             leading: Padding(
-              padding: EdgeInsets.only(top: spacing.small, bottom: spacing.medium),
+              padding: EdgeInsets.only(
+                top: spacing.small,
+                bottom: spacing.medium,
+              ),
               child: _LogoButton(
                 onPressed: () => _onTabSelected(0),
                 size: spacing.extraLarge,
@@ -287,14 +295,17 @@ class _LogoButton extends StatelessWidget {
     final spacing = Theme.of(context).extension<Spacing>()!;
     final effectiveSize = size ?? spacing.large;
 
-    return IconButton(
-      icon: SvgPicture.asset(
-        'assets/icon_base.svg',
-        width: effectiveSize,
-        height: effectiveSize,
+    return Center(
+      child: IconButton(
+        iconSize: effectiveSize,
+        icon: SvgPicture.asset(
+          'assets/icon_base.svg',
+          width: effectiveSize,
+          height: effectiveSize,
+        ),
+        tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
+        onPressed: onPressed,
       ),
-      tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
-      onPressed: onPressed,
     );
   }
 }
