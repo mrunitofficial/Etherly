@@ -137,149 +137,170 @@ class _AppScreenState extends State<AppScreen>
     final shapes = theme.extension<Shapes>()!;
     final loc = AppLocalizations.of(context);
 
-    final playerBottomPadding = screenType.isLargeFormat
-        ? spacing.small
-        : RadioPlayer.minPlayerHeight + spacing.small;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isTooShort =
+            !screenType.isLargeFormat &&
+            constraints.maxHeight < RadioPlayer.maxPlayerHeight;
 
-    // Common AppBar widget logic
-    final appBar = AppBar(
-      backgroundColor: screenType.isLargeFormat
-          ? theme.colorScheme.surfaceContainer
-          : null,
-      scrolledUnderElevation: screenType.isLargeFormat ? 0 : null,
-      actionsPadding: EdgeInsets.symmetric(horizontal: spacing.small),
-      animateColor: true,
-      notificationPredicate: (notification) {
-        final context = notification.context;
-        bool insideSheet = false;
-        context?.visitAncestorElements((element) {
-          if (element.widget is DraggableScrollableSheet) {
-            insideSheet = true;
-            return false;
-          }
-          return true;
-        });
-        return !insideSheet;
-      },
-      leading: screenType.isLargeFormat
-          ? null
-          : Center(child: _LogoButton(onPressed: () => _onTabSelected(0))),
-      title: const StationSearchBar(),
-      actions: [
-        if (context.read<ChromeCastService>().isCastSupported())
-          _CastButton(spacing: spacing),
-        IconButton(
-          icon: Icon(
-            Icons.settings,
-            size: screenType.isLargeFormat ? spacing.extraLarge : spacing.large,
-          ),
-          tooltip: loc?.translate('mainTooltipSettings') ?? 'Settings',
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  SettingsScreen(themeNotifier: themeNotifier),
+        final playerBottomPadding =
+            (screenType == ScreenType.smallScreenVertical && !isTooShort)
+                ? RadioPlayer.minPlayerHeight + spacing.small
+                : spacing.small;
+
+        // Common AppBar widget logic
+        final appBar = AppBar(
+          backgroundColor:
+              screenType.isLargeFormat
+                  ? theme.colorScheme.surfaceContainer
+                  : null,
+          scrolledUnderElevation: screenType.isLargeFormat ? 0 : null,
+          actionsPadding: EdgeInsets.symmetric(horizontal: spacing.small),
+          animateColor: true,
+          notificationPredicate: (notification) {
+            final context = notification.context;
+            bool insideSheet = false;
+            context?.visitAncestorElements((element) {
+              if (element.widget is DraggableScrollableSheet) {
+                insideSheet = true;
+                return false;
+              }
+              return true;
+            });
+            return !insideSheet;
+          },
+          leading:
+              screenType.isLargeFormat
+                  ? null
+                  : Center(
+                    child: _LogoButton(onPressed: () => _onTabSelected(0)),
+                  ),
+          title: const StationSearchBar(),
+          actions: [
+            if (context.read<ChromeCastService>().isCastSupported())
+              _CastButton(spacing: spacing),
+            IconButton(
+              icon: Icon(
+                Icons.settings,
+                size:
+                    screenType.isLargeFormat ? spacing.extraLarge : spacing.large,
+              ),
+              tooltip: loc?.translate('mainTooltipSettings') ?? 'Settings',
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) =>
+                              SettingsScreen(themeNotifier: themeNotifier),
+                    ),
+                  ),
             ),
-          ),
-        ),
-      ],
-    );
+          ],
+        );
 
-    final mainContent = Align(
-      alignment: Alignment.topCenter,
-      child: ClipRRect(
-        borderRadius: screenType.isLargeFormat
-            ? shapes.large
-            : BorderRadius.zero,
-        child: Container(
-          color: theme.colorScheme.surface,
-          child: SafeArea(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: IndexedStack(
-                index: _selectedIndex,
-                sizing: StackFit.expand,
-                children: _destinations
-                    .map(
-                      (d) =>
-                          d.builder(context, screenType, playerBottomPadding),
-                    )
-                    .toList(),
+        final mainContent = Align(
+          alignment: Alignment.topCenter,
+          child: ClipRRect(
+            borderRadius:
+                screenType.isLargeFormat ? shapes.large : BorderRadius.zero,
+            child: Container(
+              color: theme.colorScheme.surface,
+              child: SafeArea(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: IndexedStack(
+                    index: _selectedIndex,
+                    sizing: StackFit.expand,
+                    children:
+                        _destinations
+                            .map(
+                              (d) => d.builder(
+                                context,
+                                screenType,
+                                playerBottomPadding,
+                              ),
+                            )
+                            .toList(),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
-    );
+        );
 
-    // Navigation logic
-    if (screenType.isLargeFormat) {
-      return Row(
-        children: [
-          NavigationRail(
+        // Navigation logic
+        if (screenType.isLargeFormat) {
+          return Row(
+            children: [
+              NavigationRail(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: _onTabSelected,
+                labelType: NavigationRailLabelType.all,
+                leading: Padding(
+                  padding: EdgeInsets.only(
+                    top: spacing.small,
+                    bottom: spacing.medium,
+                  ),
+                  child: _LogoButton(
+                    onPressed: () => _onTabSelected(0),
+                    size: spacing.extraLarge,
+                  ),
+                ),
+                destinations:
+                    _destinations.map((d) {
+                      return NavigationRailDestination(
+                        selectedIcon: Icon(d.selectedIcon),
+                        icon: Icon(d.icon),
+                        label: Text(loc?.translate(d.labelKey) ?? d.labelKey),
+                      );
+                    }).toList(),
+              ),
+              Expanded(
+                child: Scaffold(
+                  resizeToAvoidBottomInset: false,
+                  appBar: appBar,
+                  body: Row(
+                    children: [
+                      Expanded(child: mainContent),
+                      SizedBox(
+                        width: 360,
+                        child: RadioPlayer(screenType: screenType),
+                      ),
+                    ],
+                  ),
+                  // Bottom spacer for large format
+                  bottomNavigationBar: SizedBox(height: spacing.medium),
+                ),
+              ),
+            ],
+          );
+        }
+
+        // Small layout (Mobile)
+        return Scaffold(
+          resizeToAvoidBottomInset: false,
+          appBar: appBar,
+          body: Stack(
+            children: [
+              mainContent,
+              RadioPlayer(screenType: screenType),
+            ],
+          ),
+          bottomNavigationBar: NavigationBar(
             selectedIndex: _selectedIndex,
             onDestinationSelected: _onTabSelected,
-            labelType: NavigationRailLabelType.all,
-            leading: Padding(
-              padding: EdgeInsets.only(
-                top: spacing.small,
-                bottom: spacing.medium,
-              ),
-              child: _LogoButton(
-                onPressed: () => _onTabSelected(0),
-                size: spacing.extraLarge,
-              ),
-            ),
-            destinations: _destinations.map((d) {
-              return NavigationRailDestination(
-                selectedIcon: Icon(d.selectedIcon),
-                icon: Icon(d.icon),
-                label: Text(loc?.translate(d.labelKey) ?? d.labelKey),
-              );
-            }).toList(),
+            destinations:
+                _destinations.map((d) {
+                  return NavigationDestination(
+                    selectedIcon: Icon(d.selectedIcon),
+                    icon: Icon(d.icon),
+                    label: loc?.translate(d.labelKey) ?? d.labelKey,
+                  );
+                }).toList(),
           ),
-          Expanded(
-            child: Scaffold(
-              resizeToAvoidBottomInset: false,
-              appBar: appBar,
-              body: Row(
-                children: [
-                  Expanded(child: mainContent),
-                  SizedBox(
-                    width: 360,
-                    child: RadioPlayer(screenType: screenType),
-                  ),
-                ],
-              ),
-              // Bottom spacer for large format
-              bottomNavigationBar: SizedBox(height: spacing.medium),
-            ),
-          ),
-        ],
-      );
-    }
-
-    // Small layout (Mobile)
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: appBar,
-      body: Stack(
-        children: [
-          mainContent,
-          RadioPlayer(screenType: screenType),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _onTabSelected,
-        destinations: _destinations.map((d) {
-          return NavigationDestination(
-            selectedIcon: Icon(d.selectedIcon),
-            icon: Icon(d.icon),
-            label: loc?.translate(d.labelKey) ?? d.labelKey,
-          );
-        }).toList(),
-      ),
+        );
+      },
     );
   }
 }
