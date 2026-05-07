@@ -11,14 +11,12 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:etherly/services/theme_data.dart';
 
-
 const String _radioViewTypeKey = 'radio_view_type';
 
 enum ViewType { list, grid }
 
 typedef ContentLoadedCallback = void Function();
 
-/// A screen that displays a list or grid of all radio stations.
 class StationsScreen extends StatefulWidget {
   final ContentLoadedCallback? onContentLoaded;
   final ScreenType screenType;
@@ -36,26 +34,41 @@ class StationsScreen extends StatefulWidget {
 
 class _StationsScreenState extends State<StationsScreen>
     with AutomaticKeepAliveClientMixin {
-  late final Future<ViewType> _viewTypeFuture;
   ViewType _viewType = ViewType.list;
-
+  bool _isInitialized = false;
   bool _showLoading = false;
   Timer? _loadingTimer;
+  Future<void>? _initializationFuture;
 
   @override
   bool get wantKeepAlive => true;
 
-  /// Initializes and disposes resources.
   @override
   void initState() {
     super.initState();
-    _viewTypeFuture = _loadViewType();
+    _initializationFuture = context
+        .read<AudioPlayerService>()
+        .initializationFuture;
 
     _loadingTimer = Timer(Speed().short1, () {
       if (mounted) {
         setState(() => _showLoading = true);
       }
     });
+
+    _initScreen();
+  }
+
+  Future<void> _initScreen() async {
+    await _loadViewType();
+    await _initializationFuture;
+
+    _loadingTimer?.cancel();
+
+    if (mounted) {
+      setState(() => _isInitialized = true);
+      widget.onContentLoaded?.call();
+    }
   }
 
   @override
@@ -64,7 +77,6 @@ class _StationsScreenState extends State<StationsScreen>
     super.dispose();
   }
 
-  /// Loads the saved view type from shared preferences.
   Future<ViewType> _loadViewType() async {
     final prefs = await SharedPreferences.getInstance();
     final viewTypeName =
@@ -84,278 +96,183 @@ class _StationsScreenState extends State<StationsScreen>
     await prefs.setString(_radioViewTypeKey, viewType.name);
   }
 
-  List<dynamic> _buildCategorizedItems(List<Station> stations) {
-    final items = <dynamic>[];
-    final Map<String, List<Station>> groupedStations = {};
-
+  Map<String, List<Station>> _getGroupedStations(List<Station> stations) {
+    final Map<String, List<Station>> grouped = {};
     for (final station in stations) {
-      (groupedStations[station.category] ??= []).add(station);
+      (grouped[station.category] ??= []).add(station);
     }
-
-    groupedStations.forEach((category, stationList) {
-      items.add(category);
-      items.addAll(stationList);
-    });
-
-    return items;
+    return grouped;
   }
 
-  /// Builds the station screen UI.
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return FutureBuilder<ViewType>(
-      future: _viewTypeFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const SizedBox.shrink();
-        }
-        if (snapshot.hasError) {
-          return _buildContent(context, ViewType.list);
-        }
-        return _buildContent(context, _viewType);
-      },
-    );
-  }
 
-  Widget _buildContent(BuildContext context, ViewType viewType) {
-    final audioPlayerService = context.watch<AudioPlayerService>();
-    final stations = audioPlayerService.stations;
-
-    if (stations.isEmpty) {
+    if (!_isInitialized) {
       return _showLoading
           ? const Center(child: CircularProgressIndicator())
           : const SizedBox.shrink();
     }
-    if (widget.onContentLoaded != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.onContentLoaded?.call();
-      });
-    }
-    _loadingTimer?.cancel();
 
+    final audioPlayerService = context.watch<AudioPlayerService>();
+    final stations = audioPlayerService.stations;
+
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final sizes = theme.extension<Sizes>()!;
+    final shapes = theme.extension<Shapes>()!;
     final loc = AppLocalizations.of(context);
-    final bottomPadding = EdgeInsets.only(bottom: widget.bottomPadding);
 
-    return AnimatedSwitcher(
-      duration: Theme.of(context).extension<Speed>()!.medium1,
-      switchInCurve: Easing.emphasizedDecelerate,
-      switchOutCurve: Easing.emphasizedAccelerate,
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        return FadeTransition(opacity: animation, child: child);
-      },
-      child: KeyedSubtree(
-        key: ValueKey<ViewType>(_viewType),
-        child: SafeArea(
-          child: _viewType == ViewType.list
-              ? CustomScrollView(
-                  cacheExtent: 4000.0,
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: ScreenHeader(
-                        title:
-                            loc?.translate('stationsTitle') ?? 'All channels',
-                        actions: SegmentedButton<ViewType>(
-                          segments: const [
-                            ButtonSegment(
-                              value: ViewType.list,
-                              icon: Icon(Icons.list),
-                            ),
-                            ButtonSegment(
-                              value: ViewType.grid,
-                              icon: Icon(Icons.grid_view),
-                            ),
-                          ],
-                          selected: {_viewType},
-                          onSelectionChanged: (Set<ViewType> newSelection) {
-                            final newViewType = newSelection.first;
-                            setState(() => _viewType = newViewType);
-                            _saveViewType(newViewType);
-                          },
-                        ),
+    return CustomScrollView(
+      cacheExtent: 4000.0,
+      slivers: [
+        SliverToBoxAdapter(
+          child: ScreenHeader(
+            title: loc?.translate('stationsTitle') ?? 'All channels',
+            actions: stations.isEmpty
+                ? null
+                : SegmentedButton<ViewType>(
+                    segments: const [
+                      ButtonSegment(
+                        value: ViewType.list,
+                        icon: Icon(Icons.list),
                       ),
-                    ),
-                    _buildSliverList(
-                      _buildCategorizedItems(stations),
-                      audioPlayerService,
-                      bottomPadding,
-                    ),
-                  ],
-                )
-              : CustomScrollView(
-                  cacheExtent: 4000.0,
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: ScreenHeader(
-                        title:
-                            loc?.translate('stationsTitle') ?? 'All channels',
-                        actions: SegmentedButton<ViewType>(
-                          segments: const [
-                            ButtonSegment(
-                              value: ViewType.list,
-                              icon: Icon(Icons.list),
-                            ),
-                            ButtonSegment(
-                              value: ViewType.grid,
-                              icon: Icon(Icons.grid_view),
-                            ),
-                          ],
-                          selected: {_viewType},
-                          onSelectionChanged: (Set<ViewType> newSelection) {
-                            final newViewType = newSelection.first;
-                            setState(() => _viewType = newViewType);
-                            _saveViewType(newViewType);
-                          },
-                        ),
+                      ButtonSegment(
+                        value: ViewType.grid,
+                        icon: Icon(Icons.grid_view),
                       ),
-                    ),
-                    _buildSliverGrid(
-                      stations,
-                      audioPlayerService,
-                      bottomPadding,
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-
-  /// Builds a sliver list with categorized items.
-  Widget _buildSliverList(
-    List<dynamic> items,
-    AudioPlayerService service,
-    EdgeInsets padding,
-  ) {
-    if (widget.screenType != ScreenType.desktop) {
-      return SliverPadding(
-        padding: padding,
-        sliver: SliverList.builder(
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final item = items[index];
-            if (item is String) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0.0),
-                child: Text(
-                  item,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    ],
+                    selected: {_viewType},
+                    onSelectionChanged: (Set<ViewType> newSelection) {
+                      final newViewType = newSelection.first;
+                      setState(() => _viewType = newViewType);
+                      _saveViewType(newViewType);
+                    },
                   ),
-                ),
-              );
-            }
-            if (item is Station) {
-              return Padding(
-                key: ValueKey(item.id),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12.0,
-                  vertical: 4.0,
-                ),
-                child: StationCardItem(
-                  station: item,
-                  isFavorite: item.isFavorite,
-                  onTap: () => service.playMediaItem(item),
-                  onFavorite: () => service.toggleFavorite(item),
-                  screenType: widget.screenType,
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          },
+          ),
         ),
-      );
-    }
-
-    // Large screen: 2-column layout
-    return SliverPadding(
-      padding: padding,
-      sliver: SliverList.builder(
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          final item = items[index];
-          if (item is String) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(12.0, 12.0, 12.0, 0.0),
-              child: Text(
-                item,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            );
-          }
-          if (item is Station) {
-            int stationCountBefore = 0;
-            for (int i = index - 1; i >= 0; i--) {
-              if (items[i] is String) break;
-              if (items[i] is Station) stationCountBefore++;
-            }
-
-            if (stationCountBefore % 2 != 0) {
-              return const SizedBox.shrink();
-            }
-
-            Station? nextStation;
-            if (index + 1 < items.length && items[index + 1] is Station) {
-              nextStation = items[index + 1] as Station;
-            }
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12.0,
-                vertical: 4.0,
-              ),
-              child: Row(
+        if (stations.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: StationCardItem(
-                      key: ValueKey(item.id),
-                      station: item,
-                      isFavorite: item.isFavorite,
-                      onTap: () => service.playMediaItem(item),
-                      onFavorite: () => service.toggleFavorite(item),
-                      screenType: widget.screenType,
-                    ),
+                  Icon(
+                    Icons.radio,
+                    size: sizes.large,
+                    color: theme.colorScheme.primary,
                   ),
-                  if (nextStation != null) ...[
-                    const SizedBox(width: 8.0),
-                    Expanded(
-                      child: StationCardItem(
-                        key: ValueKey(nextStation.id),
-                        station: nextStation,
-                        isFavorite: nextStation.isFavorite,
-                        onTap: () => service.playMediaItem(nextStation!),
-                        onFavorite: () => service.toggleFavorite(nextStation!),
-                        screenType: widget.screenType,
-                      ),
-                    ),
-                  ] else
-                    const Expanded(child: SizedBox.shrink()),
+                  SizedBox(height: spacing.medium),
+                  Text(
+                    loc?.translate('stationsEmptyTitle') ?? 'No stations',
+                    style: theme.textTheme.headlineMedium,
+                  ),
+                  SizedBox(height: spacing.small),
+                  Text(
+                    loc?.translate('stationsEmptySubtitle') ??
+                        'No radio stations found',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  SizedBox(height: spacing.large),
                 ],
               ),
-            );
-          }
-          return const SizedBox.shrink();
-        },
-      ),
+            ),
+          )
+        else if (_viewType == ViewType.list)
+          ..._buildListSlivers(
+            _getGroupedStations(stations),
+            audioPlayerService,
+            spacing,
+            sizes,
+          )
+        else
+          _buildSliverGrid(stations, audioPlayerService, spacing, shapes),
+
+        SliverPadding(
+          padding: EdgeInsets.only(
+            bottom: widget.bottomPadding + spacing.medium,
+          ),
+        ),
+      ],
     );
   }
 
-  /// Builds a sliver grid with station items.
+  List<Widget> _buildListSlivers(
+    Map<String, List<Station>> grouped,
+    AudioPlayerService service,
+    Spacing spacing,
+    Sizes sizes,
+  ) {
+    final slivers = <Widget>[];
+    final artSize = widget.screenType.isLargeFormat
+        ? sizes.large
+        : sizes.normal;
+    final cardHeight = artSize + spacing.medium;
+
+    grouped.forEach((category, stations) {
+      slivers.add(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.all(spacing.medium),
+            child: Text(
+              category,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      );
+
+      slivers.add(
+        SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: spacing.medium),
+          sliver: SliverGrid.builder(
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 600.0,
+              mainAxisExtent: cardHeight,
+              mainAxisSpacing: spacing.small,
+              crossAxisSpacing: spacing.small,
+            ),
+            itemCount: stations.length,
+            itemBuilder: (context, index) {
+              final station = stations[index];
+              return StationCardItem(
+                key: ValueKey(station.id),
+                station: station,
+                isFavorite: station.isFavorite,
+                onTap: () => service.playMediaItem(station),
+                onFavorite: () => service.toggleFavorite(station),
+                screenType: widget.screenType,
+              );
+            },
+          ),
+        ),
+      );
+    });
+
+    return slivers;
+  }
+
   Widget _buildSliverGrid(
     List<Station> stations,
     AudioPlayerService service,
-    EdgeInsets padding,
+    Spacing spacing,
+    Shapes shapes,
   ) {
     return SliverPadding(
-      padding: padding.copyWith(left: 12.0, right: 12.0, top: 4.0),
+      padding: EdgeInsets.fromLTRB(
+        spacing.medium,
+        spacing.extraSmall,
+        spacing.medium,
+        0,
+      ),
       sliver: SliverGrid.builder(
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 128.0,
-          childAspectRatio: 1.0,
-          crossAxisSpacing: 8.0,
-          mainAxisSpacing: 8.0,
+          crossAxisSpacing: spacing.small,
+          mainAxisSpacing: spacing.small,
         ),
         itemCount: stations.length,
         itemBuilder: (context, index) {
@@ -366,7 +283,7 @@ class _StationsScreenState extends State<StationsScreen>
             isFavorite: station.isFavorite,
             onTap: () => service.playMediaItem(station),
             onFavorite: () => service.toggleFavorite(station),
-            borderRadius: BorderRadius.circular(12.0),
+            borderRadius: shapes.medium,
           );
         },
       ),

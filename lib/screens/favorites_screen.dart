@@ -1,15 +1,18 @@
 import 'dart:async';
-import 'package:etherly/models/device.dart';
 import 'package:etherly/localization/app_localizations.dart';
+import 'package:etherly/models/device.dart';
+import 'package:etherly/models/station.dart';
 import 'package:etherly/services/audio_player_service.dart';
+import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/widgets/screen_header.dart';
 import 'package:etherly/widgets/station_card_item.dart';
 import 'package:etherly/widgets/station_grid_item.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:reorderable_grid/reorderable_grid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:etherly/services/theme_data.dart';
-
 
 const String _favoritesViewTypeKey = 'favorites_view_type';
 
@@ -34,11 +37,11 @@ class FavoritesScreen extends StatefulWidget {
 
 class _FavoritesScreenState extends State<FavoritesScreen>
     with AutomaticKeepAliveClientMixin {
-  late final Future<ViewType> _viewTypeFuture;
   ViewType _viewType = ViewType.list;
-
+  bool _isInitialized = false;
   bool _showLoading = false;
   Timer? _loadingTimer;
+  Future<void>? _initializationFuture;
 
   @override
   bool get wantKeepAlive => true;
@@ -46,13 +49,29 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   @override
   void initState() {
     super.initState();
-    _viewTypeFuture = _loadViewType();
+    _initializationFuture = context
+        .read<AudioPlayerService>()
+        .initializationFuture;
 
     _loadingTimer = Timer(Speed().short1, () {
       if (mounted) {
         setState(() => _showLoading = true);
       }
     });
+
+    _initScreen();
+  }
+
+  Future<void> _initScreen() async {
+    await _loadViewType();
+    await _initializationFuture;
+
+    _loadingTimer?.cancel();
+
+    if (mounted) {
+      setState(() => _isInitialized = true);
+      widget.onContentLoaded?.call();
+    }
   }
 
   @override
@@ -83,244 +102,148 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return FutureBuilder<ViewType>(
-      future: _viewTypeFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const SizedBox.shrink();
-        }
-        if (snapshot.hasError) {
-          return _buildContent(context, ViewType.list);
-        }
-        return _buildContent(context, _viewType);
-      },
-    );
-  }
 
-  Widget _buildContent(BuildContext context, ViewType viewType) {
-    final audioPlayerService = context.watch<AudioPlayerService>();
-    final stations = audioPlayerService.stations;
-    final favoriteStations = stations.where((s) => s.isFavorite).toList();
-
-    if (stations.isEmpty) {
+    if (!_isInitialized) {
       return _showLoading
           ? const Center(child: CircularProgressIndicator())
           : const SizedBox.shrink();
     }
-    if (widget.onContentLoaded != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.onContentLoaded?.call();
-      });
-    }
 
-    _loadingTimer?.cancel();
+    final audioPlayerService = context.watch<AudioPlayerService>();
+    final favoriteStations = audioPlayerService.favoriteStations;
 
-    if (favoriteStations.isEmpty) {
-      final loc = AppLocalizations.of(context);
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              loc?.translate('favoritesEmptyTitle') ??
-                  'No favorite stations yet',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            Text(
-              loc?.translate('favoritesEmptySubtitle') ??
-                  'Favorite a radio station first',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      );
-    }
-
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final sizes = theme.extension<Sizes>()!;
+    final shapes = theme.extension<Shapes>()!;
     final loc = AppLocalizations.of(context);
-    final bottomPadding = EdgeInsets.only(bottom: widget.bottomPadding);
 
-    return AnimatedSwitcher(
-      duration: Theme.of(context).extension<Speed>()!.medium1,
-      switchInCurve: Easing.emphasizedDecelerate,
-      switchOutCurve: Easing.emphasizedAccelerate,
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        return FadeTransition(opacity: animation, child: child);
-      },
-      child: KeyedSubtree(
-        key: ValueKey<ViewType>(_viewType),
-        child: SafeArea(
-          child: _viewType == ViewType.list
-              ? CustomScrollView(
-                  cacheExtent: 4000.0,
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: ScreenHeader(
-                        title: loc?.translate('favoritesTitle') ?? 'Favorites',
-                        actions: SegmentedButton<ViewType>(
-                          segments: const [
-                            ButtonSegment(
-                              value: ViewType.list,
-                              icon: Icon(Icons.list),
-                            ),
-                            ButtonSegment(
-                              value: ViewType.grid,
-                              icon: Icon(Icons.grid_view),
-                            ),
-                          ],
-                          selected: {_viewType},
-                          onSelectionChanged: (Set<ViewType> newSelection) {
-                            final newViewType = newSelection.first;
-                            setState(() => _viewType = newViewType);
-                            _saveViewType(newViewType);
-                          },
-                        ),
+    return CustomScrollView(
+      cacheExtent: 1000.0,
+      slivers: [
+        SliverToBoxAdapter(
+          child: ScreenHeader(
+            title: loc?.translate('favoritesTitle') ?? 'Favorites',
+            actions: favoriteStations.isEmpty
+                ? null
+                : SegmentedButton<ViewType>(
+                    segments: const [
+                      ButtonSegment(
+                        value: ViewType.list,
+                        icon: Icon(Icons.list),
                       ),
-                    ),
-                    _buildSliverList(
-                      favoriteStations,
-                      audioPlayerService,
-                      bottomPadding,
-                    ),
-                  ],
-                )
-              : CustomScrollView(
-                  cacheExtent: 4000.0,
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: ScreenHeader(
-                        title: loc?.translate('favoritesTitle') ?? 'Favorites',
-                        actions: SegmentedButton<ViewType>(
-                          segments: const [
-                            ButtonSegment(
-                              value: ViewType.list,
-                              icon: Icon(Icons.list),
-                            ),
-                            ButtonSegment(
-                              value: ViewType.grid,
-                              icon: Icon(Icons.grid_view),
-                            ),
-                          ],
-                          selected: {_viewType},
-                          onSelectionChanged: (Set<ViewType> newSelection) {
-                            final newViewType = newSelection.first;
-                            setState(() => _viewType = newViewType);
-                            _saveViewType(newViewType);
-                          },
-                        ),
+                      ButtonSegment(
+                        value: ViewType.grid,
+                        icon: Icon(Icons.grid_view),
                       ),
-                    ),
-                    _buildSliverGrid(
-                      favoriteStations,
-                      audioPlayerService,
-                      bottomPadding,
-                    ),
-                  ],
-                ),
+                    ],
+                    selected: {_viewType},
+                    onSelectionChanged: (Set<ViewType> newSelection) {
+                      final newViewType = newSelection.first;
+                      setState(() => _viewType = newViewType);
+                      _saveViewType(newViewType);
+                    },
+                  ),
+          ),
         ),
-      ),
+        if (favoriteStations.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.favorite_border,
+                    size: sizes.large,
+                    color: theme.colorScheme.primary,
+                  ),
+                  SizedBox(height: spacing.medium),
+                  Text(
+                    loc?.translate('favoritesEmptyTitle') ??
+                        'No favorite stations yet',
+                    style: theme.textTheme.headlineMedium,
+                  ),
+                  SizedBox(height: spacing.small),
+                  Text(
+                    loc?.translate('favoritesEmptySubtitle') ??
+                        'Favorite a radio station first',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  SizedBox(height: spacing.large),
+                ],
+              ),
+            ),
+          )
+        else if (_viewType == ViewType.list)
+          _buildListSlivers(favoriteStations, audioPlayerService, spacing)
+        else
+          _buildSliverGrid(
+            favoriteStations,
+            audioPlayerService,
+            spacing,
+            shapes,
+          ),
+
+        SliverPadding(
+          padding: EdgeInsets.only(
+            bottom: widget.bottomPadding + spacing.medium,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSliverList(
-    List<dynamic> stations,
+  Widget _buildListSlivers(
+    List<Station> stations,
     AudioPlayerService service,
-    EdgeInsets padding,
+    Spacing spacing,
   ) {
-    if (widget.screenType != ScreenType.desktop) {
-      // Small screen: single-column layout
-      return SliverPadding(
-        padding: padding,
-        sliver: SliverList.builder(
-          itemCount: stations.length,
-          itemBuilder: (context, index) {
-            final station = stations[index];
-            return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              switchInCurve: Easing.emphasizedDecelerate,
-              switchOutCurve: Easing.emphasizedAccelerate,
-              transitionBuilder: (child, animation) =>
-                  FadeTransition(opacity: animation, child: child),
-              child: Padding(
-                key: ValueKey(station.id),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12.0,
-                  vertical: 4.0,
-                ),
-                child: StationCardItem(
-                  station: station,
-                  isFavorite: station.isFavorite,
-                  onTap: () => service.playMediaItem(station),
-                  onFavorite: () => service.toggleFavorite(station),
-                  screenType: widget.screenType,
-                ),
-              ),
-            );
-          },
-        ),
-      );
-    }
-
-    // Large screen: 2-column layout
-    final rowCount = (stations.length / 2).ceil();
     return SliverPadding(
-      padding: padding,
-      sliver: SliverList.builder(
-        itemCount: rowCount,
-        itemBuilder: (context, rowIndex) {
-          final leftIndex = rowIndex * 2;
-          final rightIndex = leftIndex + 1;
-          final leftStation = stations[leftIndex];
-          final rightStation = rightIndex < stations.length
-              ? stations[rightIndex]
-              : null;
+      padding: EdgeInsets.fromLTRB(
+        spacing.medium,
+        spacing.extraSmall,
+        spacing.medium,
+        0,
+      ),
+      sliver: SliverReorderableList(
+        itemCount: stations.length,
+        onReorderStart: (index) => HapticFeedback.heavyImpact(),
+        onReorder: (oldIndex, newIndex) {
+          int adjustedNewIndex = newIndex;
+          if (oldIndex < newIndex) {
+            adjustedNewIndex -= 1;
+          }
+          service.reorderFavorites(oldIndex, adjustedNewIndex);
+          setState(() {});
+        },
+        itemBuilder: (context, index) {
+          final station = stations[index];
+          final bool useQuickDrag = kIsWeb ||
+              defaultTargetPlatform == TargetPlatform.linux ||
+              defaultTargetPlatform == TargetPlatform.macOS ||
+              defaultTargetPlatform == TargetPlatform.windows;
+
+          final item = StationCardItem(
+            station: station,
+            isFavorite: station.isFavorite,
+            onTap: () => service.playMediaItem(station),
+            onFavorite: () => service.toggleFavorite(station),
+            screenType: widget.screenType,
+          );
 
           return Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12.0,
-              vertical: 4.0,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    switchInCurve: Easing.emphasizedDecelerate,
-                    switchOutCurve: Easing.emphasizedAccelerate,
-                    transitionBuilder: (child, animation) =>
-                        FadeTransition(opacity: animation, child: child),
-                    child: StationCardItem(
-                      key: ValueKey(leftStation.id),
-                      station: leftStation,
-                      isFavorite: leftStation.isFavorite,
-                      onTap: () => service.playMediaItem(leftStation),
-                      onFavorite: () => service.toggleFavorite(leftStation),
-                      screenType: widget.screenType,
-                    ),
+            key: ValueKey(station.id),
+            padding: EdgeInsets.only(bottom: spacing.small),
+            child: useQuickDrag
+                ? ReorderableDragStartListener(
+                    index: index,
+                    child: item,
+                  )
+                : ReorderableDelayedDragStartListener(
+                    index: index,
+                    child: item,
                   ),
-                ),
-                if (rightStation != null) ...[
-                  const SizedBox(width: 8.0),
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      switchInCurve: Easing.emphasizedDecelerate,
-                      switchOutCurve: Easing.emphasizedAccelerate,
-                      transitionBuilder: (child, animation) =>
-                          FadeTransition(opacity: animation, child: child),
-                      child: StationCardItem(
-                        key: ValueKey(rightStation.id),
-                        station: rightStation,
-                        isFavorite: rightStation.isFavorite,
-                        onTap: () => service.playMediaItem(rightStation),
-                        onFavorite: () => service.toggleFavorite(rightStation),
-                        screenType: widget.screenType,
-                      ),
-                    ),
-                  ),
-                ] else
-                  const Expanded(child: SizedBox.shrink()),
-              ],
-            ),
           );
         },
       ),
@@ -328,36 +251,57 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   }
 
   Widget _buildSliverGrid(
-    List<dynamic> stations,
+    List<Station> stations,
     AudioPlayerService service,
-    EdgeInsets padding,
+    Spacing spacing,
+    Shapes shapes,
   ) {
     return SliverPadding(
-      padding: padding.copyWith(left: 8.0, right: 8.0, top: 4.0),
-      sliver: SliverGrid.builder(
+      padding: EdgeInsets.fromLTRB(
+        spacing.medium,
+        spacing.extraSmall,
+        spacing.medium,
+        0,
+      ),
+      sliver: SliverReorderableGrid(
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 128.0,
-          childAspectRatio: 1.0,
-          crossAxisSpacing: 8.0,
-          mainAxisSpacing: 8.0,
+          crossAxisSpacing: spacing.small,
+          mainAxisSpacing: spacing.small,
         ),
         itemCount: stations.length,
+        onReorderStart: (index) => HapticFeedback.heavyImpact(),
+        onReorder: (oldIndex, newIndex) {
+          service.reorderFavorites(oldIndex, newIndex);
+          setState(() {});
+        },
         itemBuilder: (context, index) {
           final station = stations[index];
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            switchInCurve: Easing.emphasizedDecelerate,
-            switchOutCurve: Easing.emphasizedAccelerate,
-            transitionBuilder: (child, animation) =>
-                FadeTransition(opacity: animation, child: child),
-            child: StationGridItem(
+          final bool useQuickDrag = kIsWeb ||
+              defaultTargetPlatform == TargetPlatform.linux ||
+              defaultTargetPlatform == TargetPlatform.macOS ||
+              defaultTargetPlatform == TargetPlatform.windows;
+
+          final item = StationGridItem(
+            station: station,
+            isFavorite: station.isFavorite,
+            onTap: () => service.playMediaItem(station),
+            onFavorite: () => service.toggleFavorite(station),
+            borderRadius: shapes.medium,
+          );
+
+          if (useQuickDrag) {
+            return ReorderableGridDragStartListener(
               key: ValueKey(station.id),
-              station: station,
-              isFavorite: station.isFavorite,
-              onTap: () => service.playMediaItem(station),
-              onFavorite: () => service.toggleFavorite(station),
-              borderRadius: BorderRadius.circular(12.0),
-            ),
+              index: index,
+              child: item,
+            );
+          }
+
+          return ReorderableGridDelayedDragStartListener(
+            key: ValueKey(station.id),
+            index: index,
+            child: item,
           );
         },
       ),

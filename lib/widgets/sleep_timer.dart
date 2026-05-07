@@ -53,10 +53,7 @@ class SleepTimer extends StatelessWidget {
             return Padding(
               padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
               child: FilledButton.tonal(
-                onPressed: () {
-                  onTimerSelected(duration);
-                  Navigator.of(context).pop();
-                },
+                onPressed: () => onTimerSelected(duration),
                 child: Text(label, textAlign: TextAlign.center),
               ),
             );
@@ -90,7 +87,6 @@ class SleepTimer extends StatelessWidget {
                     selected = selected.add(const Duration(days: 1));
                   }
                   onTimerSelected(selected.difference(now));
-                  Navigator.of(context).pop();
                 }
               },
               child: Text(

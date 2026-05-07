@@ -2,9 +2,16 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class StationArt extends StatelessWidget {
-  const StationArt({super.key, required this.artUrl});
+  const StationArt({
+    super.key,
+    required this.artUrl,
+    this.size,
+    this.borderRadius,
+  });
 
   final String artUrl;
+  final double? size;
+  final BorderRadius? borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -13,16 +20,26 @@ class StationArt extends StatelessWidget {
       child: const Center(child: Icon(Icons.radio_rounded)),
     );
 
-    return AspectRatio(
-      aspectRatio: 1,
-      child: artUrl.isEmpty
-          ? fallback
-          : CachedNetworkImage(
-              imageUrl: artUrl,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => fallback,
-              errorWidget: (context, url, error) => fallback,
-            ),
-    );
+    Widget art = artUrl.isEmpty
+        ? fallback
+        : CachedNetworkImage(
+            imageUrl: artUrl,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => fallback,
+            errorWidget: (context, url, error) => fallback,
+            // Optimize memory by decoding at a size close to display resolution
+            memCacheWidth: size != null ? (size! * 2).toInt() : 300,
+            memCacheHeight: size != null ? (size! * 2).toInt() : 300,
+          );
+
+    if (borderRadius != null) {
+      art = ClipRRect(borderRadius: borderRadius!, child: art);
+    }
+
+    if (size != null) {
+      return SizedBox.square(dimension: size, child: art);
+    }
+
+    return AspectRatio(aspectRatio: 1, child: art);
   }
 }

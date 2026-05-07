@@ -17,6 +17,21 @@ import '../widgets/cast_devices.dart';
 
 typedef HomeContentLoadedCallback = void Function();
 
+/// A destination for the app's main navigation.
+class _AppDestination {
+  final String labelKey;
+  final IconData icon;
+  final IconData selectedIcon;
+  final Widget Function(BuildContext, ScreenType, double) builder;
+
+  const _AppDestination({
+    required this.labelKey,
+    required this.icon,
+    required this.selectedIcon,
+    required this.builder,
+  });
+}
+
 class AppScreen extends StatefulWidget {
   final int startingTab;
   final HomeContentLoadedCallback? onHomeContentLoaded;
@@ -34,8 +49,9 @@ class AppScreen extends StatefulWidget {
 class _AppScreenState extends State<AppScreen>
     with SingleTickerProviderStateMixin {
   late int _selectedIndex;
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
+  late final AnimationController _fadeController;
+  late final Animation<double> _fadeAnimation;
+  late final List<_AppDestination> _destinations;
 
   @override
   void initState() {
@@ -51,6 +67,38 @@ class _AppScreenState extends State<AppScreen>
       curve: Easing.standard,
     );
     _fadeController.forward();
+
+    _destinations = [
+      _AppDestination(
+        labelKey: 'navHome',
+        icon: Icons.home_outlined,
+        selectedIcon: Icons.home,
+        builder: (context, _, padding) => HomeScreen(
+          onContentLoaded: widget.onHomeContentLoaded,
+          bottomPadding: padding,
+        ),
+      ),
+      _AppDestination(
+        labelKey: 'navStations',
+        icon: Icons.radio_outlined,
+        selectedIcon: Icons.radio,
+        builder: (context, screenType, padding) => StationsScreen(
+          onContentLoaded: widget.onHomeContentLoaded,
+          screenType: screenType,
+          bottomPadding: padding,
+        ),
+      ),
+      _AppDestination(
+        labelKey: 'navFavorites',
+        icon: Icons.favorite_outline,
+        selectedIcon: Icons.favorite,
+        builder: (context, screenType, padding) => FavoritesScreen(
+          onContentLoaded: widget.onHomeContentLoaded,
+          screenType: screenType,
+          bottomPadding: padding,
+        ),
+      ),
+    ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final service = context.read<AudioPlayerService>();
@@ -76,304 +124,268 @@ class _AppScreenState extends State<AppScreen>
     if (_selectedIndex != index) {
       _fadeController.forward(from: 0.0);
       setState(() => _selectedIndex = index);
+      // Ensure player collapses when switching tabs
+      context.read<AudioPlayerService>().radioPlayerShouldClose.value = true;
     }
   }
 
-  /// Builds the appropriate screen widget based on the selected index.
-  Widget _buildScreen(int index, ScreenType screenType, double bottomPadding) {
-    switch (index) {
-      case 0:
-        return HomeScreen(
-          onContentLoaded: widget.onHomeContentLoaded,
-          bottomPadding: bottomPadding,
-        );
-      case 1:
-        return StationsScreen(
-          onContentLoaded: widget.onHomeContentLoaded,
-          screenType: screenType,
-          bottomPadding: bottomPadding,
-        );
-      case 2:
-        return FavoritesScreen(
-          onContentLoaded: widget.onHomeContentLoaded,
-          screenType: screenType,
-          bottomPadding: bottomPadding,
-        );
-      default:
-        return HomeScreen(
-          onContentLoaded: widget.onHomeContentLoaded,
-          bottomPadding: bottomPadding,
-        );
-    }
-  }
-
-  /// Builds the main Scaffold with AppBar, body, and NavigationBar.
   @override
   Widget build(BuildContext context) {
     final screenType = ScreenType.fromContext(context);
-    final spacing = Theme.of(context).extension<Spacing>()!;
-    final playerBottomPadding = screenType.isLargeFormat
-        ? spacing.small
-        : RadioPlayer.minPlayerHeight + spacing.small;
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final shapes = theme.extension<Shapes>()!;
+    final loc = AppLocalizations.of(context);
 
-    // Common AppBar widget
-    final appBar = AppBar(
-      backgroundColor: screenType.isLargeFormat
-          ? Theme.of(context).colorScheme.surfaceContainer
-          : null,
-      scrolledUnderElevation: screenType.isLargeFormat ? 0 : null,
-      actionsPadding: const EdgeInsets.symmetric(horizontal: 4.0),
-      animateColor: true,
-      notificationPredicate: (notification) {
-        final context = notification.context;
-        bool insideSheet = false;
-        context?.visitAncestorElements((element) {
-          if (element.widget is DraggableScrollableSheet) {
-            insideSheet = true;
-            return false;
-          }
-          return true;
-        });
-        return !insideSheet;
-      },
-      // Logo in AppBar only for small screens (it's in the Rail for large screens)
-      leading: screenType.isLargeFormat
-          ? null
-          : IconButton(
-              icon: SvgPicture.asset(
-                'assets/icon_base.svg',
-                width: 24,
-                height: 24,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isTooShort =
+            !screenType.isLargeFormat &&
+            constraints.maxHeight < RadioPlayer.maxPlayerHeight;
+
+        final playerBottomPadding =
+            (screenType == ScreenType.smallScreenVertical && !isTooShort)
+                ? RadioPlayer.minPlayerHeight + spacing.small
+                : spacing.small;
+
+        // Common AppBar widget logic
+        final appBar = AppBar(
+          backgroundColor:
+              screenType.isLargeFormat
+                  ? theme.colorScheme.surfaceContainer
+                  : null,
+          scrolledUnderElevation: screenType.isLargeFormat ? 0 : null,
+          actionsPadding: EdgeInsets.symmetric(horizontal: spacing.small),
+          animateColor: true,
+          notificationPredicate: (notification) {
+            final context = notification.context;
+            bool insideSheet = false;
+            context?.visitAncestorElements((element) {
+              if (element.widget is DraggableScrollableSheet) {
+                insideSheet = true;
+                return false;
+              }
+              return true;
+            });
+            return !insideSheet;
+          },
+          leading:
+              screenType.isLargeFormat
+                  ? null
+                  : Center(
+                    child: _LogoButton(onPressed: () => _onTabSelected(0)),
+                  ),
+          title: const StationSearchBar(),
+          actions: [
+            if (context.read<ChromeCastService>().isCastSupported())
+              _CastButton(spacing: spacing),
+            IconButton(
+              icon: Icon(
+                Icons.settings,
+                size:
+                    screenType.isLargeFormat ? spacing.extraLarge : spacing.large,
               ),
-              tooltip:
-                  AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
-              onPressed: () {
-                _onTabSelected(0);
-                context
-                        .read<AudioPlayerService>()
-                        .radioPlayerShouldClose
-                        .value =
-                    true;
-              },
-            ),
-      title: const StationSearchBar(),
-      actions: [
-        if (context.read<ChromeCastService>().isCastSupported())
-          IconButton(
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Icon(Icons.cast_rounded),
-                Positioned(
-                  right: -2,
-                  top: -2,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 3,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      'BETA',
-                      style: TextStyle(
-                        fontSize: 7,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
+              tooltip: loc?.translate('mainTooltipSettings') ?? 'Settings',
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) =>
+                              SettingsScreen(themeNotifier: themeNotifier),
                     ),
                   ),
-                ),
-              ],
             ),
-            tooltip:
-                AppLocalizations.of(context)?.translate('mainTooltipCast') ??
-                'Cast to device',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) => MultiProvider(
-                  providers: [
-                    ChangeNotifierProvider.value(
-                      value: context.read<AudioPlayerService>(),
-                    ),
-                    ChangeNotifierProvider.value(
-                      value: context.read<ChromeCastService>(),
-                    ),
-                  ],
-                  child: const CastDevices(),
-                ),
-              );
-            },
-          ),
-        IconButton(
-          icon: Icon(Icons.settings, size: screenType.isLargeFormat ? 32 : 24),
-          tooltip:
-              AppLocalizations.of(context)?.translate('mainTooltipSettings') ??
-              'Settings',
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    SettingsScreen(themeNotifier: themeNotifier),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-
-    // Shared content area for both layouts
-    final contentArea = () {
-      final mainContent = Align(
-        alignment: Alignment.topCenter,
-        child: ClipRRect(
-          borderRadius: screenType.isLargeFormat
-              ? const BorderRadius.all(Radius.circular(16))
-              : BorderRadius.zero,
-          child: Container(
-            color: Theme.of(context).colorScheme.surface,
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: IndexedStack(
-                index: _selectedIndex,
-                sizing: StackFit.expand,
-                children: [
-                  _buildScreen(0, screenType, playerBottomPadding),
-                  _buildScreen(1, screenType, playerBottomPadding),
-                  _buildScreen(2, screenType, playerBottomPadding),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-
-      if (screenType.isLargeFormat) {
-        return Row(
-          children: [
-            Expanded(child: mainContent),
-            SizedBox(width: 360, child: RadioPlayer(screenType: screenType)),
           ],
         );
-      }
 
-      return Stack(
-        children: [
-          mainContent,
-          RadioPlayer(screenType: screenType),
-        ],
-      );
-    }();
-
-    // Large layout: Rail + Content Scaffold
-    if (screenType.isLargeFormat) {
-      return Row(
-        children: [
-          NavigationRail(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) {
-              _onTabSelected(index);
-              context.read<AudioPlayerService>().radioPlayerShouldClose.value =
-                  true;
-            },
-            labelType: NavigationRailLabelType.all,
-            leading: Padding(
-              padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-              child: IconButton(
-                icon: SvgPicture.asset(
-                  'assets/icon_base.svg',
-                  width: 36,
-                  height: 36,
+        final mainContent = Align(
+          alignment: Alignment.topCenter,
+          child: ClipRRect(
+            borderRadius:
+                screenType.isLargeFormat ? shapes.large : BorderRadius.zero,
+            child: Container(
+              color: theme.colorScheme.surface,
+              child: SafeArea(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: IndexedStack(
+                    index: _selectedIndex,
+                    sizing: StackFit.expand,
+                    children:
+                        _destinations
+                            .map(
+                              (d) => d.builder(
+                                context,
+                                screenType,
+                                playerBottomPadding,
+                              ),
+                            )
+                            .toList(),
+                  ),
                 ),
-                tooltip:
-                    AppLocalizations.of(context)?.translate('navHome') ??
-                    'Home',
-                onPressed: () {
-                  _onTabSelected(0);
-                  context
-                          .read<AudioPlayerService>()
-                          .radioPlayerShouldClose
-                          .value =
-                      true;
-                },
               ),
             ),
-            destinations: [
-              NavigationRailDestination(
-                selectedIcon: const Icon(Icons.home),
-                icon: const Icon(Icons.home_outlined),
-                label: Text(
-                  AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
+          ),
+        );
+
+        // Navigation logic
+        if (screenType.isLargeFormat) {
+          return Row(
+            children: [
+              NavigationRail(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: _onTabSelected,
+                labelType: NavigationRailLabelType.all,
+                leading: Padding(
+                  padding: EdgeInsets.only(
+                    top: spacing.small,
+                    bottom: spacing.medium,
+                  ),
+                  child: _LogoButton(
+                    onPressed: () => _onTabSelected(0),
+                    size: spacing.extraLarge,
+                  ),
                 ),
+                destinations:
+                    _destinations.map((d) {
+                      return NavigationRailDestination(
+                        selectedIcon: Icon(d.selectedIcon),
+                        icon: Icon(d.icon),
+                        label: Text(loc?.translate(d.labelKey) ?? d.labelKey),
+                      );
+                    }).toList(),
               ),
-              NavigationRailDestination(
-                selectedIcon: const Icon(Icons.radio),
-                icon: const Icon(Icons.radio_outlined),
-                label: Text(
-                  AppLocalizations.of(context)?.translate('navStations') ??
-                      'All stations',
-                ),
-              ),
-              NavigationRailDestination(
-                selectedIcon: const Icon(Icons.favorite),
-                icon: const Icon(Icons.favorite_outline),
-                label: Text(
-                  AppLocalizations.of(context)?.translate('navFavorites') ??
-                      'Favorites',
+              Expanded(
+                child: Scaffold(
+                  resizeToAvoidBottomInset: false,
+                  appBar: appBar,
+                  body: Row(
+                    children: [
+                      Expanded(child: mainContent),
+                      SizedBox(
+                        width: 360,
+                        child: RadioPlayer(screenType: screenType),
+                      ),
+                    ],
+                  ),
+                  // Bottom spacer for large format
+                  bottomNavigationBar: SizedBox(height: spacing.medium),
                 ),
               ),
             ],
+          );
+        }
+
+        // Small layout (Mobile)
+        return Scaffold(
+          resizeToAvoidBottomInset: false,
+          appBar: appBar,
+          body: Stack(
+            children: [
+              mainContent,
+              RadioPlayer(screenType: screenType),
+            ],
           ),
-          Expanded(
-            child: Scaffold(
-              resizeToAvoidBottomInset: false,
-              appBar: appBar,
-              body: contentArea,
-              bottomNavigationBar: Container(height: 16),
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _onTabSelected,
+            destinations:
+                _destinations.map((d) {
+                  return NavigationDestination(
+                    selectedIcon: Icon(d.selectedIcon),
+                    icon: Icon(d.icon),
+                    label: loc?.translate(d.labelKey) ?? d.labelKey,
+                  );
+                }).toList(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LogoButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final double? size;
+
+  const _LogoButton({required this.onPressed, this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = Theme.of(context).extension<Spacing>()!;
+    final effectiveSize = size ?? spacing.large;
+
+    return IconButton(
+      iconSize: effectiveSize,
+      icon: SvgPicture.asset(
+        'assets/icon_base.svg',
+        width: effectiveSize,
+        height: effectiveSize,
+      ),
+      tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
+      onPressed: onPressed,
+    );
+  }
+}
+
+class _CastButton extends StatelessWidget {
+  final Spacing spacing;
+
+  const _CastButton({required this.spacing});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context);
+    final shapes = theme.extension<Shapes>()!;
+
+    return IconButton(
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.cast_rounded),
+          Positioned(
+            right: -spacing.extraExtraSmall,
+            top: -spacing.extraExtraSmall,
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: spacing.extraExtraSmall * 1.5,
+                vertical: spacing.extraExtraSmall / 2,
+              ),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: shapes.extraSmall,
+              ),
+              child: Text(
+                'BETA',
+                style: TextStyle(
+                  fontSize: 7,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
             ),
           ),
         ],
-      );
-    }
-
-    // Small layout: Single Scaffold
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: appBar,
-      body: contentArea,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          _onTabSelected(index);
-          context.read<AudioPlayerService>().radioPlayerShouldClose.value =
-              true;
-        },
-        destinations: [
-          NavigationDestination(
-            selectedIcon: const Icon(Icons.home),
-            icon: const Icon(Icons.home_outlined),
-            label: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
-          ),
-          NavigationDestination(
-            selectedIcon: const Icon(Icons.radio),
-            icon: const Icon(Icons.radio_outlined),
-            label:
-                AppLocalizations.of(context)?.translate('navStations') ??
-                'All stations',
-          ),
-          NavigationDestination(
-            selectedIcon: const Icon(Icons.favorite),
-            icon: const Icon(Icons.favorite_outline),
-            label:
-                AppLocalizations.of(context)?.translate('navFavorites') ??
-                'Favorites',
-          ),
-        ],
       ),
+      tooltip: loc?.translate('mainTooltipCast') ?? 'Cast to device',
+      onPressed: () {
+        showDialog(
+          context: context,
+          builder: (dialogContext) => MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(
+                value: context.read<AudioPlayerService>(),
+              ),
+              ChangeNotifierProvider.value(
+                value: context.read<ChromeCastService>(),
+              ),
+            ],
+            child: const CastDevices(),
+          ),
+        );
+      },
     );
   }
 }

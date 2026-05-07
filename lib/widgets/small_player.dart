@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/services/audio_player_service.dart';
+import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/widgets/station_art.dart';
 import 'package:etherly/widgets/marquee_text.dart';
 import 'package:etherly/widgets/play_button.dart';
@@ -43,16 +44,13 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
             children: [
               IgnorePointer(
                 ignoring: true,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: SizedBox(
-                    width: 56.0,
-                    height: 56.0,
-                    child: StationArt(artUrl: artUrl),
-                  ),
+                child: StationArt(
+                  artUrl: artUrl,
+                  size: theme.extension<Sizes>()!.normal,
+                  borderRadius: theme.extension<Shapes>()!.small,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: theme.extension<Spacing>()!.medium),
               Expanded(
                 child: IgnorePointer(
                   ignoring: true,

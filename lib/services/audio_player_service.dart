@@ -14,6 +14,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 class AudioPlayerService with ChangeNotifier {
   final AudioPlayer player = AudioPlayer();
   late final MyAudioHandler _audioHandler;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+  _stationsSubscription;
   final ValueNotifier<({String? title, bool loading})> icyState = ValueNotifier(
     (title: null, loading: false),
   );
@@ -21,6 +23,9 @@ class AudioPlayerService with ChangeNotifier {
   late final SharedPreferences _prefs;
 
   final ValueNotifier<bool> isReady = ValueNotifier(false);
+  final Completer<void> _initializationCompleter = Completer<void>();
+  Future<void> get initializationFuture => _initializationCompleter.future;
+
   final ValueNotifier<bool> _radioPlayerShouldClose = ValueNotifier(false);
   ValueNotifier<bool> get radioPlayerShouldClose => _radioPlayerShouldClose;
 
@@ -29,6 +34,8 @@ class AudioPlayerService with ChangeNotifier {
   static const String _favoriteStationIdsKey = 'favorite_station_ids';
   static const String _recentStationIdsKey = 'recent_station_ids';
   static const String _volumeKey = 'volume';
+  static const String _isMutedKey = 'is_muted';
+  static const String _preMuteVolumeKey = 'pre_mute_volume';
   static const int _maxRecentStations = 10;
   static const int _autoPlayCountdownStart = 3;
 
@@ -38,6 +45,12 @@ class AudioPlayerService with ChangeNotifier {
   List<String> _favoriteStationIds = [];
   List<String> _recentStationIds = [];
   List<Station> get recentStations => _recentStationIds
+      .map((id) => _stationMap[id])
+      .whereType<Station>()
+      .toList();
+
+  /// List of favorite stations in the user's custom order.
+  List<Station> get favoriteStations => _favoriteStationIds
       .map((id) => _stationMap[id])
       .whereType<Station>()
       .toList();
@@ -55,6 +68,11 @@ class AudioPlayerService with ChangeNotifier {
   /// Current media item.
   MediaItem? _currentMediaItem;
   MediaItem? get mediaItem => _currentMediaItem;
+
+  /// Mute state for web.
+  bool _isMuted = false;
+  double _preMuteVolume = 1.0;
+  bool get isMuted => _isMuted;
 
   /// Preferences.
   SharedPreferences get prefs => _prefs;
@@ -119,13 +137,23 @@ class AudioPlayerService with ChangeNotifier {
         });
 
     if (kIsWeb) {
+      _preMuteVolume = _prefs.getDouble(_preMuteVolumeKey) ?? 1.0;
+      _isMuted = _prefs.getBool(_isMutedKey) ?? false;
       final savedVolume = _prefs.getDouble(_volumeKey) ?? 1.0;
-      setVolume(savedVolume);
+      
+      if (_isMuted) {
+        player.setVolume(0.0);
+      } else {
+        player.setVolume(savedVolume);
+      }
     }
 
     await _loadStations();
     await _checkAutoplay();
     isReady.value = true;
+    if (!_initializationCompleter.isCompleted) {
+      _initializationCompleter.complete();
+    }
   }
 
   /// Updates the player volume (Web only).
@@ -134,6 +162,29 @@ class AudioPlayerService with ChangeNotifier {
       final clamped = value.clamp(0.0, 1.0);
       player.setVolume(clamped);
       _prefs.setDouble(_volumeKey, clamped);
+      
+      // If manually setting volume > 0, unmute
+      if (clamped > 0 && _isMuted) {
+        _isMuted = false;
+        _prefs.setBool(_isMutedKey, false);
+      }
+      
+      notifyListeners();
+    }
+  }
+
+  /// Toggles mute state (Web only).
+  void toggleMute() {
+    if (kIsWeb) {
+      _isMuted = !_isMuted;
+      if (_isMuted) {
+        _preMuteVolume = volume;
+        _prefs.setDouble(_preMuteVolumeKey, _preMuteVolume);
+        player.setVolume(0.0);
+      } else {
+        player.setVolume(_preMuteVolume > 0 ? _preMuteVolume : 1.0);
+      }
+      _prefs.setBool(_isMutedKey, _isMuted);
       notifyListeners();
     }
   }
@@ -144,6 +195,7 @@ class AudioPlayerService with ChangeNotifier {
     _castService?.isRemotePlaying.removeListener(notifyListeners);
     _castService?.isRemoteLoading.removeListener(notifyListeners);
     _castService?.isCastingActive.removeListener(_onCastingStateChanged);
+    _stationsSubscription?.cancel();
     _audioHandler.customAction('dispose');
     _autoplayTimer?.cancel();
     _sleepTimer?.cancel();
@@ -182,6 +234,8 @@ class AudioPlayerService with ChangeNotifier {
       player.play().catchError((_) {});
     } catch (e) {
       if (kDebugMode) print('Error playing media item: $e');
+      await player.stop();
+      icyState.value = (title: null, loading: false);
     }
   }
 
@@ -218,7 +272,7 @@ class AudioPlayerService with ChangeNotifier {
       } on PlayerInterruptedException {
         rethrow;
       } catch (e) {
-        if (i == entriesPriority.length - 1) return;
+        if (i == entriesPriority.length - 1) rethrow;
       }
     }
   }
@@ -301,8 +355,24 @@ class AudioPlayerService with ChangeNotifier {
     for (final station in stations) {
       if (station.art.isNotEmpty) {
         try {
-          await precacheImage(CachedNetworkImageProvider(station.art), context);
-        } catch (_) {}
+          // Using ResizeImage and errorListener to handle memory and network issues gracefully
+          final provider = CachedNetworkImageProvider(
+            station.art,
+            errorListener: (error) {
+              // Silently catch errors (like EncodingError) to prevent console flood
+            },
+          );
+
+          await precacheImage(
+            ResizeImage(provider, width: 300, height: 300),
+            context,
+          );
+
+          // Small delay to avoid overwhelming the network stack/DNS resolver
+          await Future.delayed(const Duration(milliseconds: 50));
+        } catch (_) {
+          // Silent catch for any other precaching issues
+        }
       }
     }
   }
@@ -323,6 +393,18 @@ class AudioPlayerService with ChangeNotifier {
     }
     await _prefs.setStringList(_favoriteStationIdsKey, _favoriteStationIds);
     notifyListeners();
+  }
+
+  /// Reorders the favorite stations and persists the new order.
+  Future<void> reorderFavorites(int oldIndex, int newIndex) async {
+    if (oldIndex < 0 || oldIndex >= _favoriteStationIds.length) return;
+    if (newIndex < 0 || newIndex >= _favoriteStationIds.length) return;
+
+    final String id = _favoriteStationIds.removeAt(oldIndex);
+    _favoriteStationIds.insert(newIndex, id);
+
+    notifyListeners();
+    await _prefs.setStringList(_favoriteStationIdsKey, _favoriteStationIds);
   }
 
   /// Schedules the player to stop after a given duration.
@@ -358,46 +440,64 @@ class AudioPlayerService with ChangeNotifier {
 
   /// Loads the station list from the remote repository.
   Future<void> _loadStations() async {
-    bool loaded = false;
+    final completer = Completer<void>();
+    _stationsSubscription?.cancel();
 
-    try {
-      final snapshot = await FirebaseFirestore.instance.collection('stations').get();
-      // Filter out inactive stations
-      final activeDocs = snapshot.docs.where((doc) {
-        final data = doc.data();
-        return data['active'] == true || data['active'] == null;
-      }).toList();
-      stations = activeDocs.map((doc) => Station.fromFirestore(doc)).toList();
-      
-      // Sort by rank if it exists, otherwise leave order or sort by name
-      stations.sort((a, b) {
-        if (a.rank != null && b.rank != null) return a.rank!.compareTo(b.rank!);
-        if (a.rank != null) return -1;
-        if (b.rank != null) return 1;
-        return a.name.compareTo(b.name);
-      });
+    _stationsSubscription = FirebaseFirestore.instance
+        .collection('stations')
+        .snapshots()
+        .listen(
+          (snapshot) async {
+            // Filter out inactive stations
+            final activeDocs = snapshot.docs.where((doc) {
+              final data = doc.data();
+              return data['active'] == true || data['active'] == null;
+            }).toList();
 
-      loaded = true;
-    } catch (e) {
-      if (kDebugMode) print('Error loading stations from Firebase: $e');
-    }
+            stations = activeDocs
+                .map((doc) => Station.fromFirestore(doc))
+                .toList();
 
-    if (loaded) {
-      _favoriteStationIds = _prefs.getStringList(_favoriteStationIdsKey) ?? [];
-      _recentStationIds = _prefs.getStringList(_recentStationIdsKey) ?? [];
+            // Sort by rank if it exists, otherwise leave order or sort by name
+            stations.sort((a, b) {
+              if (a.rank != null && b.rank != null) {
+                return a.rank!.compareTo(b.rank!);
+              }
+              if (a.rank != null) return -1;
+              if (b.rank != null) return 1;
+              return a.name.compareTo(b.name);
+            });
 
-      stations = stations
-          .map(
-            (s) => _favoriteStationIds.contains(s.id)
-                ? s.copyWith(isFavorite: true)
-                : s,
-          )
-          .toList();
-      _stationMap = {for (var s in stations) s.id: s};
+            _favoriteStationIds =
+                _prefs.getStringList(_favoriteStationIdsKey) ?? [];
+            _recentStationIds =
+                _prefs.getStringList(_recentStationIdsKey) ?? [];
 
-      await _loadLastStation();
-    }
-    notifyListeners();
+            stations = stations
+                .map(
+                  (s) => _favoriteStationIds.contains(s.id)
+                      ? s.copyWith(isFavorite: true)
+                      : s,
+                )
+                .toList();
+            _stationMap = {for (var s in stations) s.id: s};
+
+            await _loadLastStation();
+
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+            notifyListeners();
+          },
+          onError: (e) {
+            if (kDebugMode) print('Error loading stations from Firebase: $e');
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+          },
+        );
+
+    return completer.future;
   }
 
   /// Adds a station to the recently played history.

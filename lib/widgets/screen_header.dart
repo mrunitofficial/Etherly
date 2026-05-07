@@ -1,3 +1,4 @@
+import 'package:etherly/services/theme_data.dart';
 import 'package:flutter/material.dart';
 
 /// The header widget for screens, displaying a title and the optional segmented button.
@@ -6,14 +7,21 @@ class ScreenHeader extends StatelessWidget {
 
   final String title;
   final Widget? actions;
-  static const double _headerHeight = 80.0;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: _headerHeight,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12.0, 16.0, 12.0, 8.0),
+    final spacing = Theme.of(context).extension<Spacing>()!;
+    final sizes = Theme.of(context).extension<Sizes>()!;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        spacing.medium,
+        spacing.medium + spacing.small,
+        spacing.medium,
+        spacing.small,
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: sizes.normal),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,

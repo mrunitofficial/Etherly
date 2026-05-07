@@ -1,5 +1,6 @@
 import 'package:etherly/models/device.dart';
 import 'package:etherly/models/station.dart';
+import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/widgets/station_art.dart';
 import 'package:flutter/material.dart';
 
@@ -22,44 +23,45 @@ class StationCardItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final shapes = theme.extension<Shapes>()!;
+    final sizes = theme.extension<Sizes>()!;
+
     return RepaintBoundary(
       child: Tooltip(
         message: station.name,
+        triggerMode: TooltipTriggerMode.manual,
         child: Card.filled(
+          clipBehavior: Clip.hardEdge,
           margin: EdgeInsets.zero,
-          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          color: theme.colorScheme.surfaceContainerHigh,
           child: InkWell(
-            borderRadius: BorderRadius.circular(12.0),
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: EdgeInsets.all(spacing.small),
               child: Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8.0),
-                    child: SizedBox(
-                      width: screenType.isLargeFormat ? 84.0 : 56.0,
-                      height: screenType.isLargeFormat ? 84.0 : 56.0,
-                      child: StationArt(artUrl: station.art),
-                    ),
+                  StationArt(
+                    artUrl: station.art,
+                    size: screenType.isLargeFormat ? sizes.large : sizes.normal,
+                    borderRadius: shapes.small,
                   ),
-                  const SizedBox(width: 16.0),
+                  SizedBox(width: spacing.medium),
                   Expanded(
                     child: Text(
                       station.name,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                      style: theme.textTheme.titleMedium!.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   IconButton(
-                    padding: const EdgeInsets.all(8.0),
-                    constraints: const BoxConstraints(),
                     icon: Icon(
                       isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: theme.colorScheme.onSurface,
                     ),
                     onPressed: onFavorite,
                   ),

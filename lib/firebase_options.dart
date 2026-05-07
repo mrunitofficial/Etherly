@@ -59,8 +59,8 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyC97cru4LT-C_tJXry3yQLM7SnHtbK-I4k',
-    appId: '1:285588016271:android:845c5d13001745da05b4fa',
+    apiKey: 'AIzaSyBjMv7H1MlMgoJFZKzPDc2zlq-7DQPOFDM',
+    appId: '1:285588016271:android:7e2481d1f7e5f04c05b4fa',
     messagingSenderId: '285588016271',
     projectId: 'etherly-firebase',
     storageBucket: 'etherly-firebase.firebasestorage.app',

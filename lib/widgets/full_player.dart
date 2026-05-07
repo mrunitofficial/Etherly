@@ -5,7 +5,7 @@ import 'package:etherly/localization/app_localizations.dart';
 
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/screens/settings_screen.dart';
-import 'package:etherly/services/theme_data.dart' show themeNotifier;
+import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/widgets/sleep_timer.dart';
 import 'package:etherly/widgets/station_art.dart';
 import 'package:etherly/widgets/quality_setting.dart';
@@ -14,51 +14,46 @@ import 'package:etherly/widgets/play_button.dart';
 import 'package:etherly/widgets/icy_text_display.dart';
 
 /// Full player content shown in the expanded state of the radio player.
-class FullPlayerContent extends StatefulWidget {
+class FullPlayerContent extends StatelessWidget {
   const FullPlayerContent({super.key, this.scrollController, this.onClose});
 
   final ScrollController? scrollController;
   final VoidCallback? onClose;
 
   @override
-  State<FullPlayerContent> createState() => _FullPlayerContentState();
-}
-
-class _FullPlayerContentState extends State<FullPlayerContent> {
-  String? _lastStationId;
-
-  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final shapes = theme.extension<Shapes>()!;
+    final sizes = theme.extension<Sizes>()!;
+
     Widget content = Padding(
-      padding: const EdgeInsets.only(bottom: 32),
+      padding: EdgeInsets.only(bottom: spacing.extraLarge),
       child: Consumer<AudioPlayerService>(
         builder: (context, service, _) {
           final mediaItem = service.mediaItem;
-          if (mediaItem?.id != _lastStationId) _lastStationId = mediaItem?.id;
-
           final loc = AppLocalizations.of(context);
-          final theme = Theme.of(context);
 
           return Column(
             children: [
               FullPlayerHeader(
-                onClose: widget.onClose,
+                onClose: onClose,
                 slogan: mediaItem?.album ?? '',
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: spacing.small),
               Center(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12.0),
-                  child: SizedBox(
-                    width: 280,
-                    height: 280,
+                  borderRadius: shapes.medium,
+                  child: SizedBox.square(
+                    dimension:
+                        sizes.extraLargeIncreased + sizes.largeIncreased, // 280
                     child: StationArt(artUrl: mediaItem.safeArtUrl),
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: spacing.large),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
+                padding: EdgeInsets.symmetric(horizontal: spacing.extraLarge),
                 child: Column(
                   children: [
                     MarqueeText(
@@ -68,27 +63,32 @@ class _FullPlayerContentState extends State<FullPlayerContent> {
                               'Select a station...'),
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
                       ),
                       centerWhenFits: true,
                     ),
                     if (!kIsWeb)
-                      const SizedBox(height: 28, child: IcyTextDisplay()),
+                      SizedBox(
+                        height: spacing.extraLarge,
+                        child: const IcyTextDisplay(),
+                      ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: spacing.large),
               const FullPlayerControls(),
-              if (kIsWeb) ...[const SizedBox(height: 32), const VolumeSlider()],
+              if (kIsWeb) ...[
+                SizedBox(height: spacing.medium),
+                const VolumeSlider(),
+              ],
             ],
           );
         },
       ),
     );
 
-    if (widget.scrollController != null) {
+    if (scrollController != null) {
       return SingleChildScrollView(
-        controller: widget.scrollController,
+        controller: scrollController,
         child: content,
       );
     }
@@ -106,17 +106,25 @@ class FullPlayerHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 32, 16, 16),
+      padding: EdgeInsets.fromLTRB(
+        spacing.medium,
+        spacing.extraLarge,
+        spacing.medium,
+        spacing.medium,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (!kIsWeb) PlayerCloseButton(onClose: onClose),
-          if (kIsWeb) const QualityButton(),
+          if (onClose != null)
+            PlayerCloseButton(onClose: onClose)
+          else
+            const QualityButton(),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: EdgeInsets.symmetric(horizontal: spacing.small),
               child: slogan.isEmpty
                   ? const SizedBox.shrink()
                   : Text(
@@ -130,7 +138,7 @@ class FullPlayerHeader extends StatelessWidget {
                     ),
             ),
           ),
-          const PlayerMenuButton(),
+          PlayerMenuButton(showQualityInMenu: onClose != null),
         ],
       ),
     );
@@ -145,7 +153,9 @@ class FullPlayerControls extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AudioPlayerService>(
       builder: (context, service, _) {
-        final colorScheme = Theme.of(context).colorScheme;
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        final spacing = theme.extension<Spacing>()!;
         final loc = AppLocalizations.of(context);
         final station = service.mediaItem == null
             ? null
@@ -156,44 +166,41 @@ class FullPlayerControls extends StatelessWidget {
         final isFavorite = station?.isFavorite ?? false;
 
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+          padding: EdgeInsets.symmetric(horizontal: spacing.extraLarge),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ValueListenableBuilder<bool>(
                 valueListenable: service.sleepTimerActive,
-                builder: (context, isSleepTimerSet, _) => IconButton(
-                  onPressed: isSleepTimerSet
-                      ? () => service.cancelSleepTimer()
-                      : () async {
-                          final selected = await showDialog<Duration>(
-                            context: context,
-                            builder: (context) => SleepTimer(
-                              onTimerSelected: (duration) =>
-                                  Navigator.of(context).pop(duration),
-                            ),
-                          );
-                          if (selected != null) service.setSleepTimer(selected);
-                        },
-                  icon: Icon(
-                    isSleepTimerSet ? Icons.timer : Icons.timer_outlined,
-                    size: 28,
-                    color: isSleepTimerSet
-                        ? colorScheme.primary
-                        : colorScheme.onSecondaryContainer,
-                  ),
-                  tooltip: isSleepTimerSet
-                      ? (loc?.translate('playerCancelSleepTimer') ??
-                            'Cancel sleep timer')
-                      : (loc?.translate('playerSleepTimer') ?? 'Sleep timer'),
-                  padding: const EdgeInsets.all(16),
-                  style: IconButton.styleFrom(
-                    backgroundColor: colorScheme.secondaryContainer,
-                    shape: const CircleBorder(),
-                  ),
-                ),
+                builder: (context, isSleepTimerSet, _) =>
+                    IconButton.filledTonal(
+                      onPressed: isSleepTimerSet
+                          ? () => service.cancelSleepTimer()
+                          : () async {
+                              final selected = await showDialog<Duration>(
+                                context: context,
+                                builder: (context) => SleepTimer(
+                                  onTimerSelected: (duration) =>
+                                      Navigator.of(context).pop(duration),
+                                ),
+                              );
+                              if (selected != null) {
+                                service.setSleepTimer(selected);
+                              }
+                            },
+                      icon: Icon(
+                        isSleepTimerSet ? Icons.timer : Icons.timer_outlined,
+                        color: isSleepTimerSet ? colorScheme.primary : null,
+                      ),
+                      tooltip: isSleepTimerSet
+                          ? (loc?.translate('playerCancelSleepTimer') ??
+                                'Cancel sleep timer')
+                          : (loc?.translate('playerSleepTimer') ??
+                                'Sleep timer'),
+                      padding: EdgeInsets.all(spacing.medium),
+                    ),
               ),
-              const SizedBox(width: 32),
+              SizedBox(width: spacing.extraLarge),
               ValueListenableBuilder<int>(
                 valueListenable: service.autoplayCountdownNotifier,
                 builder: (context, countdown, _) => PlayButton(
@@ -209,8 +216,8 @@ class FullPlayerControls extends StatelessWidget {
                   size: PlayButtonSize.large,
                 ),
               ),
-              const SizedBox(width: 32),
-              IconButton(
+              SizedBox(width: spacing.extraLarge),
+              IconButton.filledTonal(
                 onPressed: station == null
                     ? null
                     : () => service.toggleFavorite(station),
@@ -218,17 +225,10 @@ class FullPlayerControls extends StatelessWidget {
                   isFavorite
                       ? Icons.favorite_rounded
                       : Icons.favorite_border_rounded,
-                  size: 28,
-                  color: isFavorite
-                      ? colorScheme.primary
-                      : colorScheme.onSecondaryContainer,
+                  color: isFavorite ? colorScheme.primary : null,
                 ),
                 tooltip: loc?.translate('playerFavorite') ?? 'Favorite',
-                padding: const EdgeInsets.all(16),
-                style: IconButton.styleFrom(
-                  backgroundColor: colorScheme.secondaryContainer,
-                  shape: const CircleBorder(),
-                ),
+                padding: EdgeInsets.all(spacing.medium),
               ),
             ],
           ),
@@ -238,24 +238,18 @@ class FullPlayerControls extends StatelessWidget {
   }
 }
 
-
-
 /// Quality button in the full player header (web only).
 class QualityButton extends StatelessWidget {
   const QualityButton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    Theme.of(context);
     final loc = AppLocalizations.of(context);
 
     return IconButton(
       onPressed: () => QualitySetting.show(context),
-      icon: Icon(
-        Icons.high_quality_outlined,
-        size: 28,
-        color: theme.colorScheme.onSurface,
-      ),
+      icon: const Icon(Icons.high_quality_outlined),
       tooltip: loc?.translate('playerStreamQuality') ?? 'Stream quality',
     );
   }
@@ -269,18 +263,16 @@ class PlayerCloseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (onClose == null) return const SizedBox(width: 48);
-
     final theme = Theme.of(context);
+    final sizes = theme.extension<Sizes>()!;
+
+    if (onClose == null) return SizedBox(width: sizes.normal);
+
     final loc = AppLocalizations.of(context);
 
     return IconButton(
       onPressed: onClose,
-      icon: Icon(
-        Icons.keyboard_arrow_down_rounded,
-        size: 32,
-        color: theme.colorScheme.onSurface,
-      ),
+      icon: const Icon(Icons.keyboard_arrow_down_rounded),
       tooltip: loc?.translate('playerClose') ?? 'Close',
     );
   }
@@ -288,7 +280,9 @@ class PlayerCloseButton extends StatelessWidget {
 
 /// Menu button in the full player header.
 class PlayerMenuButton extends StatelessWidget {
-  const PlayerMenuButton({super.key});
+  const PlayerMenuButton({super.key, required this.showQualityInMenu});
+
+  final bool showQualityInMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -298,35 +292,34 @@ class PlayerMenuButton extends StatelessWidget {
     return PopupMenuButton<String>(
       icon: Icon(
         Icons.more_vert_rounded,
-        size: 28,
-        color: theme.colorScheme.onSurface,
+        color: theme.colorScheme.onSurfaceVariant,
       ),
       color: theme.colorScheme.surfaceContainerHigh,
       itemBuilder: (context) => [
         _buildMenuItem(
+          context,
           Icons.settings_outlined,
           loc?.translate('playerSettings') ?? 'Settings',
           'settings',
-          theme.colorScheme.onSurfaceVariant,
         ),
-        if (!kIsWeb)
+        if (showQualityInMenu)
           _buildMenuItem(
+            context,
             Icons.high_quality_outlined,
             loc?.translate('playerStreamQuality') ?? 'Stream quality',
             'stream_quality',
-            theme.colorScheme.onSurfaceVariant,
           ),
         _buildMenuItem(
+          context,
           Icons.info_outline,
           loc?.translate('playerAbout') ?? 'About',
           'about',
-          theme.colorScheme.onSurfaceVariant,
         ),
         _buildMenuItem(
+          context,
           Icons.feedback_outlined,
           loc?.translate('playerSendFeedback') ?? 'Send Feedback',
           'send_feedback',
-          theme.colorScheme.onSurfaceVariant,
         ),
       ],
       onSelected: (value) {
@@ -346,17 +339,19 @@ class PlayerMenuButton extends StatelessWidget {
   }
 
   PopupMenuItem<String> _buildMenuItem(
+    BuildContext context,
     IconData icon,
     String label,
     String value,
-    Color iconColor,
   ) {
+    final spacing = Theme.of(context).extension<Spacing>()!;
+
     return PopupMenuItem<String>(
       value: value,
       child: Row(
         children: [
-          Icon(icon, color: iconColor),
-          const SizedBox(width: 12),
+          Icon(icon),
+          SizedBox(width: spacing.medium),
           Text(label),
         ],
       ),
@@ -364,38 +359,45 @@ class PlayerMenuButton extends StatelessWidget {
   }
 }
 
-/// Volume slider widget for web player.
-class VolumeSlider extends StatefulWidget {
+class VolumeSlider extends StatelessWidget {
   const VolumeSlider({super.key});
 
-  @override
-  State<VolumeSlider> createState() => _VolumeSliderState();
-}
-
-class _VolumeSliderState extends State<VolumeSlider> {
   @override
   Widget build(BuildContext context) {
     return Consumer<AudioPlayerService>(
       builder: (context, service, _) {
+        final theme = Theme.of(context);
+        final spacing = theme.extension<Spacing>()!;
+
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+          padding: EdgeInsets.symmetric(horizontal: spacing.medium),
           child: Row(
             children: [
-              Icon(
-                Icons.volume_down,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              IconButton(
+                onPressed: service.toggleMute,
+                icon: Icon(
+                  service.isMuted
+                      ? Icons.volume_off_rounded
+                      : Icons.volume_mute_rounded,
+                ),
+                tooltip:
+                    AppLocalizations.of(context)?.translate('playerMute') ??
+                    'Mute',
               ),
               Expanded(
                 child: Slider(
                   value: service.volume,
-                  min: 0.0,
-                  max: 1.0,
-                  onChanged: (value) => service.setVolume(value),
+                  onChanged: service.setVolume,
                 ),
               ),
-              Icon(
-                Icons.volume_up,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              IconButton(
+                onPressed: () => service.setVolume(1.0),
+                icon: const Icon(Icons.volume_up_rounded),
+                tooltip:
+                    AppLocalizations.of(
+                      context,
+                    )?.translate('playerMaxVolume') ??
+                    'Max Volume',
               ),
             ],
           ),
