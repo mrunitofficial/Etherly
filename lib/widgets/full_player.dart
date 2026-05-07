@@ -370,7 +370,7 @@ class VolumeSlider extends StatelessWidget {
         final spacing = theme.extension<Spacing>()!;
 
         return Padding(
-          padding: EdgeInsets.symmetric(horizontal: spacing.extraLarge),
+          padding: EdgeInsets.symmetric(horizontal: spacing.medium),
           child: Row(
             children: [
               IconButton(
