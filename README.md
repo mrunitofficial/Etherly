@@ -1,6 +1,6 @@
 # Etherly
 
-A modern Netherlands-based radio streaming app built with Flutter.
+Etherly is a free, modern, ad-free, multiplatform Netherlands-based radio streaming app created in Flutter.
 
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logo=dart&logoColor=white)
@@ -12,9 +12,9 @@ Etherly is a free radio streaming application designed specifically for radio en
 
 Right now the app offers instant access to a curated collection of Dutch radio stations, but the end goal is to provide a very flexible application that can play any radio station lists (including M3U and M3U8) at some point. Etherly is hosted on Firebase.
 
-## Key Features
+## Key features
 
-### Core Functionality
+### Core functionality
 - Multi-Platform Support: Native apps for Android and Web (Google TV and Funchsia coming later).
 - Background Playback: Continue listening while using other apps with full media controls.
 - Search and find stations: use the (voice)search function to find your favorite stations easily.
@@ -22,7 +22,7 @@ Right now the app offers instant access to a curated collection of Dutch radio s
 - Cast support: Cast to your favorite google-cast-enabled devices.
 - Extensive settings: Autoplay, theme, preffered stream quality, etc..
 
-### Player Features
+### Player features
 - Now Playing Info: Real-time display of current station and (ICY) metadata.
 - Sleep Timer: Set automatic playback stop times.
 - Quality Settings: Adjust streaming quality based on your preferences (AAC, MP3).
@@ -32,7 +32,7 @@ Right now the app offers instant access to a curated collection of Dutch radio s
 - Dynamic color: Choose between your OS dynamic color or force a readable default color.
 - Theme Modes: Light, dark, or system-based theme selection.
 
-## Why Was Etherly Made?
+## Why was Etherly made?
 
 Etherly was created to address several needs in the radio streaming app landscape. Many radio apps are ad-heavy or require subscriptions, while most free alternatives offer outdated desings. Etherly embraces Material 3 to its core, providing a fresh and enjoyable user experience. Etherly is designed in FLutter to be cross-platform on all Android and web based devices including Google TV and Nest Hub (Fuchsia). Etherly focuses on what matters: reliable streaming and easy listening. There is no room for videos, short-form content or podcasts.
 
@@ -65,7 +65,7 @@ Etherly was created to address several needs in the radio streaming app landscap
    flutter run -d chrome
    ```
 
-### Building for Production
+### Building for production
 ```bash
 # Android APK
 flutter build apk --release
@@ -77,7 +77,7 @@ flutter build appbundle --release
 flutter build web --release
 ```
 
-### Tech Stack
+### Tech stack
 - Framework: Flutter 3.x
 - Language: Dart 3.x
 - State Management: Provider pattern with ChangeNotifier
@@ -86,7 +86,7 @@ flutter build web --release
 - Cloud storage: Firebase
 - Design: Material 3 to the core
 
-### Project Structure
+### Project structure
 ```
 lib/
 ├── main.dart               # App entry point
@@ -97,7 +97,7 @@ lib/
 └── localization/           # App translations
 ```
 
-## Adding New Stations
+## Adding new stations
 Right now stations are highly currated and only the most common Dutch radio stations are supported. 
 Support for M3U and M3U8 files and other sources is planned, but currently not available. 
 The option to suggest stations using the official website might come in the future.
@@ -110,5 +110,5 @@ This project currently does not have a license.
 - This project relies on code partly generated using modern llm-based tools
 - This project was created out of a need for a modern radio app on Android without ads or subscriptions
 
-## Support & Contact
+## Support & contact
 Report bugs or request features via GitHub issues.
