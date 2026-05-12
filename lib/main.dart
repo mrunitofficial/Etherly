@@ -31,11 +31,13 @@ Future<void> main() async {
   }
 
   try {
-    // Initialize App Check (Firebase).
-    // Uses Play Integrity in production and Debug Provider in development.
-    await FirebaseAppCheck.instance.activate(
-      providerAndroid: kDebugMode ? AndroidDebugProvider() : AndroidPlayIntegrityProvider(),
-    );
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      // Initialize App Check (Firebase).
+      // Uses Play Integrity in production and Debug Provider in development.
+      await FirebaseAppCheck.instance.activate(
+        providerAndroid: kDebugMode ? AndroidDebugProvider() : AndroidPlayIntegrityProvider(),
+      );
+    }
 
     // Enable Firestore persistence for web (Firebase).
     if (kIsWeb) {
