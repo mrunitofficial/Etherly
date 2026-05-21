@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Global ValueNotifier for ThemeMode, allowing deep widgets to change the theme
 /// and trigger a rebuild of the main application widget.

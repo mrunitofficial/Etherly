@@ -8,7 +8,8 @@ import 'package:etherly/widgets/screen_header.dart';
 import 'package:etherly/widgets/station_card_item.dart';
 import 'package:etherly/widgets/station_grid_item.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:reorderable_grid/reorderable_grid.dart';
@@ -119,7 +120,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     final loc = AppLocalizations.of(context);
 
     return CustomScrollView(
-      cacheExtent: 1000.0,
+      scrollCacheExtent: const ScrollCacheExtent.pixels(1000.0),
       slivers: [
         SliverToBoxAdapter(
           child: ScreenHeader(
@@ -209,12 +210,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       sliver: SliverReorderableList(
         itemCount: stations.length,
         onReorderStart: (index) => HapticFeedback.heavyImpact(),
-        onReorder: (oldIndex, newIndex) {
-          int adjustedNewIndex = newIndex;
-          if (oldIndex < newIndex) {
-            adjustedNewIndex -= 1;
-          }
-          service.reorderFavorites(oldIndex, adjustedNewIndex);
+        onReorderItem: (oldIndex, newIndex) {
+          service.reorderFavorites(oldIndex, newIndex);
           setState(() {});
         },
         itemBuilder: (context, index) {

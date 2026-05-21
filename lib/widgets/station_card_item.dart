@@ -2,7 +2,7 @@ import 'package:etherly/models/device.dart';
 import 'package:etherly/models/station.dart';
 import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/widgets/station_art.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A card item widget representing a radio station with artwork and favorite button.
 class StationCardItem extends StatelessWidget {

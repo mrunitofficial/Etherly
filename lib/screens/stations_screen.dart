@@ -6,7 +6,8 @@ import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/screen_header.dart';
 import 'package:etherly/widgets/station_card_item.dart';
 import 'package:etherly/widgets/station_grid_item.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:etherly/services/theme_data.dart';
@@ -124,7 +125,7 @@ class _StationsScreenState extends State<StationsScreen>
     final loc = AppLocalizations.of(context);
 
     return CustomScrollView(
-      cacheExtent: 4000.0,
+      scrollCacheExtent: const ScrollCacheExtent.pixels(4000.0),
       slivers: [
         SliverToBoxAdapter(
           child: ScreenHeader(

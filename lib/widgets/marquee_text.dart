@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:etherly/services/theme_data.dart';
 
 /// A simple marquee text widget that scrolls text once, pauses, then resets.

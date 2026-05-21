@@ -3,7 +3,8 @@ import 'package:etherly/models/station.dart';
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/screen_header.dart';
 import 'package:etherly/widgets/category_row.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/services/theme_data.dart';
@@ -81,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen>
     final sections = _getSections(context, audioService.stations, audioService);
 
     return CustomScrollView(
-      cacheExtent: 4000.0,
+      scrollCacheExtent: const ScrollCacheExtent.pixels(4000.0),
       slivers: [
         SliverToBoxAdapter(
           child: ScreenHeader(
