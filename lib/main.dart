@@ -129,7 +129,7 @@ class _MyAppState extends State<MyApp> {
         });
       }
 
-      _audioPlayerService = AudioPlayerService(castService: _chromeCastService);
+      _audioPlayerService = AudioPlayerService(_chromeCastService);
 
       if (!mounted) return;
       setState(() {
