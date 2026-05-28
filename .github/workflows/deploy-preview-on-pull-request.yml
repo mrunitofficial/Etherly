@@ -68,10 +68,23 @@ jobs:
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
+        id: upload_apk
         with:
           name: etherly-preview-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 7
+
+      - name: Comment PR with APK Link
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          ARTIFACT_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload_apk.outputs.artifact-id }}
+        run: |
+          gh pr comment "$PR_NUMBER" --body "📱 **Android APK Build is ready!** 
+
+          You can download the APK here: [Download etherly-preview-apk]($ARTIFACT_URL)
+          
+          *Note: You must be logged into GitHub to download this artifact.*"
 
       - name: Deploy to Firebase Hosting Preview
         uses: FirebaseExtended/action-hosting-deploy@v0
