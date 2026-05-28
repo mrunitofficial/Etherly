@@ -68,6 +68,7 @@ jobs:
         with:
           name: etherly-preview-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
 
       - name: Deploy to Firebase Hosting Preview
         uses: FirebaseExtended/action-hosting-deploy@v0
