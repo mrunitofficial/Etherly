@@ -12,7 +12,8 @@ jobs:
       name: Preview
       url: ${{ steps.deploy_preview.outputs.details_url }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
       
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -20,16 +21,23 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
-      - run: flutter clean
-      - run: flutter pub get
-      - run: flutter analyze
-      - run: flutter build apk --release
-      - run: flutter build web --release
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Analyze Project Code
+        run: flutter analyze
+
+      - name: Build Android APK
+        run: flutter build apk --release
+
+      - name: Build Web Release
+        run: flutter build web --release
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -37,7 +45,8 @@ jobs:
           name: etherly-preview-apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Deploy to Firebase Hosting Preview
+        uses: FirebaseExtended/action-hosting-deploy@v0
         id: deploy_preview
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
