@@ -91,8 +91,7 @@ class AudioPlayerService with ChangeNotifier {
   double get volume => kIsWeb ? player.volume : 1.0;
 
   /// Creates the service and attaches listeners to the optional cast service.
-  AudioPlayerService({ChromeCastService? castService})
-    : _castService = castService {
+  AudioPlayerService([this._castService]) {
     _castService?.isRemotePlaying.addListener(notifyListeners);
     _castService?.isRemoteLoading.addListener(notifyListeners);
     _castService?.isCastingActive.addListener(_onCastingStateChanged);

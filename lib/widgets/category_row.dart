@@ -2,7 +2,7 @@ import 'package:etherly/models/station.dart';
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/widgets/station_grid_item.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 /// A simplified, theme-driven horizontal scroller for station categories.

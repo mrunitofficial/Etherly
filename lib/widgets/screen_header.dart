@@ -1,5 +1,5 @@
 import 'package:etherly/services/theme_data.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The header widget for screens, displaying a title and the optional segmented button.
 class ScreenHeader extends StatelessWidget {

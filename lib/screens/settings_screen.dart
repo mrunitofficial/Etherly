@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:etherly/localization/app_localizations.dart';
@@ -188,35 +188,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildForceDefaultColorSwitch(AppLocalizations loc) {
-    return ListTile(
+    return SwitchListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
       title: Text(loc.translate('settingsForceDefaultColor')),
-      trailing: Switch(
-        value: _forceDefaultColor,
-        onChanged: (bool newValue) {
-          setState(() {
-            _forceDefaultColor = newValue;
-          });
-          dynamicColorNotifier.value = !newValue;
-          _saveDynamicColor(newValue);
-        },
-      ),
+      value: _forceDefaultColor,
+      onChanged: (bool newValue) {
+        setState(() {
+          _forceDefaultColor = newValue;
+        });
+        dynamicColorNotifier.value = !newValue;
+        _saveDynamicColor(newValue);
+      },
     );
   }
 
   Widget _buildAutoPlaySwitch(AppLocalizations loc) {
-    return ListTile(
+    return SwitchListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
       title: Text(loc.translate('settingsAutoplayOnStartup')),
-      trailing: Switch(
-        value: _autoPlay,
-        onChanged: (bool newValue) {
-          setState(() {
-            _autoPlay = newValue;
-          });
-          _saveAutoPlay(newValue);
-        },
-      ),
+      value: _autoPlay,
+      onChanged: (bool newValue) {
+        setState(() {
+          _autoPlay = newValue;
+        });
+        _saveAutoPlay(newValue);
+      },
     );
   }
 
@@ -224,31 +220,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
       title: Text(loc.translate('settingsAppTheme')),
-      trailing: SizedBox(
-        width: 140,
-        child: DropdownButton<ThemeMode>(
-          isExpanded: true,
-          elevation: 1,
-          dropdownColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-          value: _selectedTheme,
-          onChanged: (ThemeMode? newValue) {
-            if (newValue != null) {
-              setState(() {
-                _selectedTheme = newValue;
-              });
-              widget.themeNotifier.value = newValue;
-              _saveTheme(newValue);
-            }
-          },
-          items: ThemeMode.values.map<DropdownMenuItem<ThemeMode>>((
-            ThemeMode mode,
-          ) {
-            return DropdownMenuItem(
-              value: mode,
-              child: Text(mode.getLocalizedName(loc)),
-            );
-          }).toList(),
-        ),
+      trailing: DropdownMenu<ThemeMode>(
+        width: 160,
+        requestFocusOnTap: false,
+        initialSelection: _selectedTheme,
+        onSelected: (ThemeMode? newValue) {
+          if (newValue != null) {
+            setState(() {
+              _selectedTheme = newValue;
+            });
+            widget.themeNotifier.value = newValue;
+            _saveTheme(newValue);
+          }
+        },
+        dropdownMenuEntries: ThemeMode.values.map((ThemeMode mode) {
+          return DropdownMenuEntry<ThemeMode>(
+            value: mode,
+            label: mode.getLocalizedName(loc),
+          );
+        }).toList(),
       ),
     );
   }
@@ -258,28 +248,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
       title: Text(loc.translate('settingsDefaultStartScreen')),
-      trailing: SizedBox(
-        width: 140,
-        child: DropdownButton<int>(
-          isExpanded: true,
-          elevation: 1,
-          dropdownColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-          value: _selectedTab,
-          onChanged: (int? newValue) {
-            if (newValue != null) {
-              setState(() {
-                _selectedTab = newValue;
-              });
-              _saveStartingTab(newValue);
-            }
-          },
-          items: tabIndices.map<DropdownMenuItem<int>>((int index) {
-            return DropdownMenuItem(
-              value: index,
-              child: Text(index.getLocalizedName(loc)),
-            );
-          }).toList(),
-        ),
+      trailing: DropdownMenu<int>(
+        width: 160,
+        requestFocusOnTap: false,
+        initialSelection: _selectedTab,
+        onSelected: (int? newValue) {
+          if (newValue != null) {
+            setState(() {
+              _selectedTab = newValue;
+            });
+            _saveStartingTab(newValue);
+          }
+        },
+        dropdownMenuEntries: tabIndices.map((int index) {
+          return DropdownMenuEntry<int>(
+            value: index,
+            label: index.getLocalizedName(loc),
+          );
+        }).toList(),
       ),
     );
   }
@@ -292,28 +278,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
       title: Text(loc.translate('settingsDefaultStreamingQuality')),
-      trailing: SizedBox(
-        width: 140,
-        child: DropdownButton<String>(
-          isExpanded: true,
-          elevation: 1,
-          dropdownColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-          value: _selectedQuality,
-          onChanged: (String? newValue) {
-            if (newValue != null) {
-              setState(() {
-                _selectedQuality = newValue;
-              });
-              _saveQuality(newValue);
-            }
-          },
-          items: qualityOptions.map<DropdownMenuItem<String>>((opt) {
-            return DropdownMenuItem<String>(
-              value: opt['key']!,
-              child: Text(opt['label']!),
-            );
-          }).toList(),
-        ),
+      trailing: DropdownMenu<String>(
+        width: 160,
+        requestFocusOnTap: false,
+        initialSelection: _selectedQuality,
+        onSelected: (String? newValue) {
+          if (newValue != null) {
+            setState(() {
+              _selectedQuality = newValue;
+            });
+            _saveQuality(newValue);
+          }
+        },
+        dropdownMenuEntries: qualityOptions.map((opt) {
+          return DropdownMenuEntry<String>(
+            value: opt['key']!,
+            label: opt['label']!,
+          );
+        }).toList(),
       ),
     );
   }
@@ -366,28 +348,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
       title: Text(loc.translate('settingsPreferredMusicApp')),
-      trailing: SizedBox(
-        width: 140,
-        child: DropdownButton<String>(
-          isExpanded: true,
-          elevation: 1,
-          dropdownColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-          value: safeMusicAppValue,
-          onChanged: (String? newValue) {
-            if (newValue != null) {
-              setState(() {
-                _selectedMusicApp = newValue;
-              });
-              _saveMusicApp(newValue);
-            }
-          },
-          items: musicAppOptions.map<DropdownMenuItem<String>>((opt) {
-            return DropdownMenuItem<String>(
-              value: opt['key']!,
-              child: Text(opt['label']!),
-            );
-          }).toList(),
-        ),
+      trailing: DropdownMenu<String>(
+        width: 160,
+        requestFocusOnTap: false,
+        initialSelection: safeMusicAppValue,
+        onSelected: (String? newValue) {
+          if (newValue != null) {
+            setState(() {
+              _selectedMusicApp = newValue;
+            });
+            _saveMusicApp(newValue);
+          }
+        },
+        dropdownMenuEntries: musicAppOptions.map((opt) {
+          return DropdownMenuEntry<String>(
+            value: opt['key']!,
+            label: opt['label']!,
+          );
+        }).toList(),
       ),
     );
   }

@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -129,7 +129,7 @@ class _MyAppState extends State<MyApp> {
         });
       }
 
-      _audioPlayerService = AudioPlayerService(castService: _chromeCastService);
+      _audioPlayerService = AudioPlayerService(_chromeCastService);
 
       if (!mounted) return;
       setState(() {

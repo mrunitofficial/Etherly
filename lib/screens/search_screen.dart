@@ -2,7 +2,7 @@ import 'package:etherly/models/station.dart';
 import 'package:etherly/models/device.dart';
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/station_card_item.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
