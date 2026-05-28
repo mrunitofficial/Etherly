@@ -1,5 +1,10 @@
 name: Deploy Preview on Pull Request
 on: pull_request
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   checks: write
   contents: read
@@ -26,6 +31,25 @@ jobs:
         with:
           channel: 'stable'
           cache: true
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Cache Gradle templates (Android)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: Get Dependencies
         run: flutter pub get
