@@ -43,6 +43,15 @@ extensions.configure<ApplicationExtension> {
     }
 }
 
+configure<com.android.build.gradle.AppExtension> {
+    applicationVariants.all {
+        outputs.forEach { output ->
+            val apkOutput = output as? com.android.build.gradle.api.ApkVariantOutput
+            apkOutput?.outputFileName = "Etherly.apk"
+        }
+    }
+}
+
 flutter {
     source = "../.."
 }

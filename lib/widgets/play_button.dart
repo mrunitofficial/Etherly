@@ -71,9 +71,14 @@ class PlayButton extends StatelessWidget {
       );
     }
 
-    if (processingState == ProcessingState.loading ||
-        (processingState == ProcessingState.buffering &&
-            (!kIsWeb || !isPlaying))) {
+    final bool isServiceLoading = service.icyState.value.loading;
+    final bool showSpinner =
+        isServiceLoading ||
+        (isPlaying &&
+            (processingState == ProcessingState.loading ||
+                (processingState == ProcessingState.buffering && !kIsWeb)));
+
+    if (showSpinner) {
       return SizedBox.square(
         dimension: baseSize,
         child: CircularProgressIndicator(
@@ -86,13 +91,19 @@ class PlayButton extends StatelessWidget {
   }
 
   void _handlePlayPause() {
-    if (processingState == ProcessingState.buffering ||
-        processingState == ProcessingState.loading) {
-      service.stop();
-    } else if (countdown > 0 || isPlaying) {
+    if (countdown > 0) {
+      service.pause();
+    } else if (isPlaying) {
       service.pause();
     } else {
-      service.play();
+      final bool isServiceLoading = service.icyState.value.loading;
+      if (processingState == ProcessingState.buffering ||
+          processingState == ProcessingState.loading ||
+          isServiceLoading) {
+        service.stop();
+      } else {
+        service.play();
+      }
     }
   }
 }
