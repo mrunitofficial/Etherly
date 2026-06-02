@@ -71,7 +71,7 @@ jobs:
         id: upload_apk
         with:
           name: etherly-preview-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/Etherly.apk
           retention-days: 7
 
       - name: Comment PR with APK Link

@@ -41,6 +41,13 @@ extensions.configure<ApplicationExtension> {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    applicationVariants.all {
+        outputs.forEach { output ->
+            val apkOutput = output as? com.android.build.gradle.api.ApkVariantOutput
+            apkOutput?.outputFileName = "Etherly.apk"
+        }
+    }
 }
 
 flutter {
