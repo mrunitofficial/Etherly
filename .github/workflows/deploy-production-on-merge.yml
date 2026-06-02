@@ -81,4 +81,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Etherly.apk
           gh release create ${{ steps.get_version.outputs.tag }} build/app/outputs/flutter-apk/Etherly.apk --notes "Web App: https://etherly-firebase.web.app" --generate-notes
