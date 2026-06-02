@@ -38,3 +38,8 @@ android/key.properties
 *.keystore
 .env*
 service-account.json
+
+# CI/CD related
+.agents/
+skills-lock.json
+.github/
