@@ -116,13 +116,22 @@ class AudioPlayerService with ChangeNotifier {
       player: player,
       channelName: 'Etherly Radio',
       onPlay: play,
+      onPause: pause,
+      onStop: stop,
       onSkipToNext: skipToNext,
       onSkipToPrevious: skipToPrevious,
     );
 
     // Sync just_audio state to our listeners
     player.playingStream.listen((_) => notifyListeners());
-    player.processingStateStream.listen((_) => notifyListeners());
+    player.processingStateStream.listen((state) {
+      if (state == ProcessingState.ready) {
+        if (icyState.value.loading) {
+          icyState.value = (title: icyState.value.title, loading: false);
+        }
+      }
+      notifyListeners();
+    });
 
     // Sync ICY Metadata from just_audio natively
     player.icyMetadataStream
@@ -139,7 +148,7 @@ class AudioPlayerService with ChangeNotifier {
       _preMuteVolume = _prefs.getDouble(_preMuteVolumeKey) ?? 1.0;
       _isMuted = _prefs.getBool(_isMutedKey) ?? false;
       final savedVolume = _prefs.getDouble(_volumeKey) ?? 1.0;
-      
+
       if (_isMuted) {
         player.setVolume(0.0);
       } else {
@@ -161,13 +170,13 @@ class AudioPlayerService with ChangeNotifier {
       final clamped = value.clamp(0.0, 1.0);
       player.setVolume(clamped);
       _prefs.setDouble(_volumeKey, clamped);
-      
+
       // If manually setting volume > 0, unmute
       if (clamped > 0 && _isMuted) {
         _isMuted = false;
         _prefs.setBool(_isMutedKey, false);
       }
-      
+
       notifyListeners();
     }
   }

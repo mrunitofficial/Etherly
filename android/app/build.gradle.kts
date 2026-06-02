@@ -3,7 +3,6 @@ import com.android.build.api.dsl.ApplicationExtension
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
     // END: FlutterFire Configuration
@@ -41,7 +40,9 @@ extensions.configure<ApplicationExtension> {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
 
+configure<com.android.build.gradle.AppExtension> {
     applicationVariants.all {
         outputs.forEach { output ->
             val apkOutput = output as? com.android.build.gradle.api.ApkVariantOutput

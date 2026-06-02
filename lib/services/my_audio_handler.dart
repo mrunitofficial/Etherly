@@ -11,6 +11,8 @@ Future<MyAudioHandler> initAudioService({
   required AudioPlayer player,
   required String channelName,
   required Future<void> Function() onPlay,
+  required Future<void> Function() onPause,
+  required Future<void> Function() onStop,
   required Future<void> Function() onSkipToNext,
   required Future<void> Function() onSkipToPrevious,
 }) {
@@ -18,6 +20,8 @@ Future<MyAudioHandler> initAudioService({
     builder: () => MyAudioHandler(
       player: player,
       onPlay: onPlay,
+      onPause: onPause,
+      onStop: onStop,
       onSkipNext: onSkipToNext,
       onSkipPrev: onSkipToPrevious,
     ),
@@ -35,6 +39,8 @@ Future<MyAudioHandler> initAudioService({
 class MyAudioHandler extends BaseAudioHandler {
   final AudioPlayer player;
   final Future<void> Function() onPlay;
+  final Future<void> Function() onPause;
+  final Future<void> Function() onStop;
   final Future<void> Function() onSkipNext;
   final Future<void> Function() onSkipPrev;
 
@@ -43,12 +49,20 @@ class MyAudioHandler extends BaseAudioHandler {
   MyAudioHandler({
     required this.player,
     required this.onPlay,
+    required this.onPause,
+    required this.onStop,
     required this.onSkipNext,
     required this.onSkipPrev,
   }) {
-    // Pipe just_audio's playback events to audio_service
-    player.playbackEventStream.map(_transformEvent).listen(playbackState.add);
+    // Pipe just_audio's playback events and state changes to audio_service
+    player.playbackEventStream.listen((_) => _updatePlaybackState());
+    player.playingStream.listen((_) => _updatePlaybackState());
+    player.processingStateStream.listen((_) => _updatePlaybackState());
     _initAudioSession();
+  }
+
+  void _updatePlaybackState() {
+    playbackState.add(_transformEvent(player.playbackEvent));
   }
 
   Future<void> _initAudioSession() async {
@@ -73,11 +87,11 @@ class MyAudioHandler extends BaseAudioHandler {
   Future<void> play() async => onPlay();
 
   @override
-  Future<void> pause() async => player.pause();
+  Future<void> pause() async => onPause();
 
   @override
   Future<void> stop() async {
-    await player.stop();
+    await onStop();
     playbackState.add(
       playbackState.value.copyWith(
         processingState: AudioProcessingState.idle,
@@ -152,14 +166,18 @@ class MyAudioHandler extends BaseAudioHandler {
 
   /// Transforms just_audio's generic PlaybackEvent into audio_service's PlaybackState
   PlaybackState _transformEvent(PlaybackEvent event) {
+    final playing = player.playing;
     return PlaybackState(
       controls: [
-        if (player.processingState == ProcessingState.idle)
-          if (player.playing) MediaControl.pause else MediaControl.play,
+        if (playing) MediaControl.pause else MediaControl.play,
       ],
+      systemActions: const {
+        MediaAction.skipToNext,
+        MediaAction.skipToPrevious,
+      },
       androidCompactActionIndices: const [0],
       processingState: _getProcessingState(player.processingState),
-      playing: player.playing,
+      playing: playing,
       updatePosition: player.position,
       bufferedPosition: player.bufferedPosition,
       speed: player.speed,
