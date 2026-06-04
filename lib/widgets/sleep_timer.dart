@@ -12,23 +12,23 @@ class SleepTimer extends StatelessWidget {
     final loc = AppLocalizations.of(context);
     final List<Map<String, dynamic>> options = [
       {
-        'label': loc?.translate('sleepTimer5min') ?? '5 minutes',
+        'label': loc?.sleepTimer5min ?? '5 minutes',
         'duration': Duration(minutes: 5),
       },
       {
-        'label': loc?.translate('sleepTimer10min') ?? '10 minutes',
+        'label': loc?.sleepTimer10min ?? '10 minutes',
         'duration': Duration(minutes: 10),
       },
       {
-        'label': loc?.translate('sleepTimer20min') ?? '20 minutes',
+        'label': loc?.sleepTimer20min ?? '20 minutes',
         'duration': Duration(minutes: 20),
       },
       {
-        'label': loc?.translate('sleepTimer30min') ?? '30 minutes',
+        'label': loc?.sleepTimer30min ?? '30 minutes',
         'duration': Duration(minutes: 30),
       },
       {
-        'label': loc?.translate('sleepTimer60min') ?? '60 minutes',
+        'label': loc?.sleepTimer60min ?? '60 minutes',
         'duration': Duration(minutes: 60),
       },
     ];
@@ -39,7 +39,7 @@ class SleepTimer extends StatelessWidget {
     return AlertDialog(
       scrollable: true,
       title: Text(
-        loc?.translate('sleepTimerTitle') ?? 'Sleep timer',
+        loc?.sleepTimerTitle ?? 'Sleep timer',
         textAlign: TextAlign.center,
       ),
       content: Column(
@@ -61,7 +61,7 @@ class SleepTimer extends StatelessWidget {
           SizedBox(height: spacing.medium),
           Center(
             child: Text(
-              loc?.translate('sleepTimerOr') ?? 'or',
+              loc?.sleepTimerOr ?? 'or',
               style: Theme.of(context).textTheme.titleLarge,
             ),
           ),
@@ -90,7 +90,7 @@ class SleepTimer extends StatelessWidget {
                 }
               },
               child: Text(
-                loc?.translate('sleepTimerSetExact') ?? 'Set exact time',
+                loc?.sleepTimerSetExact ?? 'Set exact time',
                 textAlign: TextAlign.center,
               ),
             ),
@@ -100,7 +100,7 @@ class SleepTimer extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc?.translate('close') ?? 'Close'),
+          child: Text(loc?.close ?? 'Close'),
         ),
       ],
     );

@@ -61,7 +61,7 @@ class QualitySetting extends StatelessWidget {
     return AlertDialog(
       scrollable: true,
       title: Text(
-        loc?.translate('playerStreamQuality') ?? 'Stream Quality',
+        loc?.playerStreamQuality ?? 'Stream Quality',
         textAlign: TextAlign.center,
       ),
       content: Column(
@@ -91,16 +91,11 @@ class QualitySetting extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc?.translate('close') ?? 'Close'),
+          child: Text(loc?.close ?? 'Close'),
         ),
       ],
     );
   }
-
-  static const Map<String, String> _qualityLabelKeys = {
-    'mp3': 'settingsStreamingQualityHigh',
-    'aac': 'settingsStreamingQualityHighest',
-  };
 
   static const Map<String, String> _qualityDefaultLabels = {
     'mp3': 'High (MP3)',
@@ -109,10 +104,10 @@ class QualitySetting extends StatelessWidget {
 
   String _getQualityLabel(String key, AppLocalizations? loc) {
     final cleanKey = key.toLowerCase();
-    final translationKey = _qualityLabelKeys[cleanKey];
     
-    if (translationKey != null && loc != null) {
-      return loc.translate(translationKey);
+    if (loc != null) {
+      if (cleanKey == 'mp3') return loc.settingsStreamingQualityHigh;
+      if (cleanKey == 'aac') return loc.settingsStreamingQualityHighest;
     }
     
     return _qualityDefaultLabels[cleanKey] ?? key.toUpperCase();

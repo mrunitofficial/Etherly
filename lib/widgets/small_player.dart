@@ -34,7 +34,7 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
         final loc = AppLocalizations.of(context);
         final stationName =
             mediaItem?.title ??
-            (loc?.translate('playerLoadingStation') ?? 'Loading station...');
+            (loc?.playerLoadingStation ?? 'Loading station...');
         final processingState = service.player.processingState;
         final isPlaying = service.isPlaying;
 
@@ -88,8 +88,8 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                     heroTag: "mini_player_fab",
                     elevation: 0,
                     tooltip: isPlaying
-                        ? (loc?.translate('playerPause') ?? 'Pause')
-                        : (loc?.translate('playerPlay') ?? 'Play'),
+                        ? (loc?.playerPause ?? 'Pause')
+                        : (loc?.playerPlay ?? 'Play'),
                   );
                 },
               ),

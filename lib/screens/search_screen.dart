@@ -123,9 +123,9 @@ class _StationSearchBarState extends State<StationSearchBar> {
             ),
           ),
           hintText: _isListening
-              ? loc?.translate('searchPanelVoiceHint') ??
+              ? loc?.searchPanelVoiceHint ??
                     'Start talking to search stations...'
-              : loc?.translate('searchPanelHint') ?? 'Search stations...',
+              : loc?.searchPanelHint ?? 'Search stations...',
           trailing: [
             IconButton(
               icon: Icon(
@@ -133,7 +133,7 @@ class _StationSearchBarState extends State<StationSearchBar> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               tooltip:
-                  loc?.translate('mainTooltipVoiceSearch') ?? 'Voice search',
+                  loc?.mainTooltipVoiceSearch ?? 'Voice search',
               onPressed: _toggleListening,
             ),
           ],
@@ -160,9 +160,9 @@ class _StationSearchBarState extends State<StationSearchBar> {
               child: Center(
                 child: Text(
                   _isListening
-                      ? (loc?.translate('searchPanelVoiceToSearch') ??
+                      ? (loc?.searchPanelVoiceToSearch ??
                             'Speak to search stations......')
-                      : (loc?.translate('searchPanelTypeToSearch') ??
+                      : (loc?.searchPanelTypeToSearch ??
                             'Type to search stations...'),
                   style: Theme.of(context).textTheme.titleLarge,
                   textAlign: TextAlign.center,
@@ -178,7 +178,7 @@ class _StationSearchBarState extends State<StationSearchBar> {
               padding: const EdgeInsets.only(top: 64.0),
               child: Center(
                 child: Text(
-                  loc?.translate('searchPanelNoResults') ?? 'No stations found',
+                  loc?.searchPanelNoResults ?? 'No stations found',
                   style: Theme.of(context).textTheme.titleLarge,
                   textAlign: TextAlign.center,
                 ),

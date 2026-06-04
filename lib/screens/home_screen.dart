@@ -86,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen>
       slivers: [
         SliverToBoxAdapter(
           child: ScreenHeader(
-            title: loc?.translate('homeWelcome') ?? 'Etherly',
+            title: loc?.homeWelcome ?? 'Etherly',
           ),
         ),
         if (sections.isEmpty)
@@ -103,12 +103,12 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   SizedBox(height: spacing.medium),
                   Text(
-                    loc?.translate('homeEmptyTitle') ?? 'No stations',
+                    loc?.homeEmptyTitle ?? 'No stations',
                     style: theme.textTheme.headlineMedium,
                   ),
                   SizedBox(height: spacing.small),
                   Text(
-                    loc?.translate('homeEmptySubtitle') ??
+                    loc?.homeEmptySubtitle ??
                         'No radio stations available',
                     style: theme.textTheme.bodyMedium,
                   ),
@@ -149,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen>
     final favorites = audioService.favoriteStations;
     if (favorites.isNotEmpty) {
       sections.add((
-        title: loc?.translate('homeFavoritesTitle') ?? 'Favorites',
+        title: loc?.homeFavoritesTitle ?? 'Favorites',
         stations: favorites,
       ));
     }
@@ -158,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen>
     final recents = audioService.recentStations;
     if (recents.isNotEmpty) {
       sections.add((
-        title: loc?.translate('homeRecentsTitle') ?? 'Recents',
+        title: loc?.homeRecentsTitle ?? 'Recents',
         stations: recents,
       ));
     }
@@ -168,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen>
       ..sort((a, b) => (a.rank ?? 999).compareTo(b.rank ?? 999));
     if (popular.isNotEmpty) {
       sections.add((
-        title: loc?.translate('homeCategoriesTitle') ?? 'Popular',
+        title: loc?.homeCategoriesTitle ?? 'Popular',
         stations: popular,
       ));
     }
@@ -176,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen>
     // 4. Dynamic Categories
     final sourceStations = recents.isNotEmpty ? recents : popular;
     final recentIds = recents.map((s) => s.id).toSet();
-    final String moreFromPrefix = loc?.translate('homeMoreFrom') ?? 'More from';
+    final String moreFromPrefix = loc?.homeMoreFrom ?? 'More from';
 
     for (final station in sourceStations) {
       final category = station.category;
