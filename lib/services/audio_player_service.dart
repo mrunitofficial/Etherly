@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -448,64 +449,73 @@ class AudioPlayerService with ChangeNotifier {
 
   /// Loads the station list from the remote repository.
   Future<void> _loadStations() async {
-    final completer = Completer<void>();
-    _stationsSubscription?.cancel();
+    try {
+      // 1. Download the bundle from the website host (CDN)
+      final bundleUrl = Uri.parse('https://etherly-firebase.firebaseapp.com/bundles/stations_bundle');
+      final response = await http
+          .get(bundleUrl)
+          .timeout(const Duration(seconds: 10));
+      
+      if (response.statusCode == 200) {
+        final Uint8List bundleBytes = response.bodyBytes;
+        // 2. Load the bundle into Firestore local memory cache
+        final LoadBundleTask task = FirebaseFirestore.instance.loadBundle(bundleBytes);
+        await task.stream.last;
+        if (kDebugMode) print('Firestore bundle loaded successfully');
+      } else {
+        if (kDebugMode) print('Failed to load Firestore bundle: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error fetching or loading Firestore bundle: $e');
+    }
 
-    _stationsSubscription = FirebaseFirestore.instance
-        .collection('stations')
-        .snapshots()
-        .listen(
-          (snapshot) async {
-            // Filter out inactive stations
-            final activeDocs = snapshot.docs.where((doc) {
-              final data = doc.data();
-              return data['active'] == true || data['active'] == null;
-            }).toList();
+    try {
+      // 3. Execute the named query to unpack and read stations from local memory/cache
+      final QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
+          .namedQueryGet(
+            'all_stations',
+            options: const GetOptions(source: Source.cache),
+          );
 
-            stations = activeDocs
-                .map((doc) => Station.fromFirestore(doc))
-                .toList();
+      // Filter out inactive stations
+      final activeDocs = snapshot.docs.where((doc) {
+        final data = doc.data();
+        return data['active'] == true || data['active'] == null;
+      }).toList();
 
-            // Sort by rank if it exists, otherwise leave order or sort by name
-            stations.sort((a, b) {
-              if (a.rank != null && b.rank != null) {
-                return a.rank!.compareTo(b.rank!);
-              }
-              if (a.rank != null) return -1;
-              if (b.rank != null) return 1;
-              return a.name.compareTo(b.name);
-            });
+      stations = activeDocs
+          .map((doc) => Station.fromFirestore(doc))
+          .toList();
 
-            _favoriteStationIds =
-                _prefs.getStringList(_favoriteStationIdsKey) ?? [];
-            _recentStationIds =
-                _prefs.getStringList(_recentStationIdsKey) ?? [];
+      // Sort by rank if it exists, otherwise leave order or sort by name
+      stations.sort((a, b) {
+        if (a.rank != null && b.rank != null) {
+          return a.rank!.compareTo(b.rank!);
+        }
+        if (a.rank != null) return -1;
+        if (b.rank != null) return 1;
+        return a.name.compareTo(b.name);
+      });
 
-            stations = stations
-                .map(
-                  (s) => _favoriteStationIds.contains(s.id)
-                      ? s.copyWith(isFavorite: true)
-                      : s,
-                )
-                .toList();
-            _stationMap = {for (var s in stations) s.id: s};
+      _favoriteStationIds =
+          _prefs.getStringList(_favoriteStationIdsKey) ?? [];
+      _recentStationIds =
+          _prefs.getStringList(_recentStationIdsKey) ?? [];
 
-            await _loadLastStation();
+      stations = stations
+          .map(
+            (s) => _favoriteStationIds.contains(s.id)
+                ? s.copyWith(isFavorite: true)
+                : s,
+          )
+          .toList();
+      _stationMap = {for (var s in stations) s.id: s};
 
-            if (!completer.isCompleted) {
-              completer.complete();
-            }
-            notifyListeners();
-          },
-          onError: (e) {
-            if (kDebugMode) print('Error loading stations from Firebase: $e');
-            if (!completer.isCompleted) {
-              completer.complete();
-            }
-          },
-        );
-
-    return completer.future;
+      await _loadLastStation();
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) print('Error loading stations from cache: $e');
+    }
   }
 
   /// Adds a station to the recently played history.
