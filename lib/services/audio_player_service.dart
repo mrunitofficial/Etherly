@@ -10,7 +10,6 @@ import 'package:etherly/models/station.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
 import 'package:etherly/services/my_audio_handler.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:etherly/services/image_cache_manager.dart';
 
 /// Service that manages the [AudioPlayer] instance, station list, and playback logic.
 class AudioPlayerService with ChangeNotifier {
@@ -369,7 +368,6 @@ class AudioPlayerService with ChangeNotifier {
           // Using custom cache manager to ensure it matches the widget's cache store
           final provider = CachedNetworkImageProvider(
             artUrl,
-            cacheManager: StationArtCacheManager.instance,
             errorListener: (error) {
               // Silently catch errors (like EncodingError) to prevent console flood
             },

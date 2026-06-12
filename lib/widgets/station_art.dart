@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:etherly/services/image_cache_manager.dart';
 import 'package:material_ui/material_ui.dart';
 
 class StationArt extends StatelessWidget {
@@ -27,12 +26,10 @@ class StationArt extends StatelessWidget {
         ? fallback
         : CachedNetworkImage(
             imageUrl: artUrl,
-            cacheManager: StationArtCacheManager.instance,
             fit: BoxFit.cover,
             placeholder: (context, url) => placeholderUrl != null && placeholderUrl!.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: placeholderUrl!,
-                    cacheManager: StationArtCacheManager.instance,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => fallback,
                     errorWidget: (context, url, error) => fallback,
