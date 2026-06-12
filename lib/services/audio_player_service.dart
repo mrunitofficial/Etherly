@@ -454,7 +454,7 @@ class AudioPlayerService with ChangeNotifier {
   Future<void> _loadStations() async {
     try {
       // 1. Download the bundle from the website host (CDN)
-      final bundleUrl = Uri.parse('https://etherly-firebase.firebaseapp.com/bundles/stations_bundle');
+      final bundleUrl = Uri.parse('https://etherly-firebase.firebaseapp.com/bundles/stations_bundle?t=${DateTime.now().millisecondsSinceEpoch}');
       final response = await http
           .get(bundleUrl)
           .timeout(const Duration(seconds: 10));
