@@ -1,0 +1,57 @@
+name: Sync Station Art to Firebase Storage
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - 'station_map.json'
+      - 'scripts/**'
+      - '.github/workflows/sync-images.yml'
+  workflow_dispatch: # Allows manual triggering from the GitHub Actions tab
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  sync-assets:
+    name: Sync Station Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout App Repository
+        uses: actions/checkout@v4
+
+      - name: Checkout Assets Repository
+        uses: actions/checkout@v4
+        with:
+          repository: mrunitofficial/Etherly-Nederland
+          path: assets-repo
+          # If the assets repository is private, PAT_TOKEN secret must be configured with read access.
+          # Otherwise, it falls back to the default github.token which works for public repos.
+          token: ${{ secrets.PAT_TOKEN || github.token }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'scripts/package.json'
+
+      - name: Install Scripts Dependencies
+        run: npm install
+        working-directory: scripts
+
+      - name: Authenticate to Firebase Storage
+        run: |
+          echo "$FIREBASE_SERVICE_ACCOUNT" > scripts/firebase-key.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/scripts/firebase-key.json" >> $GITHUB_ENV
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ETHERLY_FIREBASE }}
+
+      - name: Run Sync Script
+        run: node sync-images.js ../assets-repo
+        working-directory: scripts
+
+      - name: Cleanup Service Account Key
+        if: always()
+        run: rm -f scripts/firebase-key.json

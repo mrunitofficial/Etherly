@@ -1,0 +1,10 @@
+{
+  "name": "etherly-sync-scripts",
+  "version": "1.0.0",
+  "description": "Helper scripts for syncing Etherly assets to Firebase Storage",
+  "main": "sync-images.js",
+  "private": true,
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
