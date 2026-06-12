@@ -77,7 +77,7 @@ async function run() {
       continue;
     }
 
-    const destination = `stations/${stationId}/${stationId}.png`;
+    const destination = `art/${stationId}/${stationId}.png`;
 
     if (dryRun) {
       console.log(`[DRY RUN] Would upload "${filenameWithExt}" -> "${destination}"`);
