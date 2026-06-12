@@ -6,7 +6,11 @@ class Station {
   final String slogan;
   final Map<String, String> streams;
   final String art;
+  final String art128;
+  final String art512;
+  final String art1024;
   final String category;
+  final String country;
   final int? rank;
   final List<String> tags;
   final bool active;
@@ -18,7 +22,11 @@ class Station {
     required this.slogan,
     required this.streams,
     required this.art,
+    required this.art128,
+    required this.art512,
+    required this.art1024,
     required this.category,
+    required this.country,
     this.rank,
     this.tags = const [],
     this.active = true,
@@ -44,7 +52,11 @@ class Station {
       slogan: json['slogan'] ?? json['Album'] ?? '',
       streams: streams,
       art: json['art'] ?? json['ArtURL'] ?? '',
+      art128: json['art128'] ?? '',
+      art512: json['art512'] ?? '',
+      art1024: json['art1024'] ?? '',
       category: json['category'] ?? json['Category'] ?? '',
+      country: json['country'] ?? '',
       rank: json['rank'] is int
           ? json['rank']
           : (json['rank'] is String && json['rank'].isNotEmpty
@@ -73,7 +85,11 @@ class Station {
     String? slogan,
     Map<String, String>? streams,
     String? art,
+    String? art128,
+    String? art512,
+    String? art1024,
     String? category,
+    String? country,
     int? rank,
     List<String>? tags,
     bool? active,
@@ -85,7 +101,11 @@ class Station {
       slogan: slogan ?? this.slogan,
       streams: streams ?? this.streams,
       art: art ?? this.art,
+      art128: art128 ?? this.art128,
+      art512: art512 ?? this.art512,
+      art1024: art1024 ?? this.art1024,
       category: category ?? this.category,
+      country: country ?? this.country,
       rank: rank ?? this.rank,
       tags: tags ?? this.tags,
       active: active ?? this.active,
