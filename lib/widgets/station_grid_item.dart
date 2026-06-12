@@ -38,7 +38,12 @@ class StationGridItem extends StatelessWidget {
               final showFavorite = constraints.maxWidth >= sizes.largeIncreased;
               return Stack(
                 children: [
-                  Positioned.fill(child: StationArt(artUrl: station.art)),
+                  Positioned.fill(
+                    child: StationArt(
+                      artUrl: station.art512.isNotEmpty ? station.art512 : station.art,
+                      placeholderUrl: station.art128,
+                    ),
+                  ),
                   Positioned.fill(
                     child: Material(
                       color: Colors.transparent,

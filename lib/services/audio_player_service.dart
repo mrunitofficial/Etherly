@@ -10,6 +10,7 @@ import 'package:etherly/models/station.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
 import 'package:etherly/services/my_audio_handler.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:etherly/services/image_cache_manager.dart';
 
 /// Service that manages the [AudioPlayer] instance, station list, and playback logic.
 class AudioPlayerService with ChangeNotifier {
@@ -362,18 +363,20 @@ class AudioPlayerService with ChangeNotifier {
   /// Pre-fetches all station art to improve UI responsiveness.
   Future<void> precacheAllStationArt(BuildContext context) async {
     for (final station in stations) {
-      if (station.art.isNotEmpty) {
+      final artUrl = station.art128.isNotEmpty ? station.art128 : station.art;
+      if (artUrl.isNotEmpty) {
         try {
-          // Using ResizeImage and errorListener to handle memory and network issues gracefully
+          // Using custom cache manager to ensure it matches the widget's cache store
           final provider = CachedNetworkImageProvider(
-            station.art,
+            artUrl,
+            cacheManager: StationArtCacheManager.instance,
             errorListener: (error) {
               // Silently catch errors (like EncodingError) to prevent console flood
             },
           );
 
           await precacheImage(
-            ResizeImage(provider, width: 300, height: 300),
+            ResizeImage(provider, width: 128, height: 128),
             context,
           );
 
@@ -580,7 +583,12 @@ extension StationToMediaItem on Station {
       artUri: Uri.tryParse(art),
       artist: artist ?? '',
       album: slogan,
-      extras: {'url': url},
+      extras: {
+        'url': url,
+        'art128': art128,
+        'art512': art512,
+        'art1024': art1024,
+      },
     );
   }
 }
@@ -590,5 +598,20 @@ extension MediaItemArt on MediaItem? {
   String get safeArtUrl {
     final uri = Uri.tryParse(this?.artUri?.toString() ?? '');
     return uri != null && uri.scheme.startsWith('http') ? uri.toString() : '';
+  }
+
+  String get safeArt128Url {
+    final url = this?.extras?['art128']?.toString() ?? '';
+    return url.startsWith('http') ? url : '';
+  }
+
+  String get safeArt512Url {
+    final url = this?.extras?['art512']?.toString() ?? '';
+    return url.startsWith('http') ? url : '';
+  }
+
+  String get safeArt1024Url {
+    final url = this?.extras?['art1024']?.toString() ?? '';
+    return url.startsWith('http') ? url : '';
   }
 }

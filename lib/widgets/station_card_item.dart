@@ -43,7 +43,7 @@ class StationCardItem extends StatelessWidget {
               child: Row(
                 children: [
                   StationArt(
-                    artUrl: station.art,
+                    artUrl: station.art128.isNotEmpty ? station.art128 : station.art,
                     size: screenType.isLargeFormat ? sizes.large : sizes.normal,
                     borderRadius: shapes.small,
                   ),

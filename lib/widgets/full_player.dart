@@ -47,7 +47,14 @@ class FullPlayerContent extends StatelessWidget {
                   child: SizedBox.square(
                     dimension:
                         sizes.extraLargeIncreased + sizes.largeIncreased, // 280
-                    child: StationArt(artUrl: mediaItem.safeArtUrl),
+                    child: StationArt(
+                      artUrl: mediaItem.safeArt1024Url.isNotEmpty
+                          ? mediaItem.safeArt1024Url
+                          : mediaItem.safeArtUrl,
+                      placeholderUrl: mediaItem.safeArt512Url.isNotEmpty
+                          ? mediaItem.safeArt512Url
+                          : mediaItem.safeArt128Url,
+                    ),
                   ),
                 ),
               ),
