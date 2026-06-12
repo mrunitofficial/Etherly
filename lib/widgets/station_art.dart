@@ -25,9 +25,13 @@ class StationArt extends StatelessWidget {
     Widget art = artUrl.isEmpty
         ? fallback
         : CachedNetworkImage(
+            key: ValueKey(artUrl),
             imageUrl: artUrl,
             fit: BoxFit.cover,
-            placeholder: (context, url) => placeholderUrl != null && placeholderUrl!.isNotEmpty
+            fadeInDuration: Duration.zero,
+            fadeOutDuration: Duration.zero,
+            placeholder: (context, url) =>
+                placeholderUrl != null && placeholderUrl!.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: placeholderUrl!,
                     fit: BoxFit.cover,
@@ -54,4 +58,3 @@ class StationArt extends StatelessWidget {
     return AspectRatio(aspectRatio: 1, child: art);
   }
 }
-
