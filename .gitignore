@@ -44,7 +44,7 @@ service-account.json
 skills-lock.json
 .github/
 
-# Node.js
+# Node.js WHAT YEAR IS IT?!
 node_modules/
 **/node_modules/
 

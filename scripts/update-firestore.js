@@ -28,12 +28,12 @@ async function updateStations() {
   for (const doc of snapshot.docs) {
     const stationId = doc.id;
     
-    // Construct the tokenless public webp image URLs based on the stationId
+    // Construct the deterministic public webp image URLs based on the stationId
     const bucket = 'etherly-firebase.firebasestorage.app';
     const baseUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o`;
-    const art128 = `${baseUrl}/art%2F${stationId}%2F${stationId}_128x128.webp?alt=media`;
-    const art512 = `${baseUrl}/art%2F${stationId}%2F${stationId}_512x512.webp?alt=media`;
-    const art1024 = `${baseUrl}/art%2F${stationId}%2F${stationId}_1024x1024.webp?alt=media`;
+    const art128 = `${baseUrl}/art%2F${stationId}%2F${stationId}_128x128.webp?alt=media&token=${stationId}`;
+    const art512 = `${baseUrl}/art%2F${stationId}%2F${stationId}_512x512.webp?alt=media&token=${stationId}`;
+    const art1024 = `${baseUrl}/art%2F${stationId}%2F${stationId}_1024x1024.webp?alt=media&token=${stationId}`;
 
     const docRef = stationsRef.doc(stationId);
     batch.update(docRef, {
