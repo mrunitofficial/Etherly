@@ -161,8 +161,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   ),
                   SizedBox(height: spacing.medium),
                   Text(
-                    loc?.favoritesEmptyTitle ??
-                        'No favorite stations yet',
+                    loc?.favoritesEmptyTitle ?? 'No favorite stations yet',
                     style: theme.textTheme.headlineMedium,
                   ),
                   SizedBox(height: spacing.small),
@@ -216,7 +215,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         },
         itemBuilder: (context, index) {
           final station = stations[index];
-          final bool useQuickDrag = kIsWeb ||
+          final bool useQuickDrag =
+              kIsWeb ||
               defaultTargetPlatform == TargetPlatform.linux ||
               defaultTargetPlatform == TargetPlatform.macOS ||
               defaultTargetPlatform == TargetPlatform.windows;
@@ -233,10 +233,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             key: ValueKey(station.id),
             padding: EdgeInsets.only(bottom: spacing.small),
             child: useQuickDrag
-                ? ReorderableDragStartListener(
-                    index: index,
-                    child: item,
-                  )
+                ? ReorderableDragStartListener(index: index, child: item)
                 : ReorderableDelayedDragStartListener(
                     index: index,
                     child: item,
@@ -274,7 +271,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         },
         itemBuilder: (context, index) {
           final station = stations[index];
-          final bool useQuickDrag = kIsWeb ||
+          final bool useQuickDrag =
+              kIsWeb ||
               defaultTargetPlatform == TargetPlatform.linux ||
               defaultTargetPlatform == TargetPlatform.macOS ||
               defaultTargetPlatform == TargetPlatform.windows;

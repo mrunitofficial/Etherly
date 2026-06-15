@@ -85,9 +85,7 @@ class _HomeScreenState extends State<HomeScreen>
       scrollCacheExtent: const ScrollCacheExtent.pixels(4000.0),
       slivers: [
         SliverToBoxAdapter(
-          child: ScreenHeader(
-            title: loc?.homeWelcome ?? 'Etherly',
-          ),
+          child: ScreenHeader(title: loc?.homeWelcome ?? 'Etherly'),
         ),
         if (sections.isEmpty)
           SliverFillRemaining(
@@ -108,8 +106,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   SizedBox(height: spacing.small),
                   Text(
-                    loc?.homeEmptySubtitle ??
-                        'No radio stations available',
+                    loc?.homeEmptySubtitle ?? 'No radio stations available',
                     style: theme.textTheme.bodyMedium,
                   ),
                   SizedBox(height: spacing.large),

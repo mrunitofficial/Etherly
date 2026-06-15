@@ -103,11 +103,15 @@ class _AppScreenState extends State<AppScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final service = context.read<AudioPlayerService>();
       if (service.stations.isNotEmpty) {
-        service.precacheAllStationArt(context);
+        service.precacheAllStationArt(context).then((_) {
+          widget.onHomeContentLoaded?.call();
+        });
       } else {
         service.isReady.addListener(() {
           if (service.isReady.value) {
-            service.precacheAllStationArt(context);
+            service.precacheAllStationArt(context).then((_) {
+              widget.onHomeContentLoaded?.call();
+            });
           }
         });
       }

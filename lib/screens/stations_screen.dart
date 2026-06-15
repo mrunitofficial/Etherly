@@ -171,8 +171,7 @@ class _StationsScreenState extends State<StationsScreen>
                   ),
                   SizedBox(height: spacing.small),
                   Text(
-                    loc?.stationsEmptySubtitle ??
-                        'No radio stations found',
+                    loc?.stationsEmptySubtitle ?? 'No radio stations found',
                     style: theme.textTheme.bodyMedium,
                   ),
                   SizedBox(height: spacing.large),
