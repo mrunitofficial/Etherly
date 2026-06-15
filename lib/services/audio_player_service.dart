@@ -369,12 +369,7 @@ class AudioPlayerService with ChangeNotifier {
     for (final station in stations) {
       final artUrl = station.art128.isNotEmpty ? station.art128 : station.art;
       if (artUrl.isNotEmpty) {
-        final provider = CachedNetworkImageProvider(
-          artUrl,
-          errorListener: (error) {
-            // Silently catch errors (like EncodingError) to prevent console flood
-          },
-        );
+        final provider = CachedNetworkImageProvider(artUrl);
         futures.add(precacheImage(provider, context).catchError((_) {}));
       }
     }

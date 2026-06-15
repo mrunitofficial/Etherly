@@ -149,15 +149,14 @@ class _AppScreenState extends State<AppScreen>
 
         final playerBottomPadding =
             (screenType == ScreenType.smallScreenVertical && !isTooShort)
-                ? RadioPlayer.minPlayerHeight + spacing.small
-                : spacing.small;
+            ? RadioPlayer.minPlayerHeight + spacing.small
+            : spacing.small;
 
         // Common AppBar widget logic
         final appBar = AppBar(
-          backgroundColor:
-              screenType.isLargeFormat
-                  ? theme.colorScheme.surfaceContainer
-                  : null,
+          backgroundColor: screenType.isLargeFormat
+              ? theme.colorScheme.surfaceContainer
+              : null,
           scrolledUnderElevation: screenType.isLargeFormat ? 0 : null,
           actionsPadding: EdgeInsets.symmetric(horizontal: spacing.small),
           animateColor: true,
@@ -173,12 +172,9 @@ class _AppScreenState extends State<AppScreen>
             });
             return !insideSheet;
           },
-          leading:
-              screenType.isLargeFormat
-                  ? null
-                  : Center(
-                    child: _LogoButton(onPressed: () => _onTabSelected(0)),
-                  ),
+          leading: screenType.isLargeFormat
+              ? null
+              : Center(child: _LogoButton(onPressed: () => _onTabSelected(0))),
           title: const StationSearchBar(),
           actions: [
             if (context.read<ChromeCastService>().isCastSupported())
@@ -186,19 +182,18 @@ class _AppScreenState extends State<AppScreen>
             IconButton(
               icon: Icon(
                 Icons.settings,
-                size:
-                    screenType.isLargeFormat ? spacing.extraLarge : spacing.large,
+                size: screenType.isLargeFormat
+                    ? spacing.extraLarge
+                    : spacing.large,
               ),
               tooltip: loc?.mainTooltipSettings ?? 'Settings',
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) =>
-                              SettingsScreen(themeNotifier: themeNotifier),
-                    ),
-                  ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      SettingsScreen(themeNotifier: themeNotifier),
+                ),
+              ),
             ),
           ],
         );
@@ -206,8 +201,9 @@ class _AppScreenState extends State<AppScreen>
         final mainContent = Align(
           alignment: Alignment.topCenter,
           child: ClipRRect(
-            borderRadius:
-                screenType.isLargeFormat ? shapes.large : BorderRadius.zero,
+            borderRadius: screenType.isLargeFormat
+                ? shapes.large
+                : BorderRadius.zero,
             child: Container(
               color: theme.colorScheme.surface,
               child: SafeArea(
@@ -216,16 +212,15 @@ class _AppScreenState extends State<AppScreen>
                   child: IndexedStack(
                     index: _selectedIndex,
                     sizing: StackFit.expand,
-                    children:
-                        _destinations
-                            .map(
-                              (d) => d.builder(
-                                context,
-                                screenType,
-                                playerBottomPadding,
-                              ),
-                            )
-                            .toList(),
+                    children: _destinations
+                        .map(
+                          (d) => d.builder(
+                            context,
+                            screenType,
+                            playerBottomPadding,
+                          ),
+                        )
+                        .toList(),
                   ),
                 ),
               ),
@@ -251,20 +246,19 @@ class _AppScreenState extends State<AppScreen>
                     size: spacing.extraLarge,
                   ),
                 ),
-                destinations:
-                    _destinations.map((d) {
-                      String label = d.labelKey;
-                      if (loc != null) {
-                        if (d.labelKey == 'navHome') label = loc.navHome;
-                        if (d.labelKey == 'navStations') label = loc.navStations;
-                        if (d.labelKey == 'navFavorites') label = loc.navFavorites;
-                      }
-                      return NavigationRailDestination(
-                        selectedIcon: Icon(d.selectedIcon),
-                        icon: Icon(d.icon),
-                        label: Text(label),
-                      );
-                    }).toList(),
+                destinations: _destinations.map((d) {
+                  String label = d.labelKey;
+                  if (loc != null) {
+                    if (d.labelKey == 'navHome') label = loc.navHome;
+                    if (d.labelKey == 'navStations') label = loc.navStations;
+                    if (d.labelKey == 'navFavorites') label = loc.navFavorites;
+                  }
+                  return NavigationRailDestination(
+                    selectedIcon: Icon(d.selectedIcon),
+                    icon: Icon(d.icon),
+                    label: Text(label),
+                  );
+                }).toList(),
               ),
               Expanded(
                 child: Scaffold(
@@ -300,20 +294,19 @@ class _AppScreenState extends State<AppScreen>
           bottomNavigationBar: NavigationBar(
             selectedIndex: _selectedIndex,
             onDestinationSelected: _onTabSelected,
-            destinations:
-                _destinations.map((d) {
-                  String label = d.labelKey;
-                  if (loc != null) {
-                    if (d.labelKey == 'navHome') label = loc.navHome;
-                    if (d.labelKey == 'navStations') label = loc.navStations;
-                    if (d.labelKey == 'navFavorites') label = loc.navFavorites;
-                  }
-                  return NavigationDestination(
-                    selectedIcon: Icon(d.selectedIcon),
-                    icon: Icon(d.icon),
-                    label: label,
-                  );
-                }).toList(),
+            destinations: _destinations.map((d) {
+              String label = d.labelKey;
+              if (loc != null) {
+                if (d.labelKey == 'navHome') label = loc.navHome;
+                if (d.labelKey == 'navStations') label = loc.navStations;
+                if (d.labelKey == 'navFavorites') label = loc.navFavorites;
+              }
+              return NavigationDestination(
+                selectedIcon: Icon(d.selectedIcon),
+                icon: Icon(d.icon),
+                label: label,
+              );
+            }).toList(),
           ),
         );
       },
