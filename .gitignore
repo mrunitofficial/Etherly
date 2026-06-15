@@ -43,3 +43,8 @@ service-account.json
 .agents/
 skills-lock.json
 .github/
+
+# Node.js WHAT YEAR IS IT?!
+node_modules/
+**/node_modules/
+

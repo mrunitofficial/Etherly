@@ -11,11 +11,11 @@ extension on ThemeMode {
   String getLocalizedName(AppLocalizations loc) {
     switch (this) {
       case ThemeMode.system:
-        return loc.translate('settingsDeviceDefault');
+        return loc.settingsDeviceDefault;
       case ThemeMode.light:
-        return loc.translate('settingsLightMode');
+        return loc.settingsLightMode;
       case ThemeMode.dark:
-        return loc.translate('settingsDarkMode');
+        return loc.settingsDarkMode;
     }
   }
 }
@@ -24,11 +24,11 @@ extension on int {
   String getLocalizedName(AppLocalizations loc) {
     switch (this) {
       case 0:
-        return loc.translate('settingsHome');
+        return loc.settingsHome;
       case 1:
-        return loc.translate('settingsAllChannels');
+        return loc.settingsAllChannels;
       case 2:
-        return loc.translate('settingsFavorites');
+        return loc.settingsFavorites;
       default:
         return '';
     }
@@ -138,7 +138,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-        title: Text(loc.translate('settingsTitle')),
+        title: Text(loc.settingsTitle),
       ),
       body: Stack(
         children: [
@@ -165,7 +165,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             bottom: 48,
             child: FloatingActionButton.extended(
               icon: const Icon(Icons.feedback_outlined),
-              label: Text(loc.translate('settingsSendFeedback')),
+              label: Text(loc.settingsSendFeedback),
               backgroundColor: Theme.of(context).colorScheme.primaryContainer,
               foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
               shape: RoundedRectangleBorder(
@@ -173,7 +173,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               onPressed: () async {
                 const email = 'info@etherly.nl';
-                final subject = loc.translate('settingsFeedbackEmailSubject');
+                final subject = loc.settingsFeedbackEmailSubject;
                 final mailtoLink =
                     'mailto:$email?subject=${Uri.encodeComponent(subject)}';
                 if (await canLaunchUrlString(mailtoLink)) {
@@ -190,7 +190,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildForceDefaultColorSwitch(AppLocalizations loc) {
     return SwitchListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-      title: Text(loc.translate('settingsForceDefaultColor')),
+      title: Text(loc.settingsForceDefaultColor),
       value: _forceDefaultColor,
       onChanged: (bool newValue) {
         setState(() {
@@ -205,7 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildAutoPlaySwitch(AppLocalizations loc) {
     return SwitchListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-      title: Text(loc.translate('settingsAutoplayOnStartup')),
+      title: Text(loc.settingsAutoplayOnStartup),
       value: _autoPlay,
       onChanged: (bool newValue) {
         setState(() {
@@ -219,7 +219,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildThemeDropdownSetting(AppLocalizations loc) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-      title: Text(loc.translate('settingsAppTheme')),
+      title: Text(loc.settingsAppTheme),
       trailing: DropdownMenu<ThemeMode>(
         width: 160,
         requestFocusOnTap: false,
@@ -247,7 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     const tabIndices = [0, 1, 2];
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-      title: Text(loc.translate('settingsDefaultStartScreen')),
+      title: Text(loc.settingsDefaultStartScreen),
       trailing: DropdownMenu<int>(
         width: 160,
         requestFocusOnTap: false,
@@ -272,12 +272,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildQualityDropdownSetting(AppLocalizations loc) {
     final qualityOptions = [
-      {'key': 'mp3', 'label': loc.translate('settingsStreamingQualityHigh')},
-      {'key': 'aac', 'label': loc.translate('settingsStreamingQualityHighest')},
+      {'key': 'mp3', 'label': loc.settingsStreamingQualityHigh},
+      {'key': 'aac', 'label': loc.settingsStreamingQualityHighest},
     ];
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-      title: Text(loc.translate('settingsDefaultStreamingQuality')),
+      title: Text(loc.settingsDefaultStreamingQuality),
       trailing: DropdownMenu<String>(
         width: 160,
         requestFocusOnTap: false,
@@ -302,24 +302,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildMusicAppDropdownSetting(AppLocalizations loc) {
     String getAppLabel(String id, String defaultName) {
-      final keyMap = {
-        'youtube': 'settingsMusicAppYoutube',
-        'ytmusic': 'settingsMusicAppYtMusic',
-        'spotify': 'settingsMusicAppSpotify',
-        'apple_music': 'settingsMusicAppAppleMusic',
-        'tidal': 'settingsMusicAppTidal',
-        'soundcloud': 'settingsMusicAppSoundcloud',
-        'amazon': 'settingsMusicAppAmazon',
-      };
-      final key = keyMap[id];
-      if (key != null) return loc.translate(key);
-      return defaultName;
+      switch (id) {
+        case 'youtube': return loc.settingsMusicAppYoutube;
+        case 'ytmusic': return loc.settingsMusicAppYtMusic;
+        case 'spotify': return loc.settingsMusicAppSpotify;
+        case 'apple_music': return loc.settingsMusicAppAppleMusic;
+        case 'tidal': return loc.settingsMusicAppTidal;
+        case 'soundcloud': return loc.settingsMusicAppSoundcloud;
+        case 'amazon': return loc.settingsMusicAppAmazon;
+        default: return defaultName;
+      }
     }
 
     final musicAppOptions = [
       {
         'key': 'always_ask',
-        'label': loc.translate('settingsMusicAppAlwaysAsk'),
+        'label': loc.settingsMusicAppAlwaysAsk,
       },
       ..._musicAppService
           .getAllSupportedApps()
@@ -336,7 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
       {
         'key': 'internet_search',
-        'label': loc.translate('playerSearchInternet'),
+        'label': loc.playerSearchInternet,
       },
     ];
 
@@ -347,7 +345,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         : 'always_ask';
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-      title: Text(loc.translate('settingsPreferredMusicApp')),
+      title: Text(loc.settingsPreferredMusicApp),
       trailing: DropdownMenu<String>(
         width: 160,
         requestFocusOnTap: false,
@@ -378,14 +376,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            loc.translate('settingsAboutTitle'),
+            loc.settingsAboutTitle,
             style: textTheme.titleLarge,
           ),
-          Text(loc.translate('settingsAboutDescription1')),
+          Text(loc.settingsAboutDescription1),
           const SizedBox(height: 8),
-          Text(loc.translate('settingsAboutDescription2')),
+          Text(loc.settingsAboutDescription2),
           const SizedBox(height: 16),
-          Text(loc.translate('settingsCreatedBy'), style: textTheme.bodyLarge),
+          Text(loc.settingsCreatedBy, style: textTheme.bodyLarge),
         ],
       ),
     );

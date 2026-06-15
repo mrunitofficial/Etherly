@@ -124,7 +124,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       slivers: [
         SliverToBoxAdapter(
           child: ScreenHeader(
-            title: loc?.translate('favoritesTitle') ?? 'Favorites',
+            title: loc?.favoritesTitle ?? 'Favorites',
             actions: favoriteStations.isEmpty
                 ? null
                 : SegmentedButton<ViewType>(
@@ -161,13 +161,13 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   ),
                   SizedBox(height: spacing.medium),
                   Text(
-                    loc?.translate('favoritesEmptyTitle') ??
+                    loc?.favoritesEmptyTitle ??
                         'No favorite stations yet',
                     style: theme.textTheme.headlineMedium,
                   ),
                   SizedBox(height: spacing.small),
                   Text(
-                    loc?.translate('favoritesEmptySubtitle') ??
+                    loc?.favoritesEmptySubtitle ??
                         'Favorite a radio station first',
                     style: theme.textTheme.bodyMedium,
                   ),
@@ -281,9 +281,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
 
           final item = StationGridItem(
             station: station,
-            isFavorite: station.isFavorite,
             onTap: () => service.playMediaItem(station),
-            onFavorite: () => service.toggleFavorite(station),
             borderRadius: shapes.medium,
           );
 

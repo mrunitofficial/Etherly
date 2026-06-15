@@ -43,7 +43,7 @@ class _CastDevicesState extends State<CastDevices> {
     return AlertDialog(
       scrollable: true,
       title: Text(
-        loc?.translate('castDialogTitle') ?? 'Cast devices',
+        loc?.castDialogTitle ?? 'Cast devices',
         textAlign: TextAlign.center,
       ),
       content: Consumer<ChromeCastService>(
@@ -57,7 +57,7 @@ class _CastDevicesState extends State<CastDevices> {
           }
           if (devices.isEmpty) {
             return Text(
-              loc?.translate('castNoDevices') ?? 'No devices found',
+              loc?.castNoDevices ?? 'No devices found',
               textAlign: TextAlign.center,
             );
           }
@@ -102,13 +102,13 @@ class _CastDevicesState extends State<CastDevices> {
                 if (context.mounted) Navigator.of(context).pop();
                 await cast.endCasting();
               },
-              child: Text(loc?.translate('castStopCasting') ?? 'Stop casting'),
+              child: Text(loc?.castStopCasting ?? 'Stop casting'),
             );
           },
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc?.translate('close') ?? 'Close'),
+          child: Text(loc?.close ?? 'Close'),
         ),
       ],
     );

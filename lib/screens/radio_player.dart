@@ -246,15 +246,11 @@ class _MiniFABs extends StatelessWidget {
                                           isSleepTimerSet
                                               ? (AppLocalizations.of(
                                                     context,
-                                                  )?.translate(
-                                                    'playerCancelSleepTimer',
-                                                  ) ??
+                                                  )?.playerCancelSleepTimer ??
                                                   'Cancel sleep timer')
                                               : (AppLocalizations.of(
                                                     context,
-                                                  )?.translate(
-                                                    'playerSleepTimer',
-                                                  ) ??
+                                                  )?.playerSleepTimer ??
                                                   'Sleep timer'),
                                       child: Icon(
                                         isSleepTimerSet
@@ -281,7 +277,7 @@ class _MiniFABs extends StatelessWidget {
                             tooltip:
                                 AppLocalizations.of(
                                   context,
-                                )?.translate('playerStreamQuality') ??
+                                )?.playerStreamQuality ??
                                 'Stream quality',
                             child: Icon(
                               Icons.high_quality_outlined,
@@ -302,7 +298,7 @@ class _MiniFABs extends StatelessWidget {
                             tooltip:
                                 AppLocalizations.of(
                                   context,
-                                )?.translate('playerPlay') ??
+                                )?.playerPlay ??
                                 'Play',
                           ),
                         ],

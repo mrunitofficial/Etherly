@@ -185,7 +185,7 @@ class _AppScreenState extends State<AppScreen>
                 size:
                     screenType.isLargeFormat ? spacing.extraLarge : spacing.large,
               ),
-              tooltip: loc?.translate('mainTooltipSettings') ?? 'Settings',
+              tooltip: loc?.mainTooltipSettings ?? 'Settings',
               onPressed:
                   () => Navigator.push(
                     context,
@@ -249,10 +249,16 @@ class _AppScreenState extends State<AppScreen>
                 ),
                 destinations:
                     _destinations.map((d) {
+                      String label = d.labelKey;
+                      if (loc != null) {
+                        if (d.labelKey == 'navHome') label = loc.navHome;
+                        if (d.labelKey == 'navStations') label = loc.navStations;
+                        if (d.labelKey == 'navFavorites') label = loc.navFavorites;
+                      }
                       return NavigationRailDestination(
                         selectedIcon: Icon(d.selectedIcon),
                         icon: Icon(d.icon),
-                        label: Text(loc?.translate(d.labelKey) ?? d.labelKey),
+                        label: Text(label),
                       );
                     }).toList(),
               ),
@@ -292,10 +298,16 @@ class _AppScreenState extends State<AppScreen>
             onDestinationSelected: _onTabSelected,
             destinations:
                 _destinations.map((d) {
+                  String label = d.labelKey;
+                  if (loc != null) {
+                    if (d.labelKey == 'navHome') label = loc.navHome;
+                    if (d.labelKey == 'navStations') label = loc.navStations;
+                    if (d.labelKey == 'navFavorites') label = loc.navFavorites;
+                  }
                   return NavigationDestination(
                     selectedIcon: Icon(d.selectedIcon),
                     icon: Icon(d.icon),
-                    label: loc?.translate(d.labelKey) ?? d.labelKey,
+                    label: label,
                   );
                 }).toList(),
           ),
@@ -323,7 +335,7 @@ class _LogoButton extends StatelessWidget {
         width: effectiveSize,
         height: effectiveSize,
       ),
-      tooltip: AppLocalizations.of(context)?.translate('navHome') ?? 'Home',
+      tooltip: AppLocalizations.of(context)?.navHome ?? 'Home',
       onPressed: onPressed,
     );
   }
@@ -369,7 +381,7 @@ class _CastButton extends StatelessWidget {
           ),
         ],
       ),
-      tooltip: loc?.translate('mainTooltipCast') ?? 'Cast to device',
+      tooltip: loc?.mainTooltipCast ?? 'Cast to device',
       onPressed: () {
         showDialog(
           context: context,

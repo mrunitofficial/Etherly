@@ -38,7 +38,7 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
     return AlertDialog(
       scrollable: true,
       title: Text(
-        loc?.translate('playerPickMusicApp') ?? 'Pick a music app',
+        loc?.playerPickMusicApp ?? 'Pick a music app',
         textAlign: TextAlign.center,
       ),
       content: Column(
@@ -63,7 +63,7 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
             SizedBox(height: spacing.medium),
             Center(
               child: Text(
-                loc?.translate('sleepTimerOr') ?? 'or',
+                loc?.sleepTimerOr ?? 'or',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
@@ -76,7 +76,7 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
                 Navigator.of(context).pop('internet_search');
               },
               child: Text(
-                loc?.translate('playerSearchInternet') ?? 'Search internet',
+                loc?.playerSearchInternet ?? 'Search internet',
                 textAlign: TextAlign.center,
               ),
             ),
@@ -86,23 +86,24 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc?.translate('close') ?? 'Close'),
+          child: Text(loc?.close ?? 'Close'),
         ),
       ],
     );
   }
 
   String _getAppLabel(String id, String defaultName, AppLocalizations? loc) {
-    final keyMap = {
-      'youtube': 'settingsMusicAppYoutube',
-      'ytmusic': 'settingsMusicAppYtMusic',
-      'spotify': 'settingsMusicAppSpotify',
-      'apple_music': 'settingsMusicAppAppleMusic',
-      'tidal': 'settingsMusicAppTidal',
-      'soundcloud': 'settingsMusicAppSoundcloud',
-      'amazon': 'settingsMusicAppAmazon',
-    };
-    final key = keyMap[id];
-    return (key != null ? loc?.translate(key) : null) ?? defaultName;
+    if (loc != null) {
+      switch (id) {
+        case 'youtube': return loc.settingsMusicAppYoutube;
+        case 'ytmusic': return loc.settingsMusicAppYtMusic;
+        case 'spotify': return loc.settingsMusicAppSpotify;
+        case 'apple_music': return loc.settingsMusicAppAppleMusic;
+        case 'tidal': return loc.settingsMusicAppTidal;
+        case 'soundcloud': return loc.settingsMusicAppSoundcloud;
+        case 'amazon': return loc.settingsMusicAppAmazon;
+      }
+    }
+    return defaultName;
   }
 }

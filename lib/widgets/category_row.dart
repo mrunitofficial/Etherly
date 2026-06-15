@@ -48,9 +48,7 @@ class CategoryRow extends StatelessWidget {
                 width: itemSize,
                 child: StationGridItem(
                   station: station,
-                  isFavorite: station.isFavorite,
                   onTap: () => audioService.playMediaItem(station),
-                  onFavorite: () => audioService.toggleFavorite(station),
                   borderRadius: shapes.medium,
                 ),
               );

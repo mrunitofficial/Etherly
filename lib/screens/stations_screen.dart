@@ -129,7 +129,7 @@ class _StationsScreenState extends State<StationsScreen>
       slivers: [
         SliverToBoxAdapter(
           child: ScreenHeader(
-            title: loc?.translate('stationsTitle') ?? 'All channels',
+            title: loc?.stationsTitle ?? 'All channels',
             actions: stations.isEmpty
                 ? null
                 : SegmentedButton<ViewType>(
@@ -166,12 +166,12 @@ class _StationsScreenState extends State<StationsScreen>
                   ),
                   SizedBox(height: spacing.medium),
                   Text(
-                    loc?.translate('stationsEmptyTitle') ?? 'No stations',
+                    loc?.stationsEmptyTitle ?? 'No stations',
                     style: theme.textTheme.headlineMedium,
                   ),
                   SizedBox(height: spacing.small),
                   Text(
-                    loc?.translate('stationsEmptySubtitle') ??
+                    loc?.stationsEmptySubtitle ??
                         'No radio stations found',
                     style: theme.textTheme.bodyMedium,
                   ),
@@ -281,9 +281,7 @@ class _StationsScreenState extends State<StationsScreen>
           return StationGridItem(
             key: ValueKey(station.id),
             station: station,
-            isFavorite: station.isFavorite,
             onTap: () => service.playMediaItem(station),
-            onFavorite: () => service.toggleFavorite(station),
             borderRadius: shapes.medium,
           );
         },

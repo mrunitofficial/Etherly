@@ -108,7 +108,7 @@ class IcyTextDisplay extends StatelessWidget {
       valueListenable: service.icyState,
       builder: (context, icy, _) {
         final String? text = icy.loading
-            ? (loc?.translate('playerLoadingSong') ?? 'Loading song...')
+            ? (loc?.playerLoadingSong ?? 'Loading song...')
             : (icy.title?.isNotEmpty == true ? icy.title! : null);
 
         if (text == null) return const SizedBox.shrink();

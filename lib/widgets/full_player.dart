@@ -47,7 +47,14 @@ class FullPlayerContent extends StatelessWidget {
                   child: SizedBox.square(
                     dimension:
                         sizes.extraLargeIncreased + sizes.largeIncreased, // 280
-                    child: StationArt(artUrl: mediaItem.safeArtUrl),
+                    child: StationArt(
+                      artUrl: mediaItem.safeArt1024Url.isNotEmpty
+                          ? mediaItem.safeArt1024Url
+                          : mediaItem.safeArtUrl,
+                      placeholderUrl: mediaItem.safeArt512Url.isNotEmpty
+                          ? mediaItem.safeArt512Url
+                          : mediaItem.safeArt128Url,
+                    ),
                   ),
                 ),
               ),
@@ -59,7 +66,7 @@ class FullPlayerContent extends StatelessWidget {
                     MarqueeText(
                       text:
                           mediaItem?.title ??
-                          (loc?.translate('playerLoadingStation') ??
+                          (loc?.playerLoadingStation ??
                               'Select a station...'),
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -193,9 +200,9 @@ class FullPlayerControls extends StatelessWidget {
                         color: isSleepTimerSet ? colorScheme.primary : null,
                       ),
                       tooltip: isSleepTimerSet
-                          ? (loc?.translate('playerCancelSleepTimer') ??
+                          ? (loc?.playerCancelSleepTimer ??
                                 'Cancel sleep timer')
-                          : (loc?.translate('playerSleepTimer') ??
+                          : (loc?.playerSleepTimer ??
                                 'Sleep timer'),
                       padding: EdgeInsets.all(spacing.medium),
                     ),
@@ -211,8 +218,8 @@ class FullPlayerControls extends StatelessWidget {
                   heroTag: "full_player_fab",
                   elevation: 0,
                   tooltip: service.isPlaying
-                      ? (loc?.translate('playerPause') ?? 'Pause')
-                      : (loc?.translate('playerPlay') ?? 'Play'),
+                      ? (loc?.playerPause ?? 'Pause')
+                      : (loc?.playerPlay ?? 'Play'),
                   size: PlayButtonSize.large,
                 ),
               ),
@@ -227,7 +234,7 @@ class FullPlayerControls extends StatelessWidget {
                       : Icons.favorite_border_rounded,
                   color: isFavorite ? colorScheme.primary : null,
                 ),
-                tooltip: loc?.translate('playerFavorite') ?? 'Favorite',
+                tooltip: loc?.playerFavorite ?? 'Favorite',
                 padding: EdgeInsets.all(spacing.medium),
               ),
             ],
@@ -250,7 +257,7 @@ class QualityButton extends StatelessWidget {
     return IconButton(
       onPressed: () => QualitySetting.show(context),
       icon: const Icon(Icons.high_quality_outlined),
-      tooltip: loc?.translate('playerStreamQuality') ?? 'Stream quality',
+      tooltip: loc?.playerStreamQuality ?? 'Stream quality',
     );
   }
 }
@@ -273,7 +280,7 @@ class PlayerCloseButton extends StatelessWidget {
     return IconButton(
       onPressed: onClose,
       icon: const Icon(Icons.keyboard_arrow_down_rounded),
-      tooltip: loc?.translate('playerClose') ?? 'Close',
+      tooltip: loc?.playerClose ?? 'Close',
     );
   }
 }
@@ -299,26 +306,26 @@ class PlayerMenuButton extends StatelessWidget {
         _buildMenuItem(
           context,
           Icons.settings_outlined,
-          loc?.translate('playerSettings') ?? 'Settings',
+          loc?.playerSettings ?? 'Settings',
           'settings',
         ),
         if (showQualityInMenu)
           _buildMenuItem(
             context,
             Icons.high_quality_outlined,
-            loc?.translate('playerStreamQuality') ?? 'Stream quality',
+            loc?.playerStreamQuality ?? 'Stream quality',
             'stream_quality',
           ),
         _buildMenuItem(
           context,
           Icons.info_outline,
-          loc?.translate('playerAbout') ?? 'About',
+          loc?.playerAbout ?? 'About',
           'about',
         ),
         _buildMenuItem(
           context,
           Icons.feedback_outlined,
-          loc?.translate('playerSendFeedback') ?? 'Send Feedback',
+          loc?.playerSendFeedback ?? 'Send Feedback',
           'send_feedback',
         ),
       ],
@@ -380,9 +387,6 @@ class VolumeSlider extends StatelessWidget {
                       ? Icons.volume_off_rounded
                       : Icons.volume_mute_rounded,
                 ),
-                tooltip:
-                    AppLocalizations.of(context)?.translate('playerMute') ??
-                    'Mute',
               ),
               Expanded(
                 child: Slider(
@@ -393,11 +397,6 @@ class VolumeSlider extends StatelessWidget {
               IconButton(
                 onPressed: () => service.setVolume(1.0),
                 icon: const Icon(Icons.volume_up_rounded),
-                tooltip:
-                    AppLocalizations.of(
-                      context,
-                    )?.translate('playerMaxVolume') ??
-                    'Max Volume',
               ),
             ],
           ),

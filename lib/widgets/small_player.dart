@@ -29,12 +29,14 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
           _lastStationId = mediaItem?.id;
         }
 
-        final artUrl = mediaItem.safeArtUrl;
+        final artUrl = mediaItem.safeArt128Url.isNotEmpty
+            ? mediaItem.safeArt128Url
+            : mediaItem.safeArtUrl;
         final theme = Theme.of(context);
         final loc = AppLocalizations.of(context);
         final stationName =
             mediaItem?.title ??
-            (loc?.translate('playerLoadingStation') ?? 'Loading station...');
+            (loc?.playerLoadingStation ?? 'Loading station...');
         final processingState = service.player.processingState;
         final isPlaying = service.isPlaying;
 
@@ -88,8 +90,8 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                     heroTag: "mini_player_fab",
                     elevation: 0,
                     tooltip: isPlaying
-                        ? (loc?.translate('playerPause') ?? 'Pause')
-                        : (loc?.translate('playerPlay') ?? 'Play'),
+                        ? (loc?.playerPause ?? 'Pause')
+                        : (loc?.playerPlay ?? 'Play'),
                   );
                 },
               ),

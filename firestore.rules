@@ -3,9 +3,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow anyone to read the 'stations' collection, and block all other actions
+    // Block all direct reads and writes to 'stations'; clients load them via CDN data bundles
     match /stations/{stationId} {
-      allow read: if true;
+      allow read: if false;
       allow write: if false;
     }
 

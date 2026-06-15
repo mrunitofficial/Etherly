@@ -5,11 +5,13 @@ class StationArt extends StatelessWidget {
   const StationArt({
     super.key,
     required this.artUrl,
+    this.placeholderUrl,
     this.size,
     this.borderRadius,
   });
 
   final String artUrl;
+  final String? placeholderUrl;
   final double? size;
   final BorderRadius? borderRadius;
 
@@ -23,13 +25,26 @@ class StationArt extends StatelessWidget {
     Widget art = artUrl.isEmpty
         ? fallback
         : CachedNetworkImage(
+            key: ValueKey(artUrl),
             imageUrl: artUrl,
             fit: BoxFit.cover,
-            placeholder: (context, url) => fallback,
+            fadeInDuration: Duration.zero,
+            fadeOutDuration: Duration.zero,
+            placeholder: (context, url) =>
+                placeholderUrl != null && placeholderUrl!.isNotEmpty
+                ? CachedNetworkImage(
+                    imageUrl: placeholderUrl!,
+                    fit: BoxFit.cover,
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
+                    placeholder: (context, url) => fallback,
+                    errorWidget: (context, url, error) => fallback,
+                  )
+                : fallback,
             errorWidget: (context, url, error) => fallback,
             // Optimize memory by decoding at a size close to display resolution
-            memCacheWidth: size != null ? (size! * 2).toInt() : 300,
-            memCacheHeight: size != null ? (size! * 2).toInt() : 300,
+            memCacheWidth: size != null ? (size! * 2).toInt() : null,
+            memCacheHeight: size != null ? (size! * 2).toInt() : null,
           );
 
     if (borderRadius != null) {

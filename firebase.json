@@ -26,7 +26,22 @@
             "**/.*",
             "**/node_modules/**"
         ],
+        "headers": [
+            {
+                "source": "/bundles/*",
+                "headers": [
+                    {
+                        "key": "Access-Control-Allow-Origin",
+                        "value": "*"
+                    }
+                ]
+            }
+        ],
         "rewrites": [
+            {
+                "source": "/bundles/*",
+                "function": "ext-firestore-bundle-builder-serve"
+            },
             {
                 "source": "**",
                 "destination": "/index.html"
