@@ -12,6 +12,7 @@ import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/services/theme_data.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const int _minTotalCategories = 8;
 
@@ -38,6 +39,8 @@ class _HomeScreenState extends State<HomeScreen>
   bool _showLoading = false;
   Timer? _loadingTimer;
   Future<void>? _initializationFuture;
+
+  static bool _hasFetchedThisSession = false;
 
   List<Station> _stations = [];
   List<Station> _favoriteStations = [];
@@ -70,10 +73,24 @@ class _HomeScreenState extends State<HomeScreen>
     _loadingTimer?.cancel();
     if (mounted) {
       _updateData();
+      await _loadCachedRegionalStations();
       _fetchRegionalStations();
       setState(() => _isInitialized = true);
       widget.onContentLoaded?.call();
     }
+  }
+
+  Future<void> _loadCachedRegionalStations() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedNames = prefs.getStringList('cached_top_regional_names');
+      if (cachedNames != null && cachedNames.isNotEmpty && mounted) {
+        setState(() {
+          _topRegionalNames = cachedNames;
+        });
+        _updateRegionalStations();
+      }
+    } catch (_) {}
   }
 
   void _updateData() {
@@ -117,6 +134,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _fetchRegionalStations() async {
+    if (_hasFetchedThisSession) return;
     if (_loadingRegional) return;
     setState(() {
       _loadingRegional = true;
@@ -150,7 +168,9 @@ class _HomeScreenState extends State<HomeScreen>
       }
 
       // 4. Default fallback
-      countryCode = (countryCode == null || countryCode.isEmpty) ? 'NL' : countryCode.toUpperCase();
+      countryCode = (countryCode == null || countryCode.isEmpty)
+          ? 'NL'
+          : countryCode.toUpperCase();
 
       final response = await http
           .get(
@@ -167,6 +187,12 @@ class _HomeScreenState extends State<HomeScreen>
             .map((json) => (json['name'] ?? '') as String)
             .where((name) => name.isNotEmpty)
             .toList();
+
+        _hasFetchedThisSession = true;
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setStringList('cached_top_regional_names', names);
+        } catch (_) {}
 
         if (mounted) {
           setState(() {
