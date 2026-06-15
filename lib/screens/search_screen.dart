@@ -132,8 +132,7 @@ class _StationSearchBarState extends State<StationSearchBar> {
                 _isListening ? Icons.mic : Icons.mic_none,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              tooltip:
-                  loc?.mainTooltipVoiceSearch ?? 'Voice search',
+              tooltip: loc?.mainTooltipVoiceSearch ?? 'Voice search',
               onPressed: _toggleListening,
             ),
           ],
