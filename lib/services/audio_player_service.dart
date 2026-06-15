@@ -239,12 +239,16 @@ class AudioPlayerService with ChangeNotifier {
     icyState.value = (title: null, loading: true);
     try {
       await player.stop();
+      if (_currentMediaItem?.id != item.id) return;
       await _setAudioSource(item);
+      if (_currentMediaItem?.id != item.id) return;
       player.play().catchError((_) {});
     } catch (e) {
       if (kDebugMode) print('Error playing media item: $e');
-      await player.stop();
-      icyState.value = (title: null, loading: false);
+      if (_currentMediaItem?.id == item.id) {
+        await player.stop();
+        icyState.value = (title: null, loading: false);
+      }
     }
   }
 
@@ -359,32 +363,17 @@ class AudioPlayerService with ChangeNotifier {
     await playMediaItem(stations[prevIndex]);
   }
 
-  /// Pre-fetches all station art to improve UI responsiveness.
+  /// Pre-fetches all station art in parallel to improve UI responsiveness.
   Future<void> precacheAllStationArt(BuildContext context) async {
+    final futures = <Future<void>>[];
     for (final station in stations) {
       final artUrl = station.art128.isNotEmpty ? station.art128 : station.art;
       if (artUrl.isNotEmpty) {
-        try {
-          // Using custom cache manager to ensure it matches the widget's cache store
-          final provider = CachedNetworkImageProvider(
-            artUrl,
-            errorListener: (error) {
-              // Silently catch errors (like EncodingError) to prevent console flood
-            },
-          );
-
-          await precacheImage(
-            ResizeImage(provider, width: 128, height: 128),
-            context,
-          );
-
-          // Small delay to avoid overwhelming the network stack/DNS resolver
-          await Future.delayed(const Duration(milliseconds: 50));
-        } catch (_) {
-          // Silent catch for any other precaching issues
-        }
+        final provider = CachedNetworkImageProvider(artUrl);
+        futures.add(precacheImage(provider, context).catchError((_) {}));
       }
     }
+    await Future.wait(futures);
   }
 
   /// Updates favorite status and persists it.
@@ -452,19 +441,25 @@ class AudioPlayerService with ChangeNotifier {
   Future<void> _loadStations() async {
     try {
       // 1. Download the bundle from the website host (CDN)
-      final bundleUrl = Uri.parse('https://etherly-firebase.firebaseapp.com/bundles/stations_bundle?t=${DateTime.now().millisecondsSinceEpoch}');
+      final bundleUrl = Uri.parse(
+        'https://etherly-firebase.firebaseapp.com/bundles/stations_bundle?t=${DateTime.now().millisecondsSinceEpoch}',
+      );
       final response = await http
           .get(bundleUrl)
           .timeout(const Duration(seconds: 10));
-      
+
       if (response.statusCode == 200) {
         final Uint8List bundleBytes = response.bodyBytes;
         // 2. Load the bundle into Firestore local memory cache
-        final LoadBundleTask task = FirebaseFirestore.instance.loadBundle(bundleBytes);
+        final LoadBundleTask task = FirebaseFirestore.instance.loadBundle(
+          bundleBytes,
+        );
         await task.stream.last;
         if (kDebugMode) print('Firestore bundle loaded successfully');
       } else {
-        if (kDebugMode) print('Failed to load Firestore bundle: ${response.statusCode}');
+        if (kDebugMode) {
+          print('Failed to load Firestore bundle: ${response.statusCode}');
+        }
       }
     } catch (e) {
       if (kDebugMode) print('Error fetching or loading Firestore bundle: $e');
@@ -472,8 +467,8 @@ class AudioPlayerService with ChangeNotifier {
 
     try {
       // 3. Execute the named query to unpack and read stations from local memory/cache
-      final QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
-          .namedQueryGet(
+      final QuerySnapshot<Map<String, dynamic>> snapshot =
+          await FirebaseFirestore.instance.namedQueryGet(
             'all_stations',
             options: const GetOptions(source: Source.cache),
           );
@@ -484,9 +479,7 @@ class AudioPlayerService with ChangeNotifier {
         return data['active'] == true || data['active'] == null;
       }).toList();
 
-      stations = activeDocs
-          .map((doc) => Station.fromFirestore(doc))
-          .toList();
+      stations = activeDocs.map((doc) => Station.fromFirestore(doc)).toList();
 
       // Sort by rank if it exists, otherwise leave order or sort by name
       stations.sort((a, b) {
@@ -498,10 +491,8 @@ class AudioPlayerService with ChangeNotifier {
         return a.name.compareTo(b.name);
       });
 
-      _favoriteStationIds =
-          _prefs.getStringList(_favoriteStationIdsKey) ?? [];
-      _recentStationIds =
-          _prefs.getStringList(_recentStationIdsKey) ?? [];
+      _favoriteStationIds = _prefs.getStringList(_favoriteStationIdsKey) ?? [];
+      _recentStationIds = _prefs.getStringList(_recentStationIdsKey) ?? [];
 
       stations = stations
           .map(

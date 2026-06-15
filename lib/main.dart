@@ -35,7 +35,9 @@ Future<void> main() async {
       // Initialize App Check (Firebase).
       // Uses Play Integrity in production and Debug Provider in development.
       await FirebaseAppCheck.instance.activate(
-        providerAndroid: kDebugMode ? AndroidDebugProvider() : AndroidPlayIntegrityProvider(),
+        providerAndroid: kDebugMode
+            ? AndroidDebugProvider()
+            : AndroidPlayIntegrityProvider(),
       );
     }
 
@@ -222,8 +224,8 @@ class _MyAppState extends State<MyApp> {
 class AppScrollBehavior extends MaterialScrollBehavior {
   @override
   Set<PointerDeviceKind> get dragDevices => {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.trackpad,
-      };
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+  };
 }

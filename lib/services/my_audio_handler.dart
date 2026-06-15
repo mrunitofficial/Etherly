@@ -169,11 +169,15 @@ class MyAudioHandler extends BaseAudioHandler {
     final playing = player.playing;
     return PlaybackState(
       controls: [
+        if (kIsWeb) MediaControl.skipToPrevious,
         if (playing) MediaControl.pause else MediaControl.play,
+        if (kIsWeb) MediaControl.skipToNext,
+        if (kIsWeb) MediaControl.stop,
       ],
-      systemActions: const {
-        MediaAction.skipToNext,
-        MediaAction.skipToPrevious,
+      systemActions: {
+        if (kIsWeb) MediaAction.skipToNext,
+        if (kIsWeb) MediaAction.skipToPrevious,
+        if (kIsWeb) MediaAction.stop,
       },
       androidCompactActionIndices: const [0],
       processingState: _getProcessingState(player.processingState),
