@@ -42,9 +42,6 @@ class StationArt extends StatelessWidget {
                   )
                 : fallback,
             errorWidget: (context, url, error) => fallback,
-            // Optimize memory by decoding at a size close to display resolution
-            memCacheWidth: size != null ? (size! * 2).toInt() : null,
-            memCacheHeight: size != null ? (size! * 2).toInt() : null,
           );
 
     if (borderRadius != null) {

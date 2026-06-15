@@ -378,7 +378,7 @@ class AudioPlayerService with ChangeNotifier {
           );
 
           await precacheImage(
-            ResizeImage(provider, width: 128, height: 128),
+            provider,
             context,
           );
 
