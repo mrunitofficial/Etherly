@@ -30,7 +30,8 @@ class StationGridItem extends StatelessWidget {
             children: [
               Positioned.fill(
                 child: StationArt(
-                  artUrl: station.art128.isNotEmpty ? station.art128 : station.art,
+                  artUrl: station.art512.isNotEmpty ? station.art512 : station.art,
+                  placeholderUrl: station.art128.isNotEmpty ? station.art128 : station.art,
                 ),
               ),
               Positioned.fill(
