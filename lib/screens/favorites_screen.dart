@@ -281,9 +281,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
 
           final item = StationGridItem(
             station: station,
-            isFavorite: station.isFavorite,
             onTap: () => service.playMediaItem(station),
-            onFavorite: () => service.toggleFavorite(station),
             borderRadius: shapes.medium,
           );
 

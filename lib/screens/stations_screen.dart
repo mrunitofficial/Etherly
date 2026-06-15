@@ -281,9 +281,7 @@ class _StationsScreenState extends State<StationsScreen>
           return StationGridItem(
             key: ValueKey(station.id),
             station: station,
-            isFavorite: station.isFavorite,
             onTap: () => service.playMediaItem(station),
-            onFavorite: () => service.toggleFavorite(station),
             borderRadius: shapes.medium,
           );
         },
