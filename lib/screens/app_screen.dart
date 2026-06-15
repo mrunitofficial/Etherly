@@ -22,7 +22,7 @@ class _AppDestination {
   final String labelKey;
   final IconData icon;
   final IconData selectedIcon;
-  final Widget Function(BuildContext, ScreenType, double) builder;
+  final Widget Function(BuildContext, ScreenType, double, bool) builder;
 
   const _AppDestination({
     required this.labelKey,
@@ -73,16 +73,17 @@ class _AppScreenState extends State<AppScreen>
         labelKey: 'navHome',
         icon: Icons.home_outlined,
         selectedIcon: Icons.home,
-        builder: (context, _, padding) => HomeScreen(
+        builder: (context, _, padding, isActive) => HomeScreen(
           onContentLoaded: widget.onHomeContentLoaded,
           bottomPadding: padding,
+          isActive: isActive,
         ),
       ),
       _AppDestination(
         labelKey: 'navStations',
         icon: Icons.radio_outlined,
         selectedIcon: Icons.radio,
-        builder: (context, screenType, padding) => StationsScreen(
+        builder: (context, screenType, padding, _) => StationsScreen(
           onContentLoaded: widget.onHomeContentLoaded,
           screenType: screenType,
           bottomPadding: padding,
@@ -92,7 +93,7 @@ class _AppScreenState extends State<AppScreen>
         labelKey: 'navFavorites',
         icon: Icons.favorite_outline,
         selectedIcon: Icons.favorite,
-        builder: (context, screenType, padding) => FavoritesScreen(
+        builder: (context, screenType, padding, _) => FavoritesScreen(
           onContentLoaded: widget.onHomeContentLoaded,
           screenType: screenType,
           bottomPadding: padding,
@@ -212,15 +213,15 @@ class _AppScreenState extends State<AppScreen>
                   child: IndexedStack(
                     index: _selectedIndex,
                     sizing: StackFit.expand,
-                    children: _destinations
-                        .map(
-                          (d) => d.builder(
-                            context,
-                            screenType,
-                            playerBottomPadding,
-                          ),
-                        )
-                        .toList(),
+                    children: List.generate(_destinations.length, (index) {
+                      final d = _destinations[index];
+                      return d.builder(
+                        context,
+                        screenType,
+                        playerBottomPadding,
+                        _selectedIndex == index,
+                      );
+                    }),
                   ),
                 ),
               ),

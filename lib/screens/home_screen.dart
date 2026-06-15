@@ -16,7 +16,13 @@ typedef ContentLoadedCallback = void Function();
 class HomeScreen extends StatefulWidget {
   final ContentLoadedCallback? onContentLoaded;
   final double bottomPadding;
-  const HomeScreen({super.key, this.onContentLoaded, this.bottomPadding = 0.0});
+  final bool isActive;
+  const HomeScreen({
+    super.key,
+    this.onContentLoaded,
+    this.bottomPadding = 0.0,
+    this.isActive = false,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -28,6 +34,10 @@ class _HomeScreenState extends State<HomeScreen>
   bool _showLoading = false;
   Timer? _loadingTimer;
   Future<void>? _initializationFuture;
+
+  List<Station> _stations = [];
+  List<Station> _favoriteStations = [];
+  List<Station> _recentStations = [];
 
   @override
   bool get wantKeepAlive => true;
@@ -52,8 +62,27 @@ class _HomeScreenState extends State<HomeScreen>
     await _initializationFuture;
     _loadingTimer?.cancel();
     if (mounted) {
+      _updateData();
       setState(() => _isInitialized = true);
       widget.onContentLoaded?.call();
+    }
+  }
+
+  void _updateData() {
+    if (!mounted) return;
+    final audioService = context.read<AudioPlayerService>();
+    setState(() {
+      _stations = List.from(audioService.stations);
+      _favoriteStations = List.from(audioService.favoriteStations);
+      _recentStations = List.from(audioService.recentStations);
+    });
+  }
+
+  @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _updateData();
     }
   }
 
@@ -78,8 +107,12 @@ class _HomeScreenState extends State<HomeScreen>
     final spacing = theme.extension<Spacing>()!;
     final sizes = theme.extension<Sizes>()!;
 
-    final audioService = context.watch<AudioPlayerService>();
-    final sections = _getSections(context, audioService.stations, audioService);
+    final sections = _getSections(
+      context,
+      _stations,
+      _favoriteStations,
+      _recentStations,
+    );
 
     return CustomScrollView(
       scrollCacheExtent: const ScrollCacheExtent.pixels(4000.0),
@@ -136,27 +169,26 @@ class _HomeScreenState extends State<HomeScreen>
   List<({String title, List<Station> stations})> _getSections(
     BuildContext context,
     List<Station> allStations,
-    AudioPlayerService audioService,
+    List<Station> favoriteStations,
+    List<Station> recentStations,
   ) {
     final loc = AppLocalizations.of(context);
     final List<({String title, List<Station> stations})> sections = [];
     final Set<String> displayedCategories = {};
 
     // 1. Favorites
-    final favorites = audioService.favoriteStations;
-    if (favorites.isNotEmpty) {
+    if (favoriteStations.isNotEmpty) {
       sections.add((
         title: loc?.homeFavoritesTitle ?? 'Favorites',
-        stations: favorites,
+        stations: favoriteStations,
       ));
     }
 
     // 2. Recents
-    final recents = audioService.recentStations;
-    if (recents.isNotEmpty) {
+    if (recentStations.isNotEmpty) {
       sections.add((
         title: loc?.homeRecentsTitle ?? 'Recents',
-        stations: recents,
+        stations: recentStations,
       ));
     }
 
@@ -171,8 +203,8 @@ class _HomeScreenState extends State<HomeScreen>
     }
 
     // 4. Dynamic Categories
-    final sourceStations = recents.isNotEmpty ? recents : popular;
-    final recentIds = recents.map((s) => s.id).toSet();
+    final sourceStations = recentStations.isNotEmpty ? recentStations : popular;
+    final recentIds = recentStations.map((s) => s.id).toSet();
     final String moreFromPrefix = loc?.homeMoreFrom ?? 'More from';
 
     for (final station in sourceStations) {
