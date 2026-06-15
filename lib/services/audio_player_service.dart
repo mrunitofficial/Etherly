@@ -239,12 +239,16 @@ class AudioPlayerService with ChangeNotifier {
     icyState.value = (title: null, loading: true);
     try {
       await player.stop();
+      if (_currentMediaItem?.id != item.id) return;
       await _setAudioSource(item);
+      if (_currentMediaItem?.id != item.id) return;
       player.play().catchError((_) {});
     } catch (e) {
       if (kDebugMode) print('Error playing media item: $e');
-      await player.stop();
-      icyState.value = (title: null, loading: false);
+      if (_currentMediaItem?.id == item.id) {
+        await player.stop();
+        icyState.value = (title: null, loading: false);
+      }
     }
   }
 
