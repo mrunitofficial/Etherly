@@ -35,7 +35,10 @@ class HistoryScreen extends StatelessWidget {
     }
   }
 
-  Map<String, List<Song>> _groupSongsByDate(List<Song> songs, AppLocalizations? loc) {
+  Map<String, List<Song>> _groupSongsByDate(
+    List<Song> songs,
+    AppLocalizations? loc,
+  ) {
     final Map<String, List<Song>> grouped = {};
     for (final song in songs) {
       final header = _getDateHeader(song.timestamp, loc);
@@ -129,7 +132,8 @@ class HistoryScreen extends StatelessWidget {
                   ),
                   SizedBox(height: spacing.small),
                   Text(
-                    loc?.historyEmptySubtitle ?? 'Songs you listen to will appear here',
+                    loc?.historyEmptySubtitle ??
+                        'Songs you listen to will appear here',
                     style: theme.textTheme.bodyMedium,
                   ),
                   SizedBox(height: spacing.large),
@@ -154,7 +158,7 @@ class HistoryScreen extends StatelessWidget {
                   int currentFlatIndex = 0;
                   for (final header in headers) {
                     final songsForHeader = groupedSongs[header]!;
-                    
+
                     if (currentFlatIndex == index) {
                       return Padding(
                         padding: EdgeInsets.only(
@@ -174,19 +178,28 @@ class HistoryScreen extends StatelessWidget {
                     if (index < currentFlatIndex + songsForHeader.length) {
                       final songIndex = index - currentFlatIndex;
                       final item = songsForHeader[songIndex];
-                      final timeFormatter = Country.use24HourFormat ? DateFormat('HH:mm') : DateFormat('jm');
+                      final timeFormatter = Country.use24HourFormat
+                          ? DateFormat('HH:mm')
+                          : DateFormat('jm');
                       final timeStr = timeFormatter.format(item.timestamp);
 
                       return Padding(
                         padding: EdgeInsets.only(bottom: spacing.small),
                         child: SongCardItem(
                           songName: item.title,
-                          artistName: item.artist.isNotEmpty ? item.artist : 'Unknown Artist',
+                          artistName: item.artist.isNotEmpty
+                              ? item.artist
+                              : 'Unknown Artist',
                           artUrl: item.stationArtUrl,
                           timeLabel: timeStr,
                           screenType: screenType,
                           onTap: () {
-                            _searchSong(context, audioService, item.artist, item.title);
+                            _searchSong(
+                              context,
+                              audioService,
+                              item.artist,
+                              item.title,
+                            );
                           },
                         ),
                       );

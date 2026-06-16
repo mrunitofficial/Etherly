@@ -37,7 +37,7 @@ class SongCardItem extends StatelessWidget {
         child: Card.filled(
           clipBehavior: Clip.hardEdge,
           margin: EdgeInsets.zero,
-          color: theme.colorScheme.surfaceContainerHigh,
+          color: theme.colorScheme.surfaceContainerHighest,
           child: InkWell(
             onTap: onTap,
             child: Padding(
