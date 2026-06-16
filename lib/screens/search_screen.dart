@@ -1,6 +1,7 @@
 import 'package:etherly/models/station.dart';
 import 'package:etherly/models/device.dart';
 import 'package:etherly/services/audio_player_service.dart';
+import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/widgets/station_card_item.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -93,13 +94,13 @@ class _StationSearchBarState extends State<StationSearchBar> {
     final stations = audioPlayerService.stations;
     final loc = AppLocalizations.of(context);
     final screenType = ScreenType.fromContext(context);
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
 
     return SearchAnchor(
       searchController: _controller,
       viewElevation: 0,
-      viewBackgroundColor: Theme.of(
-        context,
-      ).colorScheme.surfaceContainerHighest,
+      viewBackgroundColor: theme.colorScheme.surfaceContainerHighest,
       isFullScreen: !screenType.isLargeFormat,
       builder: (BuildContext context, SearchController controller) {
         return SearchBar(
@@ -107,19 +108,19 @@ class _StationSearchBarState extends State<StationSearchBar> {
           controller: controller,
           elevation: const WidgetStatePropertyAll<double>(0.0),
           backgroundColor: WidgetStatePropertyAll<Color>(
-            Theme.of(context).colorScheme.surfaceContainerHighest,
+            theme.colorScheme.surfaceContainerHighest,
           ),
-          padding: const WidgetStatePropertyAll<EdgeInsets>(
-            EdgeInsets.symmetric(horizontal: 4.0),
+          padding: WidgetStatePropertyAll<EdgeInsets>(
+            EdgeInsets.symmetric(horizontal: spacing.extraSmall),
           ),
           onTap: () {
             controller.openView();
           },
           leading: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            padding: EdgeInsets.symmetric(horizontal: spacing.small + spacing.extraSmall),
             child: Icon(
               Icons.search,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           hintText: _isListening
@@ -130,7 +131,7 @@ class _StationSearchBarState extends State<StationSearchBar> {
             IconButton(
               icon: Icon(
                 _isListening ? Icons.mic : Icons.mic_none,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               tooltip: loc?.mainTooltipVoiceSearch ?? 'Voice search',
               onPressed: _toggleListening,
@@ -155,7 +156,7 @@ class _StationSearchBarState extends State<StationSearchBar> {
         if (query.isEmpty) {
           return [
             Padding(
-              padding: const EdgeInsets.only(top: 64.0),
+              padding: EdgeInsets.only(top: spacing.extraLarge * 2),
               child: Center(
                 child: Text(
                   _isListening
@@ -163,7 +164,7 @@ class _StationSearchBarState extends State<StationSearchBar> {
                             'Speak to search stations......')
                       : (loc?.searchPanelTypeToSearch ??
                             'Type to search stations...'),
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: theme.textTheme.titleLarge,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -174,11 +175,11 @@ class _StationSearchBarState extends State<StationSearchBar> {
         if (filtered.isEmpty) {
           return [
             Padding(
-              padding: const EdgeInsets.only(top: 64.0),
+              padding: EdgeInsets.only(top: spacing.extraLarge * 2),
               child: Center(
                 child: Text(
                   loc?.searchPanelNoResults ?? 'No stations found',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: theme.textTheme.titleLarge,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -187,7 +188,7 @@ class _StationSearchBarState extends State<StationSearchBar> {
         }
 
         return [
-          const SizedBox(height: 8.0),
+          SizedBox(height: spacing.small),
           ...filtered.map((station) {
             return ListenableBuilder(
               listenable: audioPlayerService,
@@ -198,9 +199,9 @@ class _StationSearchBarState extends State<StationSearchBar> {
                 );
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12.0,
-                    vertical: 4.0,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: spacing.small + spacing.extraSmall,
+                    vertical: spacing.extraSmall,
                   ),
                   child: StationCardItem(
                     station: currentStation,
@@ -220,7 +221,7 @@ class _StationSearchBarState extends State<StationSearchBar> {
               },
             );
           }),
-          const SizedBox(height: 8.0),
+          SizedBox(height: spacing.small),
         ];
       },
     );

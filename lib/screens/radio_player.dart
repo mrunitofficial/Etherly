@@ -67,11 +67,13 @@ class _RadioPlayerState extends State<RadioPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     // 1. Tablet/Desktop: persistent right side panel.
     if (widget.screenType.isLargeFormat) {
       return Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainer,
+          color: theme.colorScheme.surfaceContainer,
         ),
         child: SafeArea(
           child: Align(
@@ -125,7 +127,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
 
               return Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  color: theme.colorScheme.surfaceContainer,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(32),
                     topRight: Radius.circular(32),
@@ -141,9 +143,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
                             ? _controller
                                   .animateTo(
                                     minPlayerSize,
-                                    duration: Theme.of(
-                                      context,
-                                    ).extension<Speed>()!.long3,
+                                    duration: theme.extension<Speed>()!.long3,
                                     curve: Easing.standard,
                                   )
                                   .catchError((_) {})
@@ -159,9 +159,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
                               ? _controller
                                     .animateTo(
                                       maxPlayerSize,
-                                      duration: Theme.of(
-                                        context,
-                                      ).extension<Speed>()!.long3,
+                                      duration: theme.extension<Speed>()!.long3,
                                       curve: Easing.standard,
                                     )
                                     .catchError((_) {})

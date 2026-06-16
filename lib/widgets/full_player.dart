@@ -251,7 +251,6 @@ class QualityButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
     final loc = AppLocalizations.of(context);
 
     return IconButton(

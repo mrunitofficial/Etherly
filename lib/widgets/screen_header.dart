@@ -10,8 +10,9 @@ class ScreenHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spacing = Theme.of(context).extension<Spacing>()!;
-    final sizes = Theme.of(context).extension<Sizes>()!;
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final sizes = theme.extension<Sizes>()!;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -29,7 +30,7 @@ class ScreenHeader extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: Theme.of(context).textTheme.headlineMedium,
+                style: theme.textTheme.headlineMedium,
               ),
             ),
             ?actions,
