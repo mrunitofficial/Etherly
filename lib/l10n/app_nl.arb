@@ -104,7 +104,8 @@
   "historyTitle": "Geschiedenis",
   "historyClear": "Geschiedenis wissen",
   "historyClearConfirmation": "Weet je zeker dat je je afspeelgeschiedenis wilt wissen? Dit kan niet ongedaan worden gemaakt.",
-  "historyEmptyTitle": "Nog geen nummers afgespeeld",
+  "historyEmptyTitle": "Nog geen geschiedenis",
+  "historyEmptySubtitle": "Nummers die je afspeelt verschijnen hier",
   "historyToday": "Vandaag",
   "historyYesterday": "Gisteren",
   "playerHistory": "Geschiedenis"

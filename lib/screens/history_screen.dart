@@ -83,6 +83,7 @@ class HistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final spacing = theme.extension<Spacing>()!;
+    final sizes = theme.extension<Sizes>()!;
     final loc = AppLocalizations.of(context);
     final audioService = context.read<AudioPlayerService>();
 
@@ -118,16 +119,20 @@ class HistoryScreen extends StatelessWidget {
                 children: [
                   Icon(
                     Icons.history_rounded,
-                    size: 64,
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    size: sizes.large,
+                    color: theme.colorScheme.primary,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: spacing.medium),
                   Text(
-                    loc?.historyEmptyTitle ?? 'No songs played yet',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    loc?.historyEmptyTitle ?? 'No history yet',
+                    style: theme.textTheme.headlineMedium,
                   ),
+                  SizedBox(height: spacing.small),
+                  Text(
+                    loc?.historyEmptySubtitle ?? 'Songs you listen to will appear here',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  SizedBox(height: spacing.large),
                 ],
               ),
             );

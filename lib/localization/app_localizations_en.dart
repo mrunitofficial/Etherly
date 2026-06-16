@@ -328,7 +328,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to clear your song history? This action cannot be undone.';
 
   @override
-  String get historyEmptyTitle => 'No songs played yet';
+  String get historyEmptyTitle => 'No history yet';
+
+  @override
+  String get historyEmptySubtitle => 'Songs you listen to will appear here';
 
   @override
   String get historyToday => 'Today';

@@ -104,7 +104,8 @@
   "historyTitle": "History",
   "historyClear": "Clear History",
   "historyClearConfirmation": "Are you sure you want to clear your song history? This action cannot be undone.",
-  "historyEmptyTitle": "No songs played yet",
+  "historyEmptyTitle": "No history yet",
+  "historyEmptySubtitle": "Songs you listen to will appear here",
   "historyToday": "Today",
   "historyYesterday": "Yesterday",
   "playerHistory": "History"

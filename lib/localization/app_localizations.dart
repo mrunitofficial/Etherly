@@ -731,8 +731,14 @@ abstract class AppLocalizations {
   /// No description provided for @historyEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No songs played yet'**
+  /// **'No history yet'**
   String get historyEmptyTitle;
+
+  /// No description provided for @historyEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Songs you listen to will appear here'**
+  String get historyEmptySubtitle;
 
   /// No description provided for @historyToday.
   ///

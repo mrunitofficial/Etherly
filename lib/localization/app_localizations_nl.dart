@@ -330,7 +330,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Weet je zeker dat je je afspeelgeschiedenis wilt wissen? Dit kan niet ongedaan worden gemaakt.';
 
   @override
-  String get historyEmptyTitle => 'Nog geen nummers afgespeeld';
+  String get historyEmptyTitle => 'Nog geen geschiedenis';
+
+  @override
+  String get historyEmptySubtitle => 'Nummers die je afspeelt verschijnen hier';
 
   @override
   String get historyToday => 'Vandaag';
