@@ -14,11 +14,8 @@ permissions:
   contents: write
 
 jobs:
-  build_and_deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: Production
-      url: https://etherly-firebase.web.app
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -63,6 +60,34 @@ jobs:
       - name: Build Web Release
         run: flutter build web --release
 
+      - name: Upload Web Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+
+      - name: Upload Android Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: Production
+      url: https://etherly-firebase.web.app
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Web Build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+
       - name: Deploy to Firebase Hosting Production
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -70,7 +95,20 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ETHERLY_FIREBASE }}
           channelId: live
           projectId: etherly-firebase
-      
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Android Build
+        uses: actions/download-artifact@v4
+        with:
+          name: android-build
+          path: build/app/outputs/flutter-apk
+
       - name: Extract version from pubspec.yaml
         id: get_version
         run: |
@@ -83,3 +121,4 @@ jobs:
         run: |
           mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Etherly.apk
           gh release create ${{ steps.get_version.outputs.tag }} build/app/outputs/flutter-apk/Etherly.apk --notes "Web App: https://etherly-firebase.web.app" --generate-notes
+

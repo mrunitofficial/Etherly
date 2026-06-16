@@ -48,3 +48,6 @@ skills-lock.json
 node_modules/
 **/node_modules/
 
+# Firebase & Google Cloud CLI caches/configs
+.firebase/
+.gcloud/
