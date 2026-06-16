@@ -12,7 +12,8 @@ import 'package:intl/intl.dart';
 import 'package:etherly/models/country.dart';
 import 'package:etherly/models/song.dart';
 import 'package:etherly/localization/app_localizations.dart';
-import 'package:url_launcher/url_launcher.dart';
+
+import 'package:etherly/models/music_app.dart';
 
 /// A screen that displays the history of played songs.
 class HistoryScreen extends StatelessWidget {
@@ -75,42 +76,7 @@ class HistoryScreen extends StatelessWidget {
     }
 
     final songQuery = '$artistName - $songName';
-    final query = Uri.encodeComponent(songQuery);
-    final uris = {
-      'youtube': Uri.parse('vnd.youtube://results?search_query=$query'),
-      'ytmusic': Uri.parse('https://music.youtube.com/search?q=$query'),
-      'spotify': Uri.parse('spotify:search:$query'),
-      'apple_music': Uri.parse('https://music.apple.com/search?term=$query'),
-      'tidal': Uri.parse('tidal://search/$query'),
-      'soundcloud': Uri.parse('soundcloud://search?q=$query'),
-      'amazon': Uri.parse('https://music.amazon.com/search/$query'),
-      'internet_search': Uri.parse('https://www.google.com/search?q=$query'),
-    };
-
-    final uri = uris[selectedApp];
-    if (uri == null) return;
-
-    bool launched = false;
-    try {
-      launched = await launchUrl(
-        uri,
-        mode: selectedApp == 'internet_search'
-            ? LaunchMode.platformDefault
-            : LaunchMode.externalNonBrowserApplication,
-      );
-    } catch (_) {}
-
-    if (!launched && context.mounted) {
-      final fallbackUri = selectedApp == 'youtube'
-          ? Uri.parse('https://www.youtube.com/results?search_query=$query')
-          : (selectedApp == 'internet_search' ? uri : null);
-
-      if (fallbackUri != null) {
-        try {
-          await launchUrl(fallbackUri, mode: LaunchMode.platformDefault);
-        } catch (_) {}
-      }
-    }
+    await MusicApp(id: selectedApp, name: '').launchSearch(songQuery);
   }
 
   @override
