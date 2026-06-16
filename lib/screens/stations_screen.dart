@@ -204,6 +204,7 @@ class _StationsScreenState extends State<StationsScreen>
     Spacing spacing,
     Sizes sizes,
   ) {
+    final theme = Theme.of(context);
     final slivers = <Widget>[];
     final artSize = widget.screenType.isLargeFormat
         ? sizes.large
@@ -217,9 +218,7 @@ class _StationsScreenState extends State<StationsScreen>
             padding: EdgeInsets.all(spacing.medium),
             child: Text(
               category,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
         ),
