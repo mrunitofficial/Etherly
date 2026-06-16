@@ -130,9 +130,22 @@ class AudioPlayerService with ChangeNotifier {
         if (icyState.value.loading) {
           icyState.value = (title: icyState.value.title, loading: false);
         }
+      } else if (state == ProcessingState.idle ||
+          state == ProcessingState.completed) {
+        if (player.playing) {
+          stop();
+        }
       }
       notifyListeners();
     });
+
+    player.playbackEventStream.listen(
+      (event) {},
+      onError: (Object e, StackTrace st) {
+        if (kDebugMode) print('Playback event error: $e');
+        stop();
+      },
+    );
 
     // Sync ICY Metadata from just_audio natively
     player.icyMetadataStream
