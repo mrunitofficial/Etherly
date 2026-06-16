@@ -100,5 +100,12 @@
   "notification_channel_name": "Radio playback",
   "castStopCasting": "Stop casting",
   "castDialogTitle": "Casten",
-  "castNoDevices": "No devices found"
+  "castNoDevices": "No devices found",
+  "historyTitle": "History",
+  "historyClear": "Clear History",
+  "historyClearConfirmation": "Are you sure you want to clear your song history? This action cannot be undone.",
+  "historyEmptyTitle": "No songs played yet",
+  "historyToday": "Today",
+  "historyYesterday": "Yesterday",
+  "playerHistory": "History"
 }

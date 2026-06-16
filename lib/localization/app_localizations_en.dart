@@ -316,4 +316,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get castNoDevices => 'No devices found';
+
+  @override
+  String get historyTitle => 'History';
+
+  @override
+  String get historyClear => 'Clear History';
+
+  @override
+  String get historyClearConfirmation =>
+      'Are you sure you want to clear your song history? This action cannot be undone.';
+
+  @override
+  String get historyEmptyTitle => 'No songs played yet';
+
+  @override
+  String get historyToday => 'Today';
+
+  @override
+  String get historyYesterday => 'Yesterday';
+
+  @override
+  String get playerHistory => 'History';
 }

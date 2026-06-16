@@ -3,6 +3,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:etherly/localization/app_localizations.dart';
 
+import 'package:etherly/models/device.dart';
+import 'package:etherly/screens/history_screen.dart';
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/screens/settings_screen.dart';
 import 'package:etherly/services/theme_data.dart';
@@ -308,6 +310,13 @@ class PlayerMenuButton extends StatelessWidget {
           loc?.playerSettings ?? 'Settings',
           'settings',
         ),
+        if (!kIsWeb)
+          _buildMenuItem(
+            context,
+            Icons.history_rounded,
+            loc?.playerHistory ?? 'History',
+            'history',
+          ),
         if (showQualityInMenu)
           _buildMenuItem(
             context,
@@ -331,6 +340,14 @@ class PlayerMenuButton extends StatelessWidget {
       onSelected: (value) {
         if (value == 'stream_quality') {
           QualitySetting.show(context);
+        } else if (value == 'history') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => HistoryScreen(
+                screenType: ScreenType.fromContext(context),
+              ),
+            ),
+          );
         } else {
           // All other options navigate to settings screen.
           Navigator.of(context).push(

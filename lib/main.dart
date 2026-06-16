@@ -14,6 +14,7 @@ import 'firebase_options.dart';
 import 'localization/app_localizations.dart';
 import 'services/audio_player_service.dart';
 import 'services/chrome_cast_service.dart';
+import 'services/history_service.dart';
 import 'services/theme_data.dart';
 import 'screens/app_screen.dart';
 
@@ -29,6 +30,9 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('Firebase initialization issue: $e');
   }
+
+  // Initialize HistoryService
+  await HistoryService().init();
 
   try {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
@@ -168,42 +172,42 @@ class _MyAppState extends State<MyApp> {
               );
             }
 
-            Widget appContent = MaterialApp(
-              title: 'Etherly',
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: const [Locale('en'), Locale('nl')],
+            if (!_localizationsLoaded ||
+                _audioPlayerService == null ||
+                _chromeCastService == null) {
+              return const SizedBox.shrink();
+            }
 
-              theme: AppTheme.getLight(lightColorScheme),
-              darkTheme: AppTheme.getDark(darkColorScheme),
-              themeMode: themeNotifier.value,
-              scrollBehavior: AppScrollBehavior(),
-              home: Builder(
-                builder: (context) {
-                  if (!_localizationsLoaded ||
-                      _audioPlayerService == null ||
-                      _chromeCastService == null) {
-                    return const SizedBox.shrink();
-                  }
-                  return MultiProvider(
-                    providers: [
-                      ChangeNotifierProvider<AudioPlayerService>(
-                        create: (_) => _audioPlayerService!,
-                      ),
-                      ChangeNotifierProvider<ChromeCastService>(
-                        create: (_) => _chromeCastService!,
-                      ),
-                    ],
-                    child: AppScreen(
-                      startingTab: widget.startingTab,
-                      onHomeContentLoaded: _triggerFadeIn,
-                    ),
-                  );
-                },
+            Widget appContent = MultiProvider(
+              providers: [
+                ChangeNotifierProvider<AudioPlayerService>(
+                  create: (_) => _audioPlayerService!,
+                ),
+                ChangeNotifierProvider<ChromeCastService>(
+                  create: (_) => _chromeCastService!,
+                ),
+                ChangeNotifierProvider<HistoryService>.value(
+                  value: HistoryService(),
+                ),
+              ],
+              child: MaterialApp(
+                title: 'Etherly',
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: const [Locale('en'), Locale('nl')],
+
+                theme: AppTheme.getLight(lightColorScheme),
+                darkTheme: AppTheme.getDark(darkColorScheme),
+                themeMode: themeNotifier.value,
+                scrollBehavior: AppScrollBehavior(),
+                home: AppScreen(
+                  startingTab: widget.startingTab,
+                  onHomeContentLoaded: _triggerFadeIn,
+                ),
               ),
             );
 

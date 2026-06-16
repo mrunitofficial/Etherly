@@ -8,6 +8,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:etherly/models/station.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
+import 'package:etherly/services/history_service.dart';
 import 'package:etherly/services/my_audio_handler.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -155,6 +156,24 @@ class AudioPlayerService with ChangeNotifier {
           if (title != null && title.isNotEmpty) {
             icyState.value = (title: title, loading: false);
             _audioHandler.patchMediaItemMetadata(artist: title);
+
+            // Record song history
+            final currentItem = _currentMediaItem;
+            if (currentItem != null) {
+              final parts = title.split(' - ');
+              final artistName = parts.length > 1 ? parts[0].trim() : '';
+              final songName = parts.length > 1 ? parts.sublist(1).join(' - ').trim() : title;
+
+              HistoryService().addSong(
+                title: songName,
+                artist: artistName,
+                stationId: currentItem.id,
+                stationName: currentItem.title,
+                stationArtUrl: currentItem.safeArt128Url.isNotEmpty
+                    ? currentItem.safeArt128Url
+                    : currentItem.safeArtUrl,
+              );
+            }
           }
         });
 
