@@ -1,13 +1,18 @@
 import 'package:etherly/models/device.dart';
 import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/services/history_service.dart';
+import 'package:etherly/services/music_app_service.dart';
+import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/clear_history.dart';
+import 'package:etherly/widgets/music_app_picker.dart';
 import 'package:etherly/widgets/song_card_item.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:etherly/models/country.dart';
 import 'package:etherly/models/song.dart';
 import 'package:etherly/localization/app_localizations.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// A screen that displays the history of played songs.
 class HistoryScreen extends StatelessWidget {
@@ -38,11 +43,82 @@ class HistoryScreen extends StatelessWidget {
     return grouped;
   }
 
+  Future<void> _searchSong(
+    BuildContext context,
+    AudioPlayerService service,
+    String artistName,
+    String songName,
+  ) async {
+    final prefs = service.prefs;
+    String? selectedApp = prefs.getString('favoriteMusicApp');
+    final wasAlwaysAsk = selectedApp == 'always_ask' || selectedApp == null;
+
+    if (!wasAlwaysAsk && selectedApp != 'internet_search') {
+      final availableApps = await MusicAppService().getAvailableApps();
+      if (!availableApps.any((app) => app['id'] == selectedApp)) {
+        await prefs.setString('favoriteMusicApp', 'always_ask');
+        selectedApp = null;
+      }
+    }
+
+    if (selectedApp == null || wasAlwaysAsk) {
+      if (!context.mounted) return;
+      selectedApp = await showDialog<String>(
+        context: context,
+        builder: (context) => const MusicAppPicker(),
+      );
+
+      if (selectedApp == null) return;
+      if (!wasAlwaysAsk) {
+        await prefs.setString('favoriteMusicApp', selectedApp);
+      }
+    }
+
+    final songQuery = '$artistName - $songName';
+    final query = Uri.encodeComponent(songQuery);
+    final uris = {
+      'youtube': Uri.parse('vnd.youtube://results?search_query=$query'),
+      'ytmusic': Uri.parse('https://music.youtube.com/search?q=$query'),
+      'spotify': Uri.parse('spotify:search:$query'),
+      'apple_music': Uri.parse('https://music.apple.com/search?term=$query'),
+      'tidal': Uri.parse('tidal://search/$query'),
+      'soundcloud': Uri.parse('soundcloud://search?q=$query'),
+      'amazon': Uri.parse('https://music.amazon.com/search/$query'),
+      'internet_search': Uri.parse('https://www.google.com/search?q=$query'),
+    };
+
+    final uri = uris[selectedApp];
+    if (uri == null) return;
+
+    bool launched = false;
+    try {
+      launched = await launchUrl(
+        uri,
+        mode: selectedApp == 'internet_search'
+            ? LaunchMode.platformDefault
+            : LaunchMode.externalNonBrowserApplication,
+      );
+    } catch (_) {}
+
+    if (!launched && context.mounted) {
+      final fallbackUri = selectedApp == 'youtube'
+          ? Uri.parse('https://www.youtube.com/results?search_query=$query')
+          : (selectedApp == 'internet_search' ? uri : null);
+
+      if (fallbackUri != null) {
+        try {
+          await launchUrl(fallbackUri, mode: LaunchMode.platformDefault);
+        } catch (_) {}
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final spacing = theme.extension<Spacing>()!;
     final loc = AppLocalizations.of(context);
+    final audioService = context.read<AudioPlayerService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -104,13 +180,11 @@ class HistoryScreen extends StatelessWidget {
                 ),
                 itemCount: history.length + headers.length,
                 itemBuilder: (context, index) {
-                  // Calculate flat index mapping for headers and song items
                   int currentFlatIndex = 0;
                   for (final header in headers) {
                     final songsForHeader = groupedSongs[header]!;
                     
                     if (currentFlatIndex == index) {
-                      // Render Category/Date Header in same style as stations categories
                       return Padding(
                         padding: EdgeInsets.only(
                           top: spacing.medium,
@@ -124,24 +198,29 @@ class HistoryScreen extends StatelessWidget {
                         ),
                       );
                     }
-                    currentFlatIndex++; // increment for header index
+                    currentFlatIndex++;
 
                     if (index < currentFlatIndex + songsForHeader.length) {
                       final songIndex = index - currentFlatIndex;
                       final item = songsForHeader[songIndex];
+                      final timeFormatter = Country.use24HourFormat ? DateFormat('HH:mm') : DateFormat('jm');
+                      final timeStr = timeFormatter.format(item.timestamp);
+
                       return Padding(
                         padding: EdgeInsets.only(bottom: spacing.small),
                         child: SongCardItem(
                           songName: item.title,
                           artistName: item.artist.isNotEmpty ? item.artist : 'Unknown Artist',
                           artUrl: item.stationArtUrl,
+                          timeLabel: timeStr,
                           screenType: screenType,
-                          onTap: () {},
-                          onShare: () {},
+                          onTap: () {
+                            _searchSong(context, audioService, item.artist, item.title);
+                          },
                         ),
                       );
                     }
-                    currentFlatIndex += songsForHeader.length; // increment for items
+                    currentFlatIndex += songsForHeader.length;
                   }
                   return const SizedBox.shrink();
                 },

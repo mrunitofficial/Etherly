@@ -2,27 +2,25 @@ import 'package:etherly/models/device.dart';
 import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/widgets/station_art.dart';
 import 'package:etherly/widgets/marquee_text.dart';
-import 'package:etherly/widgets/music_app_picker.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-/// A card item widget representing a song with artwork and a share/search button.
+/// A card item widget representing a song with artwork and a timestamp label.
 class SongCardItem extends StatelessWidget {
   const SongCardItem({
     super.key,
     required this.songName,
     required this.artistName,
     required this.artUrl,
+    required this.timeLabel,
     required this.onTap,
-    required this.onShare,
     required this.screenType,
   });
 
   final String songName;
   final String artistName;
   final String artUrl;
+  final String timeLabel;
   final VoidCallback onTap;
-  final VoidCallback onShare;
   final ScreenType screenType;
 
   @override
@@ -77,58 +75,13 @@ class SongCardItem extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  IconButton(
-                    icon: Icon(
-                      Icons.share,
-                      color: theme.colorScheme.onSurface,
+                  Text(
+                    timeLabel,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
-                    onPressed: () async {
-                      final selectedApp = await showDialog<String>(
-                        context: context,
-                        builder: (context) => const MusicAppPicker(),
-                      );
-                      if (selectedApp != null) {
-                        onShare();
-                        final songQuery = '$artistName - $songName';
-                        final query = Uri.encodeComponent(songQuery);
-                        final uris = {
-                          'youtube': Uri.parse('vnd.youtube://results?search_query=$query'),
-                          'ytmusic': Uri.parse('https://music.youtube.com/search?q=$query'),
-                          'spotify': Uri.parse('spotify:search:$query'),
-                          'apple_music': Uri.parse('https://music.apple.com/search?term=$query'),
-                          'tidal': Uri.parse('tidal://search/$query'),
-                          'soundcloud': Uri.parse('soundcloud://search?q=$query'),
-                          'amazon': Uri.parse('https://music.amazon.com/search/$query'),
-                          'internet_search': Uri.parse('https://www.google.com/search?q=$query'),
-                        };
-
-                        final uri = uris[selectedApp];
-                        if (uri == null) return;
-
-                        bool launched = false;
-                        try {
-                          launched = await launchUrl(
-                            uri,
-                            mode: selectedApp == 'internet_search'
-                                ? LaunchMode.platformDefault
-                                : LaunchMode.externalNonBrowserApplication,
-                          );
-                        } catch (_) {}
-
-                        if (!launched && context.mounted) {
-                          final fallbackUri = selectedApp == 'youtube'
-                              ? Uri.parse('https://www.youtube.com/results?search_query=$query')
-                              : (selectedApp == 'internet_search' ? uri : null);
-
-                          if (fallbackUri != null) {
-                            try {
-                              await launchUrl(fallbackUri, mode: LaunchMode.platformDefault);
-                            } catch (_) {}
-                          }
-                        }
-                      }
-                    },
                   ),
+                  SizedBox(width: spacing.small),
                 ],
               ),
             ),

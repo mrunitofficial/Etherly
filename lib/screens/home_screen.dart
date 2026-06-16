@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' as ui;
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:etherly/models/country.dart';
 import 'package:etherly/models/station.dart';
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/screen_header.dart';
@@ -158,36 +158,7 @@ class _HomeScreenState extends State<HomeScreen>
     });
 
     try {
-      String? countryCode;
-
-      // 1. Try system preferred locale country code from OS
-      try {
-        countryCode = ui.PlatformDispatcher.instance.locale.countryCode;
-      } catch (_) {}
-
-      // 2. Try Flutter context-based country code
-      if (countryCode == null || countryCode.isEmpty) {
-        final locale = Localizations.maybeLocaleOf(context);
-        countryCode = locale?.countryCode;
-      }
-
-      // 3. Try IP geolocation API (fast fallback with 3-second timeout)
-      if (countryCode == null || countryCode.isEmpty) {
-        try {
-          final geoResponse = await http
-              .get(Uri.parse('https://ipapi.co/json/'))
-              .timeout(const Duration(seconds: 3));
-          if (geoResponse.statusCode == 200) {
-            final geoData = jsonDecode(geoResponse.body);
-            countryCode = geoData['country_code'] as String?;
-          }
-        } catch (_) {}
-      }
-
-      // 4. Default fallback
-      countryCode = (countryCode == null || countryCode.isEmpty)
-          ? 'NL'
-          : countryCode.toUpperCase();
+      final countryCode = await Country.resolveCountryCode(context);
 
       final response = await http
           .get(
