@@ -52,12 +52,14 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   bool get wantKeepAlive => true;
 
+  late AudioPlayerService _audioPlayerService;
+
   @override
   void initState() {
     super.initState();
-    _initializationFuture = context
-        .read<AudioPlayerService>()
-        .initializationFuture;
+    _audioPlayerService = context.read<AudioPlayerService>();
+    _initializationFuture = _audioPlayerService.initializationFuture;
+    _audioPlayerService.addListener(_onAudioPlayerServiceChanged);
 
     _loadingTimer = Timer(Speed().short1, () {
       if (mounted) {
@@ -66,6 +68,21 @@ class _HomeScreenState extends State<HomeScreen>
     });
 
     _initScreen();
+  }
+
+  void _onAudioPlayerServiceChanged() {
+    if (!mounted) return;
+    
+    final serviceFavorites = _audioPlayerService.favoriteStations;
+    final favoritesChanged = serviceFavorites.length != _favoriteStations.length ||
+        !listEquals(
+          serviceFavorites.map((s) => s.id).toList(),
+          _favoriteStations.map((s) => s.id).toList(),
+        );
+
+    if (favoritesChanged) {
+      _updateData();
+    }
   }
 
   Future<void> _initScreen() async {
@@ -223,6 +240,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
+    _audioPlayerService.removeListener(_onAudioPlayerServiceChanged);
     _loadingTimer?.cancel();
     super.dispose();
   }
