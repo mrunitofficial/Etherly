@@ -162,7 +162,9 @@ class AudioPlayerService with ChangeNotifier {
             if (currentItem != null) {
               final parts = title.split(' - ');
               final artistName = parts.length > 1 ? parts[0].trim() : '';
-              final songName = parts.length > 1 ? parts.sublist(1).join(' - ').trim() : title;
+              final songName = parts.length > 1
+                  ? parts.sublist(1).join(' - ').trim()
+                  : title;
 
               HistoryService().addSong(
                 title: songName,
@@ -399,9 +401,19 @@ class AudioPlayerService with ChangeNotifier {
   Future<void> precacheAllStationArt(BuildContext context) async {
     final futures = <Future<void>>[];
     for (final station in stations) {
-      final artUrl = station.art128.isNotEmpty ? station.art128 : station.art;
-      if (artUrl.isNotEmpty) {
-        final provider = CachedNetworkImageProvider(artUrl);
+      final art128Url = station.art128.isNotEmpty
+          ? station.art128
+          : station.art;
+      if (art128Url.isNotEmpty) {
+        final provider = CachedNetworkImageProvider(art128Url);
+        futures.add(precacheImage(provider, context).catchError((_) {}));
+      }
+
+      final art512Url = station.art512.isNotEmpty
+          ? station.art512
+          : station.art;
+      if (art512Url.isNotEmpty && art512Url != art128Url) {
+        final provider = CachedNetworkImageProvider(art512Url);
         futures.add(precacheImage(provider, context).catchError((_) {}));
       }
     }
@@ -539,6 +551,13 @@ class AudioPlayerService with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       if (kDebugMode) print('Error loading stations from cache: $e');
+    } finally {
+      try {
+        await FirebaseFirestore.instance.disableNetwork();
+        if (kDebugMode) print('Firestore network connection disabled successfully');
+      } catch (e) {
+        if (kDebugMode) print('Error disabling Firestore network: $e');
+      }
     }
   }
 

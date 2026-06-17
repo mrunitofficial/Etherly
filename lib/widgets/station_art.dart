@@ -32,13 +32,10 @@ class StationArt extends StatelessWidget {
             fadeOutDuration: Duration.zero,
             placeholder: (context, url) =>
                 placeholderUrl != null && placeholderUrl!.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: placeholderUrl!,
+                ? Image(
+                    image: CachedNetworkImageProvider(placeholderUrl!),
                     fit: BoxFit.cover,
-                    fadeInDuration: Duration.zero,
-                    fadeOutDuration: Duration.zero,
-                    placeholder: (context, url) => fallback,
-                    errorWidget: (context, url, error) => fallback,
+                    errorBuilder: (context, error, stackTrace) => fallback,
                   )
                 : fallback,
             errorWidget: (context, url, error) => fallback,
