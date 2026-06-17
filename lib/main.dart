@@ -9,6 +9,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:flutter/services.dart';
 import 'firebase_options.dart';
 import 'localization/app_localizations.dart';
 import 'services/audio_player_service.dart';
@@ -16,10 +17,22 @@ import 'services/chrome_cast_service.dart';
 import 'services/history_service.dart';
 import 'services/theme_data.dart';
 import 'screens/app_screen.dart';
+import 'models/device.dart';
 
 /// Entry point of the application.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Check if device is Android TV
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    try {
+      const channel = MethodChannel('com.mrunit.etherly/device_info');
+      ScreenType.isTv = await channel.invokeMethod<bool>('isTv') ?? false;
+    } catch (e) {
+      debugPrint('Failed to check isTv: $e');
+    }
+  }
+
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -203,6 +216,27 @@ class _MyAppState extends State<MyApp> {
                     darkTheme: AppTheme.getDark(darkColorScheme),
                     themeMode: themeNotifier.value,
                     scrollBehavior: AppScrollBehavior(),
+                    builder: (context, child) {
+                      if (ScreenType.isTv) {
+                        const targetScale = 0.7;
+                        final mediaQuery = MediaQuery.of(context);
+                        final newSize = mediaQuery.size / targetScale;
+                        return MediaQuery(
+                          data: mediaQuery.copyWith(
+                            size: newSize,
+                          ),
+                          child: FractionallySizedBox(
+                            widthFactor: 1 / targetScale,
+                            heightFactor: 1 / targetScale,
+                            child: Transform.scale(
+                              scale: targetScale,
+                              child: child,
+                            ),
+                          ),
+                        );
+                      }
+                      return child!;
+                    },
                     home: AppScreen(
                       startingTab: widget.startingTab,
                       onHomeContentLoaded: _triggerFadeIn,
