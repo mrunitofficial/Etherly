@@ -98,6 +98,12 @@ abstract class AppLocalizations {
     Locale('nl'),
   ];
 
+  /// No description provided for @languageName.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageName;
+
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:

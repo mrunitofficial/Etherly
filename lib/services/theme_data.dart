@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 /// and trigger a rebuild of the main application widget.
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
 final ValueNotifier<bool> dynamicColorNotifier = ValueNotifier(false);
+final ValueNotifier<String> languageNotifier = ValueNotifier('system');
 const brandColor = Colors.blue;
 
 /// Theme Data for Etherly

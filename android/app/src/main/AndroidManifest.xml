@@ -12,7 +12,8 @@
     android:label="Etherly"
     android:name="${applicationName}"
     android:icon="@mipmap/ic_launcher"
-    android:usesCleartextTraffic="true">
+    android:usesCleartextTraffic="true"
+    android:localeConfig="@xml/locales_config">
     <!-- Google Cast framework configuration -->
     <meta-data
       android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"

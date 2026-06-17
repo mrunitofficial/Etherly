@@ -41,6 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _forceDefaultColor = false;
   String _selectedQuality = 'mp3';
   String _selectedMusicApp = 'always_ask';
+  String _selectedLanguage = 'system';
   List<String> _availableAppIds = [];
   final MusicAppService _musicAppService = MusicAppService();
 
@@ -80,6 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _selectedQuality = _prefs!.getString('streamQuality') ?? 'mp3';
         _selectedMusicApp =
             _prefs!.getString('favoriteMusicApp') ?? 'always_ask';
+        _selectedLanguage = _prefs!.getString('language') ?? 'system';
       });
       dynamicColorNotifier.value = !_forceDefaultColor;
     }
@@ -119,6 +121,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: <Widget>[
                   _buildQualityDropdownSetting(loc, spacing, sizes),
                   _buildThemeDropdownSetting(loc, spacing, sizes),
+                  if (kIsWeb)
+                    _buildLanguageDropdownSetting(loc, spacing, sizes),
                   if (!kIsWeb) _buildForceDefaultColorSwitch(loc, spacing),
                   _buildStartingTabDropdownSetting(loc, spacing, sizes),
                   if (!kIsWeb) _buildAutoPlaySwitch(loc, spacing),
@@ -365,6 +369,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       },
       dropdownMenuEntries: musicAppOptions.map((opt) {
+        return DropdownMenuEntry<String>(
+          value: opt['key']!,
+          label: opt['label']!,
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildLanguageDropdownSetting(
+    AppLocalizations loc,
+    Spacing spacing,
+    Sizes sizes,
+  ) {
+    final languageOptions = [
+      {'key': 'system', 'label': loc.system},
+      ...AppLocalizations.supportedLocales.map((locale) {
+        final code = locale.languageCode;
+        final label = lookupAppLocalizations(locale).languageName;
+        return {'key': code, 'label': label};
+      }),
+    ];
+    return _buildDropdownSetting<String>(
+      title: loc.language,
+      initialSelection: _selectedLanguage,
+      spacing: spacing,
+      sizes: sizes,
+      onSelected: (String? newValue) {
+        if (newValue != null) {
+          setState(() {
+            _selectedLanguage = newValue;
+          });
+          languageNotifier.value = newValue;
+          _saveSetting('language', newValue);
+        }
+      },
+      dropdownMenuEntries: languageOptions.map((opt) {
         return DropdownMenuEntry<String>(
           value: opt['key']!,
           label: opt['label']!,

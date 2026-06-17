@@ -61,6 +61,8 @@ Future<void> main() async {
   final forceDefaultColor = prefs.getBool('forceDefaultColor') ?? false;
   dynamicColorNotifier.value = !forceDefaultColor;
   final startingTab = prefs.getInt('startingTab') ?? 0;
+  final language = prefs.getString('language') ?? 'system';
+  languageNotifier.value = language;
 
   // Run the app.
   runApp(MyApp(startingTab: startingTab));
@@ -167,37 +169,47 @@ class _MyAppState extends State<MyApp> {
               return const SizedBox.shrink();
             }
 
-            Widget appContent = MultiProvider(
-              providers: [
-                ChangeNotifierProvider<AudioPlayerService>(
-                  create: (_) => _audioPlayerService!,
-                ),
-                ChangeNotifierProvider<ChromeCastService>(
-                  create: (_) => _chromeCastService!,
-                ),
-                ChangeNotifierProvider<HistoryService>.value(
-                  value: HistoryService(),
-                ),
-              ],
-              child: MaterialApp(
-                title: 'Etherly',
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                ],
-                supportedLocales: const [Locale('en'), Locale('nl')],
+            Widget appContent = ValueListenableBuilder<String>(
+              valueListenable: languageNotifier,
+              builder: (context, currentLanguage, _) {
+                Locale? appLocale;
+                if (kIsWeb && currentLanguage != 'system') {
+                  appLocale = Locale(currentLanguage);
+                }
 
-                theme: AppTheme.getLight(lightColorScheme),
-                darkTheme: AppTheme.getDark(darkColorScheme),
-                themeMode: themeNotifier.value,
-                scrollBehavior: AppScrollBehavior(),
-                home: AppScreen(
-                  startingTab: widget.startingTab,
-                  onHomeContentLoaded: _triggerFadeIn,
-                ),
-              ),
+                return MultiProvider(
+                  providers: [
+                    ChangeNotifierProvider<AudioPlayerService>(
+                      create: (_) => _audioPlayerService!,
+                    ),
+                    ChangeNotifierProvider<ChromeCastService>(
+                      create: (_) => _chromeCastService!,
+                    ),
+                    ChangeNotifierProvider<HistoryService>.value(
+                      value: HistoryService(),
+                    ),
+                  ],
+                  child: MaterialApp(
+                    title: 'Etherly',
+                    locale: appLocale,
+                    localizationsDelegates: const [
+                      AppLocalizations.delegate,
+                      GlobalMaterialLocalizations.delegate,
+                      GlobalWidgetsLocalizations.delegate,
+                      GlobalCupertinoLocalizations.delegate,
+                    ],
+                    supportedLocales: const [Locale('en'), Locale('nl')],
+                    theme: AppTheme.getLight(lightColorScheme),
+                    darkTheme: AppTheme.getDark(darkColorScheme),
+                    themeMode: themeNotifier.value,
+                    scrollBehavior: AppScrollBehavior(),
+                    home: AppScreen(
+                      startingTab: widget.startingTab,
+                      onHomeContentLoaded: _triggerFadeIn,
+                    ),
+                  ),
+                );
+              },
             );
 
             return AnimatedOpacity(
