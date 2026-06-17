@@ -26,7 +26,6 @@ dependencies:
   flutter_svg: ^2.0.10
   cloud_firestore: ^6.3.0
   firebase_core: ^4.7.0
-  firebase_app_check: ^0.4.3
   reorderable_grid: ^1.0.13
   material_ui: ^0.0.1
   

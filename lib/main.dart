@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 
 import 'firebase_options.dart';
 import 'localization/app_localizations.dart';
@@ -35,16 +34,6 @@ Future<void> main() async {
   await HistoryService().init();
 
   try {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      // Initialize App Check (Firebase).
-      // Uses Play Integrity in production and Debug Provider in development.
-      await FirebaseAppCheck.instance.activate(
-        providerAndroid: kDebugMode
-            ? AndroidDebugProvider()
-            : AndroidPlayIntegrityProvider(),
-      );
-    }
-
     // Enable Firestore persistence for web (Firebase).
     if (kIsWeb) {
       FirebaseFirestore.instance.settings = const Settings(
