@@ -117,7 +117,9 @@ class _StationSearchBarState extends State<StationSearchBar> {
             controller.openView();
           },
           leading: Padding(
-            padding: EdgeInsets.symmetric(horizontal: spacing.small + spacing.extraSmall),
+            padding: EdgeInsets.symmetric(
+              horizontal: spacing.small + spacing.extraSmall,
+            ),
             child: Icon(
               Icons.search,
               color: theme.colorScheme.onSurfaceVariant,

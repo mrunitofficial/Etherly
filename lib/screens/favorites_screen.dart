@@ -222,11 +222,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         itemCount: stations.length,
         onReorderStart: (index) => HapticFeedback.heavyImpact(),
         onReorder: (oldIndex, newIndex) {
-          int adjustedNewIndex = newIndex;
-          if (oldIndex < newIndex) {
-            adjustedNewIndex -= 1;
-          }
-          service.reorderFavorites(oldIndex, adjustedNewIndex);
+          service.reorderFavorites(oldIndex, newIndex);
           setState(() {});
         },
         itemBuilder: (context, index) {
@@ -285,11 +281,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         itemCount: stations.length,
         onReorderStart: (index) => HapticFeedback.heavyImpact(),
         onReorder: (oldIndex, newIndex) {
-          int adjustedNewIndex = newIndex;
-          if (oldIndex < newIndex) {
-            adjustedNewIndex -= 1;
-          }
-          service.reorderFavorites(oldIndex, adjustedNewIndex);
+          service.reorderFavorites(oldIndex, newIndex);
           setState(() {});
         },
         itemBuilder: (context, index) {
