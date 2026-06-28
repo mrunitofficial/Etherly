@@ -93,11 +93,15 @@ class _CastDevicesState extends State<CastDevices> {
         },
       ),
       actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(loc?.close ?? 'Close'),
+        ),
         Consumer<ChromeCastService>(
           builder: (context, cast, _) {
             final connected = cast.connectedDevice;
             if (connected == null) return const SizedBox.shrink();
-            return TextButton(
+            return FilledButton(
               onPressed: () async {
                 if (context.mounted) Navigator.of(context).pop();
                 await cast.endCasting();
@@ -105,10 +109,6 @@ class _CastDevicesState extends State<CastDevices> {
               child: Text(loc?.castStopCasting ?? 'Stop casting'),
             );
           },
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(loc?.close ?? 'Close'),
         ),
       ],
     );

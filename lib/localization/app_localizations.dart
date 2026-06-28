@@ -98,6 +98,12 @@ abstract class AppLocalizations {
     Locale('nl'),
   ];
 
+  /// No description provided for @languageName.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageName;
+
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
@@ -709,6 +715,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No devices found'**
   String get castNoDevices;
+
+  /// No description provided for @historyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get historyTitle;
+
+  /// No description provided for @historyClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear History'**
+  String get historyClear;
+
+  /// No description provided for @historyClearConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to clear your song history? This action cannot be undone.'**
+  String get historyClearConfirmation;
+
+  /// No description provided for @historyEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No history yet'**
+  String get historyEmptyTitle;
+
+  /// No description provided for @historyEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Songs you listen to will appear here'**
+  String get historyEmptySubtitle;
+
+  /// No description provided for @historyToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get historyToday;
+
+  /// No description provided for @historyYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get historyYesterday;
+
+  /// No description provided for @playerHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get playerHistory;
 }
 
 class _AppLocalizationsDelegate

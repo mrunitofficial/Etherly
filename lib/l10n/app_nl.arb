@@ -1,4 +1,5 @@
 {
+  "languageName": "Nederlands",
   "appTitle": "Etherly",
   "appDescription": "Een Nederlandse radio-app",
   "theme": "Thema",
@@ -100,5 +101,13 @@
   "notification_channel_name": "Radio afspelen",
   "castStopCasting": "Casten stoppen",
   "castDialogTitle": "Casten",
-  "castNoDevices": "Geen apparaten gevonden"
+  "castNoDevices": "Geen apparaten gevonden",
+  "historyTitle": "Geschiedenis",
+  "historyClear": "Geschiedenis wissen",
+  "historyClearConfirmation": "Weet je zeker dat je je afspeelgeschiedenis wilt wissen? Dit kan niet ongedaan worden gemaakt.",
+  "historyEmptyTitle": "Nog geen geschiedenis",
+  "historyEmptySubtitle": "Nummers die je afspeelt verschijnen hier",
+  "historyToday": "Vandaag",
+  "historyYesterday": "Gisteren",
+  "playerHistory": "Geschiedenis"
 }

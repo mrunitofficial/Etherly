@@ -114,6 +114,7 @@ class _MarqueeTextState extends State<MarqueeText> {
   /// Builds the widget tree for the marquee text.
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final effectiveStyle = widget.style ?? DefaultTextStyle.of(context).style;
     final height =
         widget.height ??
@@ -151,7 +152,7 @@ class _MarqueeTextState extends State<MarqueeText> {
           width: textWidth > containerWidth ? double.infinity : null,
           child: AnimatedOpacity(
             opacity: _opacity,
-            duration: Theme.of(context).extension<Speed>()!.long1,
+            duration: theme.extension<Speed>()!.long1,
             curve: Curves.linear,
             child: SingleChildScrollView(
               controller: _scrollController,

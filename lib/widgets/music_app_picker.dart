@@ -33,7 +33,8 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final spacing = Theme.of(context).extension<Spacing>()!;
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
 
     return AlertDialog(
       scrollable: true,
@@ -64,7 +65,7 @@ class _MusicAppPickerState extends State<MusicAppPicker> {
             Center(
               child: Text(
                 loc?.sleepTimerOr ?? 'or',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: theme.textTheme.titleLarge,
               ),
             ),
             SizedBox(height: spacing.medium),

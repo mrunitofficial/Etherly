@@ -8,6 +8,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:etherly/models/station.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
+import 'package:etherly/services/history_service.dart';
 import 'package:etherly/services/my_audio_handler.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -130,9 +131,22 @@ class AudioPlayerService with ChangeNotifier {
         if (icyState.value.loading) {
           icyState.value = (title: icyState.value.title, loading: false);
         }
+      } else if (state == ProcessingState.idle ||
+          state == ProcessingState.completed) {
+        if (player.playing) {
+          stop();
+        }
       }
       notifyListeners();
     });
+
+    player.playbackEventStream.listen(
+      (event) {},
+      onError: (Object e, StackTrace st) {
+        if (kDebugMode) print('Playback event error: $e');
+        stop();
+      },
+    );
 
     // Sync ICY Metadata from just_audio natively
     player.icyMetadataStream
@@ -142,6 +156,26 @@ class AudioPlayerService with ChangeNotifier {
           if (title != null && title.isNotEmpty) {
             icyState.value = (title: title, loading: false);
             _audioHandler.patchMediaItemMetadata(artist: title);
+
+            // Record song history
+            final currentItem = _currentMediaItem;
+            if (currentItem != null) {
+              final parts = title.split(' - ');
+              final artistName = parts.length > 1 ? parts[0].trim() : '';
+              final songName = parts.length > 1
+                  ? parts.sublist(1).join(' - ').trim()
+                  : title;
+
+              HistoryService().addSong(
+                title: songName,
+                artist: artistName,
+                stationId: currentItem.id,
+                stationName: currentItem.title,
+                stationArtUrl: currentItem.safeArt128Url.isNotEmpty
+                    ? currentItem.safeArt128Url
+                    : currentItem.safeArtUrl,
+              );
+            }
           }
         });
 
@@ -367,9 +401,19 @@ class AudioPlayerService with ChangeNotifier {
   Future<void> precacheAllStationArt(BuildContext context) async {
     final futures = <Future<void>>[];
     for (final station in stations) {
-      final artUrl = station.art128.isNotEmpty ? station.art128 : station.art;
-      if (artUrl.isNotEmpty) {
-        final provider = CachedNetworkImageProvider(artUrl);
+      final art128Url = station.art128.isNotEmpty
+          ? station.art128
+          : station.art;
+      if (art128Url.isNotEmpty) {
+        final provider = CachedNetworkImageProvider(art128Url);
+        futures.add(precacheImage(provider, context).catchError((_) {}));
+      }
+
+      final art512Url = station.art512.isNotEmpty
+          ? station.art512
+          : station.art;
+      if (art512Url.isNotEmpty && art512Url != art128Url) {
+        final provider = CachedNetworkImageProvider(art512Url);
         futures.add(precacheImage(provider, context).catchError((_) {}));
       }
     }
@@ -507,6 +551,13 @@ class AudioPlayerService with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       if (kDebugMode) print('Error loading stations from cache: $e');
+    } finally {
+      try {
+        await FirebaseFirestore.instance.disableNetwork();
+        if (kDebugMode) print('Firestore network connection disabled successfully');
+      } catch (e) {
+        if (kDebugMode) print('Error disabling Firestore network: $e');
+      }
     }
   }
 

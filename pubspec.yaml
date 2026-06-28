@@ -1,7 +1,7 @@
 name: etherly
 description: "Etherly is a free, modern, ad-free, multiplatform Netherlands-based radio streaming app created in Flutter."
 publish_to: "none"
-version: 0.3.4+1
+version: 0.3.5+1
 
 environment:
   sdk: ^3.12.0
@@ -26,7 +26,6 @@ dependencies:
   flutter_svg: ^2.0.10
   cloud_firestore: ^6.3.0
   firebase_core: ^4.7.0
-  firebase_app_check: ^0.4.3
   reorderable_grid: ^1.0.13
   material_ui: ^0.0.1
   

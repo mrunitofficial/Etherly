@@ -176,7 +176,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             ),
           )
         else if (_viewType == ViewType.list)
-          _buildListSlivers(favoriteStations, audioPlayerService, spacing)
+          _buildListSlivers(favoriteStations, audioPlayerService, spacing, sizes)
         else
           _buildSliverGrid(
             favoriteStations,
@@ -198,7 +198,13 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     List<Station> stations,
     AudioPlayerService service,
     Spacing spacing,
+    Sizes sizes,
   ) {
+    final artSize = widget.screenType.isLargeFormat
+        ? sizes.large
+        : sizes.normal;
+    final cardHeight = artSize + spacing.medium;
+
     return SliverPadding(
       padding: EdgeInsets.fromLTRB(
         spacing.medium,
@@ -206,10 +212,16 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         spacing.medium,
         0,
       ),
-      sliver: SliverReorderableList(
+      sliver: SliverReorderableGrid(
+        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 600.0,
+          mainAxisExtent: cardHeight,
+          crossAxisSpacing: spacing.small,
+          mainAxisSpacing: spacing.small,
+        ),
         itemCount: stations.length,
         onReorderStart: (index) => HapticFeedback.heavyImpact(),
-        onReorderItem: (oldIndex, newIndex) {
+        onReorder: (oldIndex, newIndex) {
           service.reorderFavorites(oldIndex, newIndex);
           setState(() {});
         },
@@ -229,15 +241,18 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             screenType: widget.screenType,
           );
 
-          return Padding(
+          if (useQuickDrag) {
+            return ReorderableGridDragStartListener(
+              key: ValueKey(station.id),
+              index: index,
+              child: item,
+            );
+          }
+
+          return ReorderableGridDelayedDragStartListener(
             key: ValueKey(station.id),
-            padding: EdgeInsets.only(bottom: spacing.small),
-            child: useQuickDrag
-                ? ReorderableDragStartListener(index: index, child: item)
-                : ReorderableDelayedDragStartListener(
-                    index: index,
-                    child: item,
-                  ),
+            index: index,
+            child: item,
           );
         },
       ),

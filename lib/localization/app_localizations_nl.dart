@@ -9,6 +9,9 @@ class AppLocalizationsNl extends AppLocalizations {
   AppLocalizationsNl([String locale = 'nl']) : super(locale);
 
   @override
+  String get languageName => 'Nederlands';
+
+  @override
   String get appTitle => 'Etherly';
 
   @override
@@ -318,4 +321,29 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get castNoDevices => 'Geen apparaten gevonden';
+
+  @override
+  String get historyTitle => 'Geschiedenis';
+
+  @override
+  String get historyClear => 'Geschiedenis wissen';
+
+  @override
+  String get historyClearConfirmation =>
+      'Weet je zeker dat je je afspeelgeschiedenis wilt wissen? Dit kan niet ongedaan worden gemaakt.';
+
+  @override
+  String get historyEmptyTitle => 'Nog geen geschiedenis';
+
+  @override
+  String get historyEmptySubtitle => 'Nummers die je afspeelt verschijnen hier';
+
+  @override
+  String get historyToday => 'Vandaag';
+
+  @override
+  String get historyYesterday => 'Gisteren';
+
+  @override
+  String get playerHistory => 'Geschiedenis';
 }

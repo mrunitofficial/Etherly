@@ -8,18 +8,31 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 
+import 'package:flutter/services.dart';
 import 'firebase_options.dart';
 import 'localization/app_localizations.dart';
 import 'services/audio_player_service.dart';
 import 'services/chrome_cast_service.dart';
+import 'services/history_service.dart';
 import 'services/theme_data.dart';
 import 'screens/app_screen.dart';
+import 'models/device.dart';
 
 /// Entry point of the application.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Check if device is Android TV
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    try {
+      const channel = MethodChannel('com.mrunit.etherly/device_info');
+      ScreenType.isTv = await channel.invokeMethod<bool>('isTv') ?? false;
+    } catch (e) {
+      debugPrint('Failed to check isTv: $e');
+    }
+  }
+
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -30,17 +43,10 @@ Future<void> main() async {
     debugPrint('Firebase initialization issue: $e');
   }
 
-  try {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      // Initialize App Check (Firebase).
-      // Uses Play Integrity in production and Debug Provider in development.
-      await FirebaseAppCheck.instance.activate(
-        providerAndroid: kDebugMode
-            ? AndroidDebugProvider()
-            : AndroidPlayIntegrityProvider(),
-      );
-    }
+  // Initialize HistoryService
+  await HistoryService().init();
 
+  try {
     // Enable Firestore persistence for web (Firebase).
     if (kIsWeb) {
       FirebaseFirestore.instance.settings = const Settings(
@@ -68,6 +74,8 @@ Future<void> main() async {
   final forceDefaultColor = prefs.getBool('forceDefaultColor') ?? false;
   dynamicColorNotifier.value = !forceDefaultColor;
   final startingTab = prefs.getInt('startingTab') ?? 0;
+  final language = prefs.getString('language') ?? 'system';
+  languageNotifier.value = language;
 
   // Run the app.
   runApp(MyApp(startingTab: startingTab));
@@ -168,43 +176,74 @@ class _MyAppState extends State<MyApp> {
               );
             }
 
-            Widget appContent = MaterialApp(
-              title: 'Etherly',
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: const [Locale('en'), Locale('nl')],
+            if (!_localizationsLoaded ||
+                _audioPlayerService == null ||
+                _chromeCastService == null) {
+              return const SizedBox.shrink();
+            }
 
-              theme: AppTheme.getLight(lightColorScheme),
-              darkTheme: AppTheme.getDark(darkColorScheme),
-              themeMode: themeNotifier.value,
-              scrollBehavior: AppScrollBehavior(),
-              home: Builder(
-                builder: (context) {
-                  if (!_localizationsLoaded ||
-                      _audioPlayerService == null ||
-                      _chromeCastService == null) {
-                    return const SizedBox.shrink();
-                  }
-                  return MultiProvider(
-                    providers: [
-                      ChangeNotifierProvider<AudioPlayerService>(
-                        create: (_) => _audioPlayerService!,
-                      ),
-                      ChangeNotifierProvider<ChromeCastService>(
-                        create: (_) => _chromeCastService!,
-                      ),
+            Widget appContent = ValueListenableBuilder<String>(
+              valueListenable: languageNotifier,
+              builder: (context, currentLanguage, _) {
+                Locale? appLocale;
+                if (kIsWeb && currentLanguage != 'system') {
+                  appLocale = Locale(currentLanguage);
+                }
+
+                return MultiProvider(
+                  providers: [
+                    ChangeNotifierProvider<AudioPlayerService>(
+                      create: (_) => _audioPlayerService!,
+                    ),
+                    ChangeNotifierProvider<ChromeCastService>(
+                      create: (_) => _chromeCastService!,
+                    ),
+                    ChangeNotifierProvider<HistoryService>.value(
+                      value: HistoryService(),
+                    ),
+                  ],
+                  child: MaterialApp(
+                    title: 'Etherly',
+                    locale: appLocale,
+                    localizationsDelegates: const [
+                      AppLocalizations.delegate,
+                      GlobalMaterialLocalizations.delegate,
+                      GlobalWidgetsLocalizations.delegate,
+                      GlobalCupertinoLocalizations.delegate,
                     ],
-                    child: AppScreen(
+                    supportedLocales: const [Locale('en'), Locale('nl')],
+                    theme: AppTheme.getLight(lightColorScheme),
+                    darkTheme: AppTheme.getDark(darkColorScheme),
+                    themeMode: themeNotifier.value,
+                    scrollBehavior: AppScrollBehavior(),
+                    builder: (context, child) {
+                      if (ScreenType.isTv) {
+                        const targetScale = 0.7;
+                        final mediaQuery = MediaQuery.of(context);
+                        final newSize = mediaQuery.size / targetScale;
+                        return MediaQuery(
+                          data: mediaQuery.copyWith(
+                            size: newSize,
+                          ),
+                          child: FractionallySizedBox(
+                            widthFactor: 1 / targetScale,
+                            heightFactor: 1 / targetScale,
+                            child: Transform.scale(
+                              scale: targetScale,
+                              child: child,
+                            ),
+                          ),
+                        );
+                      }
+                      return child!;
+                    },
+                    home: AppScreen(
                       startingTab: widget.startingTab,
                       onHomeContentLoaded: _triggerFadeIn,
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             );
 
             return AnimatedOpacity(

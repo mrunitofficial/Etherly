@@ -2,10 +2,10 @@ import 'package:etherly/services/theme_data.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/services/music_app_service.dart';
+import 'package:etherly/models/music_app.dart';
 import 'package:etherly/widgets/marquee_text.dart';
 import 'package:etherly/widgets/music_app_picker.dart';
 
@@ -47,43 +47,7 @@ class IcyTextDisplay extends StatelessWidget {
       }
     }
 
-    final query = Uri.encodeComponent(songName);
-    final uris = {
-      'youtube': Uri.parse('vnd.youtube://results?search_query=$query'),
-      'ytmusic': Uri.parse('https://music.youtube.com/search?q=$query'),
-      'spotify': Uri.parse('spotify:search:$query'),
-      'apple_music': Uri.parse('https://music.apple.com/search?term=$query'),
-      'tidal': Uri.parse('tidal://search/$query'),
-      'soundcloud': Uri.parse('soundcloud://search?q=$query'),
-      'amazon': Uri.parse('https://music.amazon.com/search/$query'),
-      'internet_search': Uri.parse('https://www.google.com/search?q=$query'),
-    };
-
-    final uri = uris[selectedApp];
-    if (uri == null) return;
-
-    bool launched = false;
-    try {
-      launched = await launchUrl(
-        uri,
-        mode: selectedApp == 'internet_search'
-            ? LaunchMode.platformDefault
-            : LaunchMode.externalNonBrowserApplication,
-      );
-    } catch (_) {}
-
-    if (!launched && context.mounted) {
-      // Fallback for youtube or general failure
-      final fallbackUri = selectedApp == 'youtube'
-          ? Uri.parse('https://www.youtube.com/results?search_query=$query')
-          : (selectedApp == 'internet_search' ? uri : null);
-
-      if (fallbackUri != null) {
-        try {
-          await launchUrl(fallbackUri, mode: LaunchMode.platformDefault);
-        } catch (_) {}
-      }
-    }
+    await MusicApp(id: selectedApp, name: '').launchSearch(songName);
   }
 
   Future<void> _copyToClipboard(BuildContext context, String text) async {

@@ -29,22 +29,14 @@ app.*.map.json
 # Firebase / Google Services
 lib/firebase_options.dart
 android/app/google-services.json
-ios/Runner/GoogleService-Info.plist
 
 # Local / Sensitive
 android/local.properties
-android/key.properties
-*.jks
-*.keystore
-.env*
-service-account.json
 
 # CI/CD related
 .agents/
 skills-lock.json
-.github/
 
-# Node.js WHAT YEAR IS IT?!
-node_modules/
-**/node_modules/
+# Firebase & Google Cloud CLI caches/configs
+.firebase/
 

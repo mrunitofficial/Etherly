@@ -9,6 +9,9 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get languageName => 'English';
+
+  @override
   String get appTitle => 'Etherly';
 
   @override
@@ -316,4 +319,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get castNoDevices => 'No devices found';
+
+  @override
+  String get historyTitle => 'History';
+
+  @override
+  String get historyClear => 'Clear History';
+
+  @override
+  String get historyClearConfirmation =>
+      'Are you sure you want to clear your song history? This action cannot be undone.';
+
+  @override
+  String get historyEmptyTitle => 'No history yet';
+
+  @override
+  String get historyEmptySubtitle => 'Songs you listen to will appear here';
+
+  @override
+  String get historyToday => 'Today';
+
+  @override
+  String get historyYesterday => 'Yesterday';
+
+  @override
+  String get playerHistory => 'History';
 }

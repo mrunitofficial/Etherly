@@ -33,7 +33,8 @@ class SleepTimer extends StatelessWidget {
       },
     ];
 
-    final spacing = Theme.of(context).extension<Spacing>()!;
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
 
     /// The sleep timer dialog.
     return AlertDialog(
@@ -62,7 +63,7 @@ class SleepTimer extends StatelessWidget {
           Center(
             child: Text(
               loc?.sleepTimerOr ?? 'or',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: theme.textTheme.titleLarge,
             ),
           ),
           SizedBox(height: spacing.medium),
