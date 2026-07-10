@@ -10,18 +10,12 @@ Future<MyAudioHandler>? _audioHandlerFuture;
 Future<MyAudioHandler> initAudioService({
   required AudioPlayer player,
   required String channelName,
-  required Future<void> Function() onPlay,
-  required Future<void> Function() onPause,
-  required Future<void> Function() onStop,
   required Future<void> Function() onSkipToNext,
   required Future<void> Function() onSkipToPrevious,
 }) {
   return _audioHandlerFuture ??= AudioService.init<MyAudioHandler>(
     builder: () => MyAudioHandler(
       player: player,
-      onPlay: onPlay,
-      onPause: onPause,
-      onStop: onStop,
       onSkipNext: onSkipToNext,
       onSkipPrev: onSkipToPrevious,
     ),
@@ -38,9 +32,6 @@ Future<MyAudioHandler> initAudioService({
 /// A lightweight handler that syncs just_audio's state to audio_service.
 class MyAudioHandler extends BaseAudioHandler {
   final AudioPlayer player;
-  final Future<void> Function() onPlay;
-  final Future<void> Function() onPause;
-  final Future<void> Function() onStop;
   final Future<void> Function() onSkipNext;
   final Future<void> Function() onSkipPrev;
 
@@ -48,9 +39,6 @@ class MyAudioHandler extends BaseAudioHandler {
 
   MyAudioHandler({
     required this.player,
-    required this.onPlay,
-    required this.onPause,
-    required this.onStop,
     required this.onSkipNext,
     required this.onSkipPrev,
   }) {
@@ -83,14 +71,14 @@ class MyAudioHandler extends BaseAudioHandler {
 
   /// AudioService Overrides delegating directly to just_audio
   @override
-  Future<void> play() async => onPlay();
+  Future<void> play() async => player.play();
 
   @override
-  Future<void> pause() async => onPause();
+  Future<void> pause() async => player.pause();
 
   @override
   Future<void> stop() async {
-    await onStop();
+    await player.stop();
     await super.stop();
   }
 

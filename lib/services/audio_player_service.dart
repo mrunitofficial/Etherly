@@ -138,9 +138,6 @@ class AudioPlayerService with ChangeNotifier {
     _audioHandler = await initAudioService(
       player: player,
       channelName: 'Etherly Radio',
-      onPlay: play,
-      onPause: pause,
-      onStop: stop,
       onSkipToNext: skipToNext,
       onSkipToPrevious: skipToPrevious,
     );
@@ -298,7 +295,7 @@ class AudioPlayerService with ChangeNotifier {
     if (_castService != null && _castService.isConnected) {
       currentSongTitle = null;
       _isTransitioning = false;
-      await player.stop();
+      await _audioHandler.stop();
       await _castService.castAudio(mediaItem: item);
       notifyListeners();
       return;
@@ -310,15 +307,15 @@ class AudioPlayerService with ChangeNotifier {
     _connectingStationId = item.id;
     notifyListeners();
     try {
-      await player.stop();
+      await _audioHandler.stop();
       if (_currentMediaItem?.id != item.id) return;
       await _setAudioSource(item);
       if (_currentMediaItem?.id != item.id) return;
-      player.play().catchError((_) {});
+      _audioHandler.play().catchError((_) {});
     } catch (e) {
       if (kDebugMode) print('Error playing media item: $e');
       if (_currentMediaItem?.id == item.id) {
-        await player.stop();
+        await _audioHandler.stop();
         _isTransitioning = false;
         _isPlayIntended = false;
         _connectingStationId = null;
@@ -379,7 +376,7 @@ class AudioPlayerService with ChangeNotifier {
     cancelAutoplayCountdown();
     if (_castService != null && _castService.isConnected) {
       if (_currentMediaItem != null) {
-        await player.stop();
+        await _audioHandler.stop();
         await _castService.castAudio(mediaItem: _currentMediaItem!);
       } else {
         await _castService.play();
@@ -397,11 +394,11 @@ class AudioPlayerService with ChangeNotifier {
     _isPlayIntended = false;
     notifyListeners();
     if (_castService != null && _castService.isConnected) {
-      await player.pause();
+      await _audioHandler.pause();
       await _castService.pause();
       return;
     }
-    await player.pause();
+    await _audioHandler.pause();
   }
 
   /// Stops playback.
@@ -411,11 +408,11 @@ class AudioPlayerService with ChangeNotifier {
     _isPlayIntended = false;
     notifyListeners();
     if (_castService != null && _castService.isConnected) {
-      await player.stop();
+      await _audioHandler.stop();
       await _castService.pause();
       return;
     }
-    await player.stop();
+    await _audioHandler.stop();
   }
 
   /// Skips to the next station in the list.
