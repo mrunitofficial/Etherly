@@ -91,13 +91,6 @@ class MyAudioHandler extends BaseAudioHandler {
   @override
   Future<void> stop() async {
     await onStop();
-    playbackState.add(
-      playbackState.value.copyWith(
-        processingState: AudioProcessingState.idle,
-        playing: false,
-        controls: [],
-      ),
-    );
     await super.stop();
   }
 
@@ -166,17 +159,23 @@ class MyAudioHandler extends BaseAudioHandler {
   /// Transforms just_audio's generic PlaybackEvent into audio_service's PlaybackState
   PlaybackState _transformEvent(PlaybackEvent event) {
     final playing = player.playing;
+    final isIdle = player.processingState == ProcessingState.idle;
+
     return PlaybackState(
       controls: [
-        if (kIsWeb) MediaControl.skipToPrevious,
-        if (playing) MediaControl.pause else MediaControl.play,
-        if (kIsWeb) MediaControl.skipToNext,
-        if (kIsWeb) MediaControl.stop,
+        if (!isIdle) ...[
+          if (kIsWeb) MediaControl.skipToPrevious,
+          if (playing) MediaControl.pause else MediaControl.play,
+          if (kIsWeb) MediaControl.skipToNext,
+          if (kIsWeb) MediaControl.stop,
+        ],
       ],
       systemActions: {
-        if (kIsWeb) MediaAction.skipToNext,
-        if (kIsWeb) MediaAction.skipToPrevious,
-        if (kIsWeb) MediaAction.stop,
+        if (!isIdle) ...{
+          if (kIsWeb) MediaAction.skipToNext,
+          if (kIsWeb) MediaAction.skipToPrevious,
+          if (kIsWeb) MediaAction.stop,
+        },
       },
       androidCompactActionIndices: const [0],
       processingState: _getProcessingState(player.processingState),
