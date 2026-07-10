@@ -106,7 +106,7 @@ class AudioPlayerService with ChangeNotifier {
       return _castService.isRemoteLoading.value;
     }
     final isBuffering = player.processingState == ProcessingState.loading ||
-                        player.processingState == ProcessingState.buffering;
+                        (player.processingState == ProcessingState.buffering && !kIsWeb);
     return _isTransitioning || isBuffering;
   }
 
