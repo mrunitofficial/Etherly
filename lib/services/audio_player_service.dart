@@ -404,6 +404,7 @@ class AudioPlayerService with ChangeNotifier {
   /// Stops playback.
   Future<void> stop() async {
     cancelAutoplayCountdown();
+    cancelSleepTimer();
     _isTransitioning = false;
     _isPlayIntended = false;
     notifyListeners();
