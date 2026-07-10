@@ -182,14 +182,18 @@ class AudioPlayerService with ChangeNotifier {
         .distinct()
         .listen((title) {
           if (title != null && title.isNotEmpty) {
-            currentSongTitle = title;
-            _isTransitioning = false;
-            notifyListeners();
-            _audioHandler.patchMediaItemMetadata(artist: title);
+            final currentTag = player.sequenceState.currentSource?.tag as MediaItem?;
+            
+            // Only update current song UI if it matches the current user selection
+            if (currentTag?.id == _currentMediaItem?.id) {
+              currentSongTitle = title;
+              _isTransitioning = false;
+              notifyListeners();
+              _audioHandler.patchMediaItemMetadata(artist: title);
+            }
 
-            // Record song history
-            final currentItem = _currentMediaItem;
-            if (currentItem != null) {
+            // Record song history under the actual native source that emitted the metadata
+            if (currentTag != null) {
               final parts = title.split(' - ');
               final artistName = parts.length > 1 ? parts[0].trim() : '';
               final songName = parts.length > 1
@@ -199,11 +203,11 @@ class AudioPlayerService with ChangeNotifier {
               HistoryService().addSong(
                 title: songName,
                 artist: artistName,
-                stationId: currentItem.id,
-                stationName: currentItem.title,
-                stationArtUrl: currentItem.safeArt128Url.isNotEmpty
-                    ? currentItem.safeArt128Url
-                    : currentItem.safeArtUrl,
+                stationId: currentTag.id,
+                stationName: currentTag.title,
+                stationArtUrl: currentTag.safeArt128Url.isNotEmpty
+                    ? currentTag.safeArt128Url
+                    : currentTag.safeArtUrl,
               );
             }
           }
