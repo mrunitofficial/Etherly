@@ -56,8 +56,7 @@ class MyAudioHandler extends BaseAudioHandler {
   }) {
     // Pipe just_audio's playback events and state changes to audio_service
     player.playbackEventStream.listen((_) => _updatePlaybackState());
-    player.playingStream.listen((_) => _updatePlaybackState());
-    player.processingStateStream.listen((_) => _updatePlaybackState());
+    player.playerStateStream.listen((_) => _updatePlaybackState());
     _initAudioSession();
   }
 

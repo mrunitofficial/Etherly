@@ -37,9 +37,6 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
         final stationName =
             mediaItem?.title ??
             (loc?.playerLoadingStation ?? 'Loading station...');
-        final processingState = service.player.processingState;
-        final isPlaying = service.isPlaying;
-
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 32, 20, 16),
           child: Row(
@@ -63,8 +60,8 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                       MarqueeText(
                         text: stationName,
                         style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
+                           fontWeight: FontWeight.bold,
+                           color: theme.colorScheme.onSurface,
                         ),
                       ),
                       IcyTextDisplay(
@@ -84,12 +81,10 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                   return PlayButton(
                     service: service,
                     countdown: countdown,
-                    processingState: processingState,
-                    isPlaying: isPlaying,
                     size: PlayButtonSize.medium,
                     heroTag: "mini_player_fab",
                     elevation: 0,
-                    tooltip: isPlaying
+                    tooltip: service.isPlaying
                         ? (loc?.playerPause ?? 'Pause')
                         : (loc?.playerPlay ?? 'Play'),
                   );

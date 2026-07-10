@@ -288,8 +288,6 @@ class _MiniFABs extends StatelessWidget {
                           PlayButton(
                             service: service,
                             countdown: countdown,
-                            processingState: service.player.processingState,
-                            isPlaying: service.isPlaying,
                             size: PlayButtonSize.medium,
                             heroTag: 'mini_player_fab_landscape',
                             elevation: 6,

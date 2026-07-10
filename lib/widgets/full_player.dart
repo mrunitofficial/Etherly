@@ -215,8 +215,6 @@ class FullPlayerControls extends StatelessWidget {
                 builder: (context, countdown, _) => PlayButton(
                   service: service,
                   countdown: countdown,
-                  processingState: service.player.processingState,
-                  isPlaying: service.isPlaying,
                   heroTag: "full_player_fab",
                   elevation: 0,
                   tooltip: service.isPlaying

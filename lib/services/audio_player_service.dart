@@ -18,9 +18,18 @@ class AudioPlayerService with ChangeNotifier {
   late final MyAudioHandler _audioHandler;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
   _stationsSubscription;
-  final ValueNotifier<({String? title, bool loading})> icyState = ValueNotifier(
-    (title: null, loading: false),
-  );
+  /// Pre-emptive loading transition lock
+  bool _isTransitioning = false;
+
+  /// The intended play state forced by the user/UI to prevent transition flickering
+  bool _isPlayIntended = false;
+
+  /// The ID of the station currently being connected to
+  String? _connectingStationId;
+
+  /// Current ICY stream metadata song title
+  String? currentSongTitle;
+  
   final ChromeCastService? _castService;
   late final SharedPreferences _prefs;
 
@@ -82,11 +91,23 @@ class AudioPlayerService with ChangeNotifier {
   /// Cast loading status.
   bool get isCastLoading => _castService?.isRemoteLoading.value ?? false;
   bool get isCasting => _castService?.isConnected ?? false;
+  
+  /// Unified play state for UI
   bool get isPlaying {
     if (_castService != null && _castService.isConnected) {
       return _castService.isRemotePlaying.value;
     }
-    return player.playing;
+    return _isPlayIntended;
+  }
+
+  /// Unified loading and buffering state for UI
+  bool get isLoading {
+    if (_castService != null && _castService.isConnected) {
+      return _castService.isRemoteLoading.value;
+    }
+    final isBuffering = player.processingState == ProcessingState.loading ||
+                        player.processingState == ProcessingState.buffering;
+    return _isTransitioning || isBuffering;
   }
 
   /// Volume level on web.
@@ -124,16 +145,26 @@ class AudioPlayerService with ChangeNotifier {
       onSkipToPrevious: skipToPrevious,
     );
 
-    // Sync just_audio state to our listeners
-    player.playingStream.listen((_) => notifyListeners());
-    player.processingStateStream.listen((state) {
-      if (state == ProcessingState.ready) {
-        if (icyState.value.loading) {
-          icyState.value = (title: icyState.value.title, loading: false);
+    // Sync unified just_audio player state to our listeners
+    player.playerStateStream.listen((state) {
+      final processingState = state.processingState;
+      
+      // Sync play intent with native player once we are no longer connecting
+      if (!_isTransitioning) {
+        _isPlayIntended = state.playing;
+      }
+      
+      // Only clear the connecting spinner once the player is fully ready for the intended station
+      final currentTag = player.sequenceState.currentSource?.tag as MediaItem?;
+      if (processingState == ProcessingState.ready && currentTag?.id == _connectingStationId) {
+        if (_isTransitioning) {
+          _isTransitioning = false;
         }
-      } else if (state == ProcessingState.idle ||
-          state == ProcessingState.completed) {
-        if (player.playing) {
+      }
+      
+      if (processingState == ProcessingState.idle ||
+          processingState == ProcessingState.completed) {
+        if (state.playing && !_isTransitioning) {
           stop();
         }
       }
@@ -154,7 +185,9 @@ class AudioPlayerService with ChangeNotifier {
         .distinct()
         .listen((title) {
           if (title != null && title.isNotEmpty) {
-            icyState.value = (title: title, loading: false);
+            currentSongTitle = title;
+            _isTransitioning = false;
+            notifyListeners();
             _audioHandler.patchMediaItemMetadata(artist: title);
 
             // Record song history
@@ -263,14 +296,19 @@ class AudioPlayerService with ChangeNotifier {
     _setMediaItem(item);
 
     if (_castService != null && _castService.isConnected) {
-      icyState.value = (title: null, loading: false);
+      currentSongTitle = null;
+      _isTransitioning = false;
       await player.stop();
       await _castService.castAudio(mediaItem: item);
       notifyListeners();
       return;
     }
 
-    icyState.value = (title: null, loading: true);
+    currentSongTitle = null;
+    _isTransitioning = true;
+    _isPlayIntended = true;
+    _connectingStationId = item.id;
+    notifyListeners();
     try {
       await player.stop();
       if (_currentMediaItem?.id != item.id) return;
@@ -281,7 +319,10 @@ class AudioPlayerService with ChangeNotifier {
       if (kDebugMode) print('Error playing media item: $e');
       if (_currentMediaItem?.id == item.id) {
         await player.stop();
-        icyState.value = (title: null, loading: false);
+        _isTransitioning = false;
+        _isPlayIntended = false;
+        _connectingStationId = null;
+        notifyListeners();
       }
     }
   }
@@ -352,11 +393,12 @@ class AudioPlayerService with ChangeNotifier {
   /// Pauses playback.
   Future<void> pause() async {
     cancelAutoplayCountdown();
-    icyState.value = (title: icyState.value.title, loading: false);
+    _isTransitioning = false;
+    _isPlayIntended = false;
+    notifyListeners();
     if (_castService != null && _castService.isConnected) {
       await player.pause();
       await _castService.pause();
-      notifyListeners();
       return;
     }
     await player.pause();
@@ -365,11 +407,12 @@ class AudioPlayerService with ChangeNotifier {
   /// Stops playback.
   Future<void> stop() async {
     cancelAutoplayCountdown();
-    icyState.value = (title: icyState.value.title, loading: false);
+    _isTransitioning = false;
+    _isPlayIntended = false;
+    notifyListeners();
     if (_castService != null && _castService.isConnected) {
       await player.stop();
       await _castService.pause();
-      notifyListeners();
       return;
     }
     await player.stop();
