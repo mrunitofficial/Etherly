@@ -401,17 +401,13 @@ class AudioPlayerService with ChangeNotifier {
   Future<void> precacheAllStationArt(BuildContext context) async {
     final futures = <Future<void>>[];
     for (final station in stations) {
-      final art128Url = station.art128.isNotEmpty
-          ? station.art128
-          : station.art;
+      final art128Url = station.getArtUrl(size: 128);
       if (art128Url.isNotEmpty) {
         final provider = CachedNetworkImageProvider(art128Url);
         futures.add(precacheImage(provider, context).catchError((_) {}));
       }
 
-      final art512Url = station.art512.isNotEmpty
-          ? station.art512
-          : station.art;
+      final art512Url = station.getArtUrl(size: 512);
       if (art512Url.isNotEmpty && art512Url != art128Url) {
         final provider = CachedNetworkImageProvider(art512Url);
         futures.add(precacheImage(provider, context).catchError((_) {}));
@@ -620,7 +616,7 @@ extension StationToMediaItem on Station {
     return MediaItem(
       id: id,
       title: name,
-      artUri: Uri.tryParse(art),
+      artUri: Uri.tryParse(getArtUrl()),
       artist: artist ?? '',
       album: slogan,
       extras: {

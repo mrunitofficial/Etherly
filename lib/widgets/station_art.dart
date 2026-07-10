@@ -1,16 +1,19 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:etherly/models/station.dart';
 
 class StationArt extends StatelessWidget {
   const StationArt({
     super.key,
-    required this.artUrl,
+    this.station,
+    this.artUrl,
     this.placeholderUrl,
     this.size,
     this.borderRadius,
   });
 
-  final String artUrl;
+  final Station? station;
+  final String? artUrl;
   final String? placeholderUrl;
   final double? size;
   final BorderRadius? borderRadius;
@@ -22,18 +25,30 @@ class StationArt extends StatelessWidget {
       child: const Center(child: Icon(Icons.radio_rounded)),
     );
 
-    Widget art = artUrl.isEmpty
+    final String resolvedArtUrl;
+    final String resolvedPlaceholderUrl;
+
+    if (station != null) {
+      resolvedArtUrl = station!.getArtUrl(size: size);
+      // For placeholder, use a smaller 128 resolution if available
+      resolvedPlaceholderUrl = station!.getArtUrl(size: 128);
+    } else {
+      resolvedArtUrl = artUrl ?? '';
+      resolvedPlaceholderUrl = placeholderUrl ?? '';
+    }
+
+    Widget art = resolvedArtUrl.isEmpty
         ? fallback
         : CachedNetworkImage(
-            key: ValueKey(artUrl),
-            imageUrl: artUrl,
+            key: ValueKey(resolvedArtUrl),
+            imageUrl: resolvedArtUrl,
             fit: BoxFit.cover,
             fadeInDuration: Duration.zero,
             fadeOutDuration: Duration.zero,
             placeholder: (context, url) =>
-                placeholderUrl != null && placeholderUrl!.isNotEmpty
+                resolvedPlaceholderUrl.isNotEmpty
                 ? Image(
-                    image: CachedNetworkImageProvider(placeholderUrl!),
+                    image: CachedNetworkImageProvider(resolvedPlaceholderUrl),
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => fallback,
                   )

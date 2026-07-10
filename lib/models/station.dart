@@ -112,4 +112,32 @@ class Station {
       isFavorite: isFavorite ?? this.isFavorite,
     );
   }
+
+  /// Gets the best art URL based on the requested size.
+  /// If no size is specified, it defaults to the highest resolution (1024).
+  /// Falls back to the plain PNG art if the desired size is not available.
+  String getArtUrl({double? size}) {
+    if (size == null) {
+      if (art1024.isNotEmpty) return art1024;
+      if (art512.isNotEmpty) return art512;
+      if (art128.isNotEmpty) return art128;
+      return art;
+    }
+
+    if (size <= 128) {
+      if (art128.isNotEmpty) return art128;
+      if (art512.isNotEmpty) return art512;
+      if (art1024.isNotEmpty) return art1024;
+    } else if (size <= 512) {
+      if (art512.isNotEmpty) return art512;
+      if (art1024.isNotEmpty) return art1024;
+      if (art128.isNotEmpty) return art128;
+    } else {
+      if (art1024.isNotEmpty) return art1024;
+      if (art512.isNotEmpty) return art512;
+      if (art128.isNotEmpty) return art128;
+    }
+    return art;
+  }
 }
+
