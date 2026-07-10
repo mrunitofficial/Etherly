@@ -160,8 +160,8 @@ class MyAudioHandler extends BaseAudioHandler {
       ],
       systemActions: {
         if (!isIdle) ...{
-          if (kIsWeb) MediaAction.skipToNext,
-          if (kIsWeb) MediaAction.skipToPrevious,
+          MediaAction.skipToNext,
+          MediaAction.skipToPrevious,
           if (kIsWeb) MediaAction.stop,
         },
       },
