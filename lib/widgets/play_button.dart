@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:etherly/services/audio_player_service.dart';
 
 enum PlayButtonSize { medium, large }
@@ -9,8 +7,6 @@ class PlayButton extends StatelessWidget {
   const PlayButton({
     super.key,
     required this.service,
-    required this.processingState,
-    required this.isPlaying,
     required this.countdown,
     this.size = PlayButtonSize.medium,
     this.tooltip,
@@ -19,8 +15,6 @@ class PlayButton extends StatelessWidget {
   });
 
   final AudioPlayerService service;
-  final ProcessingState processingState;
-  final bool isPlaying;
   final int countdown;
   final PlayButtonSize size;
   final String? tooltip;
@@ -71,12 +65,8 @@ class PlayButton extends StatelessWidget {
       );
     }
 
-    final bool isServiceLoading = service.icyState.value.loading;
-    final bool showSpinner =
-        isServiceLoading ||
-        (isPlaying &&
-            (processingState == ProcessingState.loading ||
-                (processingState == ProcessingState.buffering && !kIsWeb)));
+    final bool isPlaying = service.isPlaying;
+    final bool showSpinner = service.isLoading;
 
     if (showSpinner) {
       return SizedBox.square(
@@ -91,15 +81,13 @@ class PlayButton extends StatelessWidget {
   }
 
   void _handlePlayPause() {
+    final bool isPlaying = service.isPlaying;
     if (countdown > 0) {
       service.pause();
     } else if (isPlaying) {
       service.pause();
     } else {
-      final bool isServiceLoading = service.icyState.value.loading;
-      if (processingState == ProcessingState.buffering ||
-          processingState == ProcessingState.loading ||
-          isServiceLoading) {
+      if (service.isLoading) {
         service.stop();
       } else {
         service.play();

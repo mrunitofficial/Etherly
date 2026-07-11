@@ -62,22 +62,20 @@ class IcyTextDisplay extends StatelessWidget {
     );
     if (isCasting) return const SizedBox.shrink();
 
-    final service = context.read<AudioPlayerService>();
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context);
     final spacing = theme.extension<Spacing>()!;
     final shapes = theme.extension<Shapes>()!;
 
-    return ValueListenableBuilder(
-      valueListenable: service.icyState,
-      builder: (context, icy, _) {
-        final String? text = icy.loading
+    return Consumer<AudioPlayerService>(
+      builder: (context, service, _) {
+        final String? text = service.isLoading
             ? (loc?.playerLoadingSong ?? 'Loading song...')
-            : (icy.title?.isNotEmpty == true ? icy.title! : null);
+            : (service.currentSongTitle?.isNotEmpty == true ? service.currentSongTitle! : null);
 
         if (text == null) return const SizedBox.shrink();
 
-        final bool isSong = !icy.loading && icy.title?.isNotEmpty == true;
+        final bool isSong = !service.isLoading && service.currentSongTitle?.isNotEmpty == true;
 
         final padding = EdgeInsets.only(
           left: centerWhenFits ? spacing.small : 0,

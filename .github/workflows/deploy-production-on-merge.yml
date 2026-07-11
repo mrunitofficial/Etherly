@@ -116,7 +116,7 @@ jobs:
       - name: Extract version from pubspec.yaml
         id: get_version
         run: |
-          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f1 | tr -d '[:space:]"')
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr '+' '-' | tr -d '[:space:]"')
           echo "tag=v$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release

@@ -39,8 +39,8 @@ Future<void> main() async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
-  } catch (e) {
-    debugPrint('Firebase initialization issue: $e');
+  } catch (e, stackTrace) {
+    debugPrint('Firebase initialization issue: $e\n$stackTrace');
   }
 
   // Initialize HistoryService
