@@ -588,6 +588,11 @@ class AudioPlayerService with ChangeNotifier {
           .toList();
       _stationMap = {for (var s in stations) s.id: s};
 
+      // Clean up favorite station IDs so they only contain existing stations
+      _favoriteStationIds = _favoriteStationIds
+          .where((id) => _stationMap.containsKey(id))
+          .toList();
+
       await _loadLastStation();
       notifyListeners();
     } catch (e) {
