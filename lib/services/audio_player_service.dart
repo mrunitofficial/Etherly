@@ -315,6 +315,7 @@ class AudioPlayerService with ChangeNotifier {
       if (_currentMediaItem?.id != item.id) return;
       await _setAudioSource(item);
       if (_currentMediaItem?.id != item.id) return;
+      if (!_isPlayIntended) return;
       _audioHandler.play().catchError((_) {});
     } catch (e) {
       if (kDebugMode) print('Error playing media item: $e');
