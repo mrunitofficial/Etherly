@@ -228,9 +228,7 @@ class AudioPlayerService with ChangeNotifier {
                 artist: artistName,
                 stationId: currentTag.id,
                 stationName: currentTag.title,
-                stationArtUrl: currentTag.safeArt128Url.isNotEmpty
-                    ? currentTag.safeArt128Url
-                    : currentTag.safeArtUrl,
+                stationArtUrl: currentTag.safeArt128Url,
               );
             }
           }
@@ -651,9 +649,7 @@ extension StationToMediaItem on Station {
       extras: {
         'url': url,
         'streams': streams,
-        'art128': art128,
-        'art512': art512,
-        'art1024': art1024,
+        'art': art,
       },
     );
   }
@@ -661,23 +657,45 @@ extension StationToMediaItem on Station {
 
 /// Extension to handle safe artwork URLs from [MediaItem].
 extension MediaItemArt on MediaItem? {
+  String getArtUrl({double? size}) {
+    if (this == null) return '';
+    final rawArt = this?.extras?['art'];
+    final Map<String, String> artMap = {};
+    if (rawArt is Map) {
+      rawArt.forEach((k, v) {
+        artMap[k.toString()] = v.toString();
+      });
+    } else {
+      // Fallback/Legacy if art is not a map in extras
+      final extras = this?.extras;
+      if (extras != null) {
+        if (extras['art128'] != null) artMap['128'] = extras['art128'].toString();
+        if (extras['art512'] != null) artMap['512'] = extras['art512'].toString();
+        if (extras['art1024'] != null) artMap['1024'] = extras['art1024'].toString();
+      }
+      final defaultArt = safeArtUrl;
+      if (defaultArt.isNotEmpty) {
+        artMap['default'] = defaultArt;
+      }
+    }
+
+    return getArtUrlFromMap(artMap, size: size);
+  }
+
   String get safeArtUrl {
     final uri = Uri.tryParse(this?.artUri?.toString() ?? '');
     return uri != null && uri.scheme.startsWith('http') ? uri.toString() : '';
   }
 
   String get safeArt128Url {
-    final url = this?.extras?['art128']?.toString() ?? '';
-    return url.startsWith('http') ? url : '';
+    return getArtUrl(size: 128);
   }
 
   String get safeArt512Url {
-    final url = this?.extras?['art512']?.toString() ?? '';
-    return url.startsWith('http') ? url : '';
+    return getArtUrl(size: 512);
   }
 
   String get safeArt1024Url {
-    final url = this?.extras?['art1024']?.toString() ?? '';
-    return url.startsWith('http') ? url : '';
+    return getArtUrl(size: 1024);
   }
 }

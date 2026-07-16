@@ -40,3 +40,9 @@ skills-lock.json
 # Firebase & Google Cloud CLI caches/configs
 .firebase/
 
+# Node.js
+node_modules/
+package-lock.json
+package.json
+migrate_art.js
+
