@@ -14,10 +14,15 @@ Future<MyAudioHandler> initAudioService({
   required String channelName,
   required Future<void> Function() onSkipToNext,
   required Future<void> Function() onSkipToPrevious,
-}) {
+}) async {
+  // Pre-configure the singleton audio session BEFORE initializing the handler to avoid race conditions
+  final session = await AudioSession.instance;
+  await session.configure(const AudioSessionConfiguration.music());
+
   return _audioHandlerFuture ??= AudioService.init<MyAudioHandler>(
     builder: () => MyAudioHandler(
       player: player,
+      session: session,
       onSkipNext: onSkipToNext,
       onSkipPrev: onSkipToPrevious,
     ),
@@ -34,29 +39,23 @@ Future<MyAudioHandler> initAudioService({
 /// A lightweight handler that syncs just_audio's state to audio_service.
 class MyAudioHandler extends BaseAudioHandler {
   final AudioPlayer player;
+  final AudioSession session;
   final Future<void> Function() onSkipNext;
   final Future<void> Function() onSkipPrev;
 
-  AudioSession? _audioSession;
-
   MyAudioHandler({
     required this.player,
+    required this.session,
     required this.onSkipNext,
     required this.onSkipPrev,
   }) {
     // Pipe just_audio's playback events and state changes to audio_service
     player.playbackEventStream.listen((_) => _updatePlaybackState());
     player.playerStateStream.listen((_) => _updatePlaybackState());
-    _initAudioSession();
   }
 
   void _updatePlaybackState() {
     playbackState.add(_transformEvent(player.playbackEvent));
-  }
-
-  Future<void> _initAudioSession() async {
-    _audioSession = await AudioSession.instance;
-    await _audioSession!.configure(const AudioSessionConfiguration.music());
   }
 
   /// Updates the currently displaying media item on the OS lock screen.
@@ -87,8 +86,7 @@ class MyAudioHandler extends BaseAudioHandler {
     final quality = prefs.getString('streamQuality') ?? 'mp3';
 
     final entriesPriority = [
-      if (streams.containsKey(quality))
-        MapEntry(quality, streams[quality]!),
+      if (streams.containsKey(quality)) MapEntry(quality, streams[quality]!),
       ...streams.entries.where((e) => e.key != quality),
     ];
 
@@ -162,7 +160,6 @@ class MyAudioHandler extends BaseAudioHandler {
   Future<void> hideNotification() async {
     try {
       if (player.playing) await player.stop();
-      if (_audioSession != null) await _audioSession!.setActive(false);
 
       // Tell audio_service we are idle, which clears the OS notification
       playbackState.add(
@@ -180,7 +177,6 @@ class MyAudioHandler extends BaseAudioHandler {
   /// Restores the OS notification when casting has ended.
   Future<void> showNotification() async {
     try {
-      if (_audioSession != null) await _audioSession!.setActive(true);
       final current = mediaItem.value;
       if (current != null) {
         playbackState.add(_transformEvent(player.playbackEvent));
