@@ -18,6 +18,7 @@ class AudioPlayerService with ChangeNotifier {
   late final MyAudioHandler _audioHandler;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
   _stationsSubscription;
+
   /// Pre-emptive loading transition lock
   bool _isTransitioning = false;
 
@@ -29,7 +30,7 @@ class AudioPlayerService with ChangeNotifier {
 
   /// Current ICY stream metadata song title
   String? currentSongTitle;
-  
+
   final ChromeCastService? _castService;
   late final SharedPreferences _prefs;
 
@@ -79,7 +80,6 @@ class AudioPlayerService with ChangeNotifier {
   /// Timer to track network buffering timeout and trigger live-edge reconnection.
   Timer? _bufferingTimeoutTimer;
 
-
   /// Current media item.
   MediaItem? _currentMediaItem;
   MediaItem? get mediaItem => _currentMediaItem;
@@ -95,7 +95,7 @@ class AudioPlayerService with ChangeNotifier {
   /// Cast loading status.
   bool get isCastLoading => _castService?.isRemoteLoading.value ?? false;
   bool get isCasting => _castService?.isConnected ?? false;
-  
+
   /// Unified play state for UI
   bool get isPlaying {
     if (_castService != null && _castService.isConnected) {
@@ -109,8 +109,9 @@ class AudioPlayerService with ChangeNotifier {
     if (_castService != null && _castService.isConnected) {
       return _castService.isRemoteLoading.value;
     }
-    final isBuffering = player.processingState == ProcessingState.loading ||
-                        (player.processingState == ProcessingState.buffering && !kIsWeb);
+    final isBuffering =
+        player.processingState == ProcessingState.loading ||
+        (player.processingState == ProcessingState.buffering && !kIsWeb);
     return _isTransitioning || isBuffering;
   }
 
@@ -119,7 +120,6 @@ class AudioPlayerService with ChangeNotifier {
 
   /// Stream of player volume changes.
   Stream<double> get volumeStream => player.volumeStream;
-
 
   /// Creates the service and attaches listeners to the optional cast service.
   AudioPlayerService([this._castService]) {
@@ -153,20 +153,21 @@ class AudioPlayerService with ChangeNotifier {
     // Sync unified just_audio player state to our listeners
     player.playerStateStream.listen((state) {
       final processingState = state.processingState;
-      
+
       // Sync play intent with native player once we are no longer connecting
       if (!_isTransitioning) {
         _isPlayIntended = state.playing;
       }
-      
+
       // Only clear the connecting spinner once the player is fully ready for the intended station
       final currentTag = player.sequenceState.currentSource?.tag as MediaItem?;
-      if (processingState == ProcessingState.ready && currentTag?.id == _connectingStationId) {
+      if (processingState == ProcessingState.ready &&
+          currentTag?.id == _connectingStationId) {
         if (_isTransitioning) {
           _isTransitioning = false;
         }
       }
-      
+
       if (processingState == ProcessingState.idle ||
           processingState == ProcessingState.completed) {
         if (state.playing && !_isTransitioning) {
@@ -175,7 +176,9 @@ class AudioPlayerService with ChangeNotifier {
       }
 
       // Reconnect if stuck buffering on a live stream for too long
-      if (state.playing && processingState == ProcessingState.buffering) {
+      if (state.playing &&
+          processingState == ProcessingState.buffering &&
+          !kIsWeb) {
         _bufferingTimeoutTimer ??= Timer(const Duration(seconds: 10), () {
           if (kDebugMode) {
             print('Buffering timeout reached. Reconnecting to live edge...');
@@ -200,39 +203,39 @@ class AudioPlayerService with ChangeNotifier {
     );
 
     // Sync ICY Metadata from just_audio natively
-    player.icyMetadataStream
-        .map((m) => m?.info?.title?.trim())
-        .distinct()
-        .listen((title) {
-          if (title != null && title.isNotEmpty) {
-            final currentTag = player.sequenceState.currentSource?.tag as MediaItem?;
-            
-            // Only update current song UI if it matches the current user selection
-            if (currentTag?.id == _currentMediaItem?.id) {
-              currentSongTitle = title;
-              _isTransitioning = false;
-              notifyListeners();
-              _audioHandler.patchMediaItemMetadata(artist: title);
-            }
+    player.icyMetadataStream.map((m) => m?.info?.title?.trim()).distinct().listen((
+      title,
+    ) {
+      if (title != null && title.isNotEmpty) {
+        final currentTag =
+            player.sequenceState.currentSource?.tag as MediaItem?;
 
-            // Record song history under the actual native source that emitted the metadata
-            if (currentTag != null) {
-              final parts = title.split(' - ');
-              final artistName = parts.length > 1 ? parts[0].trim() : '';
-              final songName = parts.length > 1
-                  ? parts.sublist(1).join(' - ').trim()
-                  : title;
+        // Only update current song UI if it matches the current user selection
+        if (currentTag?.id == _currentMediaItem?.id) {
+          currentSongTitle = title;
+          _isTransitioning = false;
+          notifyListeners();
+          _audioHandler.patchMediaItemMetadata(artist: title);
+        }
 
-              HistoryService().addSong(
-                title: songName,
-                artist: artistName,
-                stationId: currentTag.id,
-                stationName: currentTag.title,
-                stationArtUrl: currentTag.safeArt128Url,
-              );
-            }
-          }
-        });
+        // Record song history under the actual native source that emitted the metadata
+        if (currentTag != null) {
+          final parts = title.split(' - ');
+          final artistName = parts.length > 1 ? parts[0].trim() : '';
+          final songName = parts.length > 1
+              ? parts.sublist(1).join(' - ').trim()
+              : title;
+
+          HistoryService().addSong(
+            title: songName,
+            artist: artistName,
+            stationId: currentTag.id,
+            stationName: currentTag.title,
+            stationArtUrl: currentTag.safeArt128Url,
+          );
+        }
+      }
+    });
 
     _preMuteVolume = _prefs.getDouble(_preMuteVolumeKey) ?? 1.0;
     _isMuted = _prefs.getBool(_isMutedKey) ?? false;
@@ -243,7 +246,6 @@ class AudioPlayerService with ChangeNotifier {
     } else {
       player.setVolume(savedVolume);
     }
-
 
     await _loadStations();
     await _checkAutoplay();
@@ -280,7 +282,6 @@ class AudioPlayerService with ChangeNotifier {
     _prefs.setBool(_isMutedKey, _isMuted);
     notifyListeners();
   }
-
 
   /// Disposes of all timers and listeners.
   @override
@@ -577,7 +578,9 @@ class AudioPlayerService with ChangeNotifier {
     } finally {
       try {
         await FirebaseFirestore.instance.disableNetwork();
-        if (kDebugMode) print('Firestore network connection disabled successfully');
+        if (kDebugMode) {
+          print('Firestore network connection disabled successfully');
+        }
       } catch (e) {
         if (kDebugMode) print('Error disabling Firestore network: $e');
       }
@@ -646,11 +649,7 @@ extension StationToMediaItem on Station {
       artUri: Uri.tryParse(getArtUrl()),
       artist: artist ?? '',
       album: slogan,
-      extras: {
-        'url': url,
-        'streams': streams,
-        'art': art,
-      },
+      extras: {'url': url, 'streams': streams, 'art': art},
     );
   }
 }
@@ -669,9 +668,15 @@ extension MediaItemArt on MediaItem? {
       // Fallback/Legacy if art is not a map in extras
       final extras = this?.extras;
       if (extras != null) {
-        if (extras['art128'] != null) artMap['128'] = extras['art128'].toString();
-        if (extras['art512'] != null) artMap['512'] = extras['art512'].toString();
-        if (extras['art1024'] != null) artMap['1024'] = extras['art1024'].toString();
+        if (extras['art128'] != null) {
+          artMap['128'] = extras['art128'].toString();
+        }
+        if (extras['art512'] != null) {
+          artMap['512'] = extras['art512'].toString();
+        }
+        if (extras['art1024'] != null) {
+          artMap['1024'] = extras['art1024'].toString();
+        }
       }
       final defaultArt = safeArtUrl;
       if (defaultArt.isNotEmpty) {

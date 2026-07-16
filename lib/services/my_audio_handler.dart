@@ -93,6 +93,7 @@ class MyAudioHandler extends BaseAudioHandler {
     for (int i = 0; i < entriesPriority.length; i++) {
       final entry = entriesPriority[i];
       try {
+        await player.stop();
         await player.setAudioSource(
           AudioSource.uri(Uri.parse(entry.value), tag: item),
         );
