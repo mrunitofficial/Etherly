@@ -29,9 +29,7 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
           _lastStationId = mediaItem?.id;
         }
 
-        final artUrl = mediaItem.safeArt128Url.isNotEmpty
-            ? mediaItem.safeArt128Url
-            : mediaItem.safeArtUrl;
+        final artUrl = mediaItem.safeArt128Url;
         final theme = Theme.of(context);
         final loc = AppLocalizations.of(context);
         final stationName =

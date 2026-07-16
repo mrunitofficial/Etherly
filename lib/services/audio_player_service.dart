@@ -18,6 +18,7 @@ class AudioPlayerService with ChangeNotifier {
   late final MyAudioHandler _audioHandler;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
   _stationsSubscription;
+
   /// Pre-emptive loading transition lock
   bool _isTransitioning = false;
 
@@ -29,7 +30,7 @@ class AudioPlayerService with ChangeNotifier {
 
   /// Current ICY stream metadata song title
   String? currentSongTitle;
-  
+
   final ChromeCastService? _castService;
   late final SharedPreferences _prefs;
 
@@ -76,6 +77,9 @@ class AudioPlayerService with ChangeNotifier {
   final ValueNotifier<bool> sleepTimerActive = ValueNotifier(false);
   bool get isSleepTimerSet => _sleepTimer != null;
 
+  /// Timer to track network buffering timeout and trigger live-edge reconnection.
+  Timer? _bufferingTimeoutTimer;
+
   /// Current media item.
   MediaItem? _currentMediaItem;
   MediaItem? get mediaItem => _currentMediaItem;
@@ -91,7 +95,7 @@ class AudioPlayerService with ChangeNotifier {
   /// Cast loading status.
   bool get isCastLoading => _castService?.isRemoteLoading.value ?? false;
   bool get isCasting => _castService?.isConnected ?? false;
-  
+
   /// Unified play state for UI
   bool get isPlaying {
     if (_castService != null && _castService.isConnected) {
@@ -105,13 +109,17 @@ class AudioPlayerService with ChangeNotifier {
     if (_castService != null && _castService.isConnected) {
       return _castService.isRemoteLoading.value;
     }
-    final isBuffering = player.processingState == ProcessingState.loading ||
-                        (player.processingState == ProcessingState.buffering && !kIsWeb);
+    final isBuffering =
+        player.processingState == ProcessingState.loading ||
+        (player.processingState == ProcessingState.buffering && !kIsWeb);
     return _isTransitioning || isBuffering;
   }
 
-  /// Volume level on web.
-  double get volume => kIsWeb ? player.volume : 1.0;
+  /// Volume level of the player.
+  double get volume => player.volume;
+
+  /// Stream of player volume changes.
+  Stream<double> get volumeStream => player.volumeStream;
 
   /// Creates the service and attaches listeners to the optional cast service.
   AudioPlayerService([this._castService]) {
@@ -145,26 +153,44 @@ class AudioPlayerService with ChangeNotifier {
     // Sync unified just_audio player state to our listeners
     player.playerStateStream.listen((state) {
       final processingState = state.processingState;
-      
+
       // Sync play intent with native player once we are no longer connecting
       if (!_isTransitioning) {
         _isPlayIntended = state.playing;
       }
-      
+
       // Only clear the connecting spinner once the player is fully ready for the intended station
       final currentTag = player.sequenceState.currentSource?.tag as MediaItem?;
-      if (processingState == ProcessingState.ready && currentTag?.id == _connectingStationId) {
+      if (processingState == ProcessingState.ready &&
+          currentTag?.id == _connectingStationId) {
         if (_isTransitioning) {
           _isTransitioning = false;
         }
       }
-      
+
       if (processingState == ProcessingState.idle ||
           processingState == ProcessingState.completed) {
         if (state.playing && !_isTransitioning) {
           stop();
         }
       }
+
+      // Reconnect if stuck buffering on a live stream for too long
+      if (state.playing &&
+          processingState == ProcessingState.buffering &&
+          !kIsWeb) {
+        _bufferingTimeoutTimer ??= Timer(const Duration(seconds: 10), () {
+          if (kDebugMode) {
+            print('Buffering timeout reached. Reconnecting to live edge...');
+          }
+          _bufferingTimeoutTimer = null;
+          playMediaItem(null);
+        });
+      } else {
+        _bufferingTimeoutTimer?.cancel();
+        _bufferingTimeoutTimer = null;
+      }
+
       notifyListeners();
     });
 
@@ -177,52 +203,48 @@ class AudioPlayerService with ChangeNotifier {
     );
 
     // Sync ICY Metadata from just_audio natively
-    player.icyMetadataStream
-        .map((m) => m?.info?.title?.trim())
-        .distinct()
-        .listen((title) {
-          if (title != null && title.isNotEmpty) {
-            final currentTag = player.sequenceState.currentSource?.tag as MediaItem?;
-            
-            // Only update current song UI if it matches the current user selection
-            if (currentTag?.id == _currentMediaItem?.id) {
-              currentSongTitle = title;
-              _isTransitioning = false;
-              notifyListeners();
-              _audioHandler.patchMediaItemMetadata(artist: title);
-            }
+    player.icyMetadataStream.map((m) => m?.info?.title?.trim()).distinct().listen((
+      title,
+    ) {
+      if (title != null && title.isNotEmpty) {
+        final currentTag =
+            player.sequenceState.currentSource?.tag as MediaItem?;
 
-            // Record song history under the actual native source that emitted the metadata
-            if (currentTag != null) {
-              final parts = title.split(' - ');
-              final artistName = parts.length > 1 ? parts[0].trim() : '';
-              final songName = parts.length > 1
-                  ? parts.sublist(1).join(' - ').trim()
-                  : title;
+        // Only update current song UI if it matches the current user selection
+        if (currentTag?.id == _currentMediaItem?.id) {
+          currentSongTitle = title;
+          _isTransitioning = false;
+          notifyListeners();
+          _audioHandler.patchMediaItemMetadata(artist: title);
+        }
 
-              HistoryService().addSong(
-                title: songName,
-                artist: artistName,
-                stationId: currentTag.id,
-                stationName: currentTag.title,
-                stationArtUrl: currentTag.safeArt128Url.isNotEmpty
-                    ? currentTag.safeArt128Url
-                    : currentTag.safeArtUrl,
-              );
-            }
-          }
-        });
+        // Record song history under the actual native source that emitted the metadata
+        if (currentTag != null) {
+          final parts = title.split(' - ');
+          final artistName = parts.length > 1 ? parts[0].trim() : '';
+          final songName = parts.length > 1
+              ? parts.sublist(1).join(' - ').trim()
+              : title;
 
-    if (kIsWeb) {
-      _preMuteVolume = _prefs.getDouble(_preMuteVolumeKey) ?? 1.0;
-      _isMuted = _prefs.getBool(_isMutedKey) ?? false;
-      final savedVolume = _prefs.getDouble(_volumeKey) ?? 1.0;
-
-      if (_isMuted) {
-        player.setVolume(0.0);
-      } else {
-        player.setVolume(savedVolume);
+          HistoryService().addSong(
+            title: songName,
+            artist: artistName,
+            stationId: currentTag.id,
+            stationName: currentTag.title,
+            stationArtUrl: currentTag.safeArt128Url,
+          );
+        }
       }
+    });
+
+    _preMuteVolume = _prefs.getDouble(_preMuteVolumeKey) ?? 1.0;
+    _isMuted = _prefs.getBool(_isMutedKey) ?? false;
+    final savedVolume = _prefs.getDouble(_volumeKey) ?? 1.0;
+
+    if (_isMuted) {
+      player.setVolume(0.0);
+    } else {
+      player.setVolume(savedVolume);
     }
 
     await _loadStations();
@@ -233,37 +255,32 @@ class AudioPlayerService with ChangeNotifier {
     }
   }
 
-  /// Updates the player volume (Web only).
+  /// Updates the player volume.
   void setVolume(double value) {
-    if (kIsWeb) {
-      final clamped = value.clamp(0.0, 1.0);
-      player.setVolume(clamped);
-      _prefs.setDouble(_volumeKey, clamped);
+    final clamped = value.clamp(0.0, 1.0);
+    player.setVolume(clamped);
+    _prefs.setDouble(_volumeKey, clamped);
 
-      // If manually setting volume > 0, unmute
-      if (clamped > 0 && _isMuted) {
-        _isMuted = false;
-        _prefs.setBool(_isMutedKey, false);
-      }
-
+    // If manually setting volume > 0, unmute
+    if (clamped > 0 && _isMuted) {
+      _isMuted = false;
+      _prefs.setBool(_isMutedKey, false);
       notifyListeners();
     }
   }
 
-  /// Toggles mute state (Web only).
+  /// Toggles mute state.
   void toggleMute() {
-    if (kIsWeb) {
-      _isMuted = !_isMuted;
-      if (_isMuted) {
-        _preMuteVolume = volume;
-        _prefs.setDouble(_preMuteVolumeKey, _preMuteVolume);
-        player.setVolume(0.0);
-      } else {
-        player.setVolume(_preMuteVolume > 0 ? _preMuteVolume : 1.0);
-      }
-      _prefs.setBool(_isMutedKey, _isMuted);
-      notifyListeners();
+    _isMuted = !_isMuted;
+    if (_isMuted) {
+      _preMuteVolume = volume;
+      _prefs.setDouble(_preMuteVolumeKey, _preMuteVolume);
+      player.setVolume(0.0);
+    } else {
+      player.setVolume(_preMuteVolume > 0 ? _preMuteVolume : 1.0);
     }
+    _prefs.setBool(_isMutedKey, _isMuted);
+    notifyListeners();
   }
 
   /// Disposes of all timers and listeners.
@@ -276,6 +293,8 @@ class AudioPlayerService with ChangeNotifier {
     _audioHandler.customAction('dispose');
     _autoplayTimer?.cancel();
     _sleepTimer?.cancel();
+    _bufferingTimeoutTimer?.cancel();
+
     try {
       _castService?.endCasting();
     } catch (_) {}
@@ -311,11 +330,8 @@ class AudioPlayerService with ChangeNotifier {
     _connectingStationId = item.id;
     notifyListeners();
     try {
-      await _audioHandler.stop();
       if (_currentMediaItem?.id != item.id) return;
-      await _setAudioSource(item);
-      if (_currentMediaItem?.id != item.id) return;
-      _audioHandler.play().catchError((_) {});
+      await _audioHandler.playMediaItem(item);
     } catch (e) {
       if (kDebugMode) print('Error playing media item: $e');
       if (_currentMediaItem?.id == item.id) {
@@ -324,44 +340,6 @@ class AudioPlayerService with ChangeNotifier {
         _isPlayIntended = false;
         _connectingStationId = null;
         notifyListeners();
-      }
-    }
-  }
-
-  /// Sets the audio source for the player, trying available codecs.
-  Future<void> _setAudioSource(MediaItem item) async {
-    final quality = _prefs.getString('streamQuality') ?? 'mp3';
-    final station = _stationMap[item.id] ?? stations.first;
-
-    final availableStreams = station.streams;
-    if (availableStreams.isEmpty) throw Exception("No valid stream URL found");
-
-    // If only one stream is available, pick it regardless of preference.
-    if (availableStreams.length == 1) {
-      await player.setAudioSource(
-        AudioSource.uri(Uri.parse(availableStreams.values.first), tag: item),
-      );
-      return;
-    }
-
-    // Try preferred quality first, then fallback to any other available.
-    final entriesPriority = [
-      if (availableStreams.containsKey(quality))
-        MapEntry(quality, availableStreams[quality]!),
-      ...availableStreams.entries.where((e) => e.key != quality),
-    ];
-
-    for (int i = 0; i < entriesPriority.length; i++) {
-      final entry = entriesPriority[i];
-      try {
-        await player.setAudioSource(
-          AudioSource.uri(Uri.parse(entry.value), tag: item),
-        );
-        return;
-      } on PlayerInterruptedException {
-        rethrow;
-      } catch (e) {
-        if (i == entriesPriority.length - 1) rethrow;
       }
     }
   }
@@ -588,6 +566,11 @@ class AudioPlayerService with ChangeNotifier {
           .toList();
       _stationMap = {for (var s in stations) s.id: s};
 
+      // Clean up favorite station IDs so they only contain existing stations
+      _favoriteStationIds = _favoriteStationIds
+          .where((id) => _stationMap.containsKey(id))
+          .toList();
+
       await _loadLastStation();
       notifyListeners();
     } catch (e) {
@@ -595,7 +578,9 @@ class AudioPlayerService with ChangeNotifier {
     } finally {
       try {
         await FirebaseFirestore.instance.disableNetwork();
-        if (kDebugMode) print('Firestore network connection disabled successfully');
+        if (kDebugMode) {
+          print('Firestore network connection disabled successfully');
+        }
       } catch (e) {
         if (kDebugMode) print('Error disabling Firestore network: $e');
       }
@@ -664,35 +649,58 @@ extension StationToMediaItem on Station {
       artUri: Uri.tryParse(getArtUrl()),
       artist: artist ?? '',
       album: slogan,
-      extras: {
-        'url': url,
-        'art128': art128,
-        'art512': art512,
-        'art1024': art1024,
-      },
+      extras: {'url': url, 'streams': streams, 'art': art},
     );
   }
 }
 
 /// Extension to handle safe artwork URLs from [MediaItem].
 extension MediaItemArt on MediaItem? {
+  String getArtUrl({double? size}) {
+    if (this == null) return '';
+    final rawArt = this?.extras?['art'];
+    final Map<String, String> artMap = {};
+    if (rawArt is Map) {
+      rawArt.forEach((k, v) {
+        artMap[k.toString()] = v.toString();
+      });
+    } else {
+      // Fallback/Legacy if art is not a map in extras
+      final extras = this?.extras;
+      if (extras != null) {
+        if (extras['art128'] != null) {
+          artMap['128'] = extras['art128'].toString();
+        }
+        if (extras['art512'] != null) {
+          artMap['512'] = extras['art512'].toString();
+        }
+        if (extras['art1024'] != null) {
+          artMap['1024'] = extras['art1024'].toString();
+        }
+      }
+      final defaultArt = safeArtUrl;
+      if (defaultArt.isNotEmpty) {
+        artMap['default'] = defaultArt;
+      }
+    }
+
+    return getArtUrlFromMap(artMap, size: size);
+  }
+
   String get safeArtUrl {
     final uri = Uri.tryParse(this?.artUri?.toString() ?? '');
     return uri != null && uri.scheme.startsWith('http') ? uri.toString() : '';
   }
 
   String get safeArt128Url {
-    final url = this?.extras?['art128']?.toString() ?? '';
-    return url.startsWith('http') ? url : '';
+    return getArtUrl(size: 128);
   }
 
   String get safeArt512Url {
-    final url = this?.extras?['art512']?.toString() ?? '';
-    return url.startsWith('http') ? url : '';
+    return getArtUrl(size: 512);
   }
 
   String get safeArt1024Url {
-    final url = this?.extras?['art1024']?.toString() ?? '';
-    return url.startsWith('http') ? url : '';
+    return getArtUrl(size: 1024);
   }
 }

@@ -13,7 +13,7 @@
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
-#.vscode/
+.vscode/
 
 # Flutter/Dart/Pub related
 .dart_tool/
@@ -39,4 +39,10 @@ skills-lock.json
 
 # Firebase & Google Cloud CLI caches/configs
 .firebase/
+
+# Node.js
+node_modules/
+package-lock.json
+package.json
+migrate_art.js
 

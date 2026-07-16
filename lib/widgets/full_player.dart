@@ -50,12 +50,8 @@ class FullPlayerContent extends StatelessWidget {
                     dimension:
                         sizes.extraLargeIncreased + sizes.largeIncreased, // 280
                     child: StationArt(
-                      artUrl: mediaItem.safeArt1024Url.isNotEmpty
-                          ? mediaItem.safeArt1024Url
-                          : mediaItem.safeArtUrl,
-                      placeholderUrl: mediaItem.safeArt512Url.isNotEmpty
-                          ? mediaItem.safeArt512Url
-                          : mediaItem.safeArt128Url,
+                      artUrl: mediaItem.safeArt1024Url,
+                      placeholderUrl: mediaItem.safeArt512Url,
                     ),
                   ),
                 ),
@@ -385,10 +381,15 @@ class VolumeSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AudioPlayerService>(
-      builder: (context, service, _) {
-        final theme = Theme.of(context);
-        final spacing = theme.extension<Spacing>()!;
+    final service = Provider.of<AudioPlayerService>(context, listen: false);
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+
+    return StreamBuilder<double>(
+      stream: service.volumeStream,
+      initialData: service.volume,
+      builder: (context, snapshot) {
+        final volume = snapshot.data ?? 1.0;
 
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: spacing.medium),
@@ -404,7 +405,7 @@ class VolumeSlider extends StatelessWidget {
               ),
               Expanded(
                 child: Slider(
-                  value: service.volume,
+                  value: volume,
                   onChanged: service.setVolume,
                 ),
               ),
