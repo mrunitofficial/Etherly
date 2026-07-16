@@ -76,6 +76,10 @@ class AudioPlayerService with ChangeNotifier {
   final ValueNotifier<bool> sleepTimerActive = ValueNotifier(false);
   bool get isSleepTimerSet => _sleepTimer != null;
 
+  /// Timer to track network buffering timeout and trigger live-edge reconnection.
+  Timer? _bufferingTimeoutTimer;
+
+
   /// Current media item.
   MediaItem? _currentMediaItem;
   MediaItem? get mediaItem => _currentMediaItem;
@@ -169,6 +173,21 @@ class AudioPlayerService with ChangeNotifier {
           stop();
         }
       }
+
+      // Reconnect if stuck buffering on a live stream for too long
+      if (state.playing && processingState == ProcessingState.buffering) {
+        _bufferingTimeoutTimer ??= Timer(const Duration(seconds: 10), () {
+          if (kDebugMode) {
+            print('Buffering timeout reached. Reconnecting to live edge...');
+          }
+          _bufferingTimeoutTimer = null;
+          playMediaItem(null);
+        });
+      } else {
+        _bufferingTimeoutTimer?.cancel();
+        _bufferingTimeoutTimer = null;
+      }
+
       notifyListeners();
     });
 
@@ -275,6 +294,8 @@ class AudioPlayerService with ChangeNotifier {
     _audioHandler.customAction('dispose');
     _autoplayTimer?.cancel();
     _sleepTimer?.cancel();
+    _bufferingTimeoutTimer?.cancel();
+
     try {
       _castService?.endCasting();
     } catch (_) {}
@@ -310,12 +331,8 @@ class AudioPlayerService with ChangeNotifier {
     _connectingStationId = item.id;
     notifyListeners();
     try {
-      await _audioHandler.stop();
       if (_currentMediaItem?.id != item.id) return;
-      await _setAudioSource(item);
-      if (_currentMediaItem?.id != item.id) return;
-      if (!_isPlayIntended) return;
-      _audioHandler.play().catchError((_) {});
+      await _audioHandler.playMediaItem(item);
     } catch (e) {
       if (kDebugMode) print('Error playing media item: $e');
       if (_currentMediaItem?.id == item.id) {
@@ -324,44 +341,6 @@ class AudioPlayerService with ChangeNotifier {
         _isPlayIntended = false;
         _connectingStationId = null;
         notifyListeners();
-      }
-    }
-  }
-
-  /// Sets the audio source for the player, trying available codecs.
-  Future<void> _setAudioSource(MediaItem item) async {
-    final quality = _prefs.getString('streamQuality') ?? 'mp3';
-    final station = _stationMap[item.id] ?? stations.first;
-
-    final availableStreams = station.streams;
-    if (availableStreams.isEmpty) throw Exception("No valid stream URL found");
-
-    // If only one stream is available, pick it regardless of preference.
-    if (availableStreams.length == 1) {
-      await player.setAudioSource(
-        AudioSource.uri(Uri.parse(availableStreams.values.first), tag: item),
-      );
-      return;
-    }
-
-    // Try preferred quality first, then fallback to any other available.
-    final entriesPriority = [
-      if (availableStreams.containsKey(quality))
-        MapEntry(quality, availableStreams[quality]!),
-      ...availableStreams.entries.where((e) => e.key != quality),
-    ];
-
-    for (int i = 0; i < entriesPriority.length; i++) {
-      final entry = entriesPriority[i];
-      try {
-        await player.setAudioSource(
-          AudioSource.uri(Uri.parse(entry.value), tag: item),
-        );
-        return;
-      } on PlayerInterruptedException {
-        rethrow;
-      } catch (e) {
-        if (i == entriesPriority.length - 1) rethrow;
       }
     }
   }
@@ -671,6 +650,7 @@ extension StationToMediaItem on Station {
       album: slogan,
       extras: {
         'url': url,
+        'streams': streams,
         'art128': art128,
         'art512': art512,
         'art1024': art1024,

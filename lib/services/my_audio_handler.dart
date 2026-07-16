@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 Future<MyAudioHandler>? _audioHandlerFuture;
 
 /// Initializes the AudioService for OS-level background audio notifications and controls.
@@ -54,12 +56,56 @@ class MyAudioHandler extends BaseAudioHandler {
 
   Future<void> _initAudioSession() async {
     _audioSession = await AudioSession.instance;
+    await _audioSession!.configure(const AudioSessionConfiguration.music());
   }
 
   /// Updates the currently displaying media item on the OS lock screen.
   @override
   Future<void> updateMediaItem(MediaItem item) async {
     mediaItem.add(item);
+  }
+
+  /// Plays a media item by setting the audio source and beginning playback.
+  @override
+  Future<void> playMediaItem(MediaItem item) async {
+    mediaItem.add(item);
+
+    final streamsObj = item.extras?['streams'];
+    Map<String, String> streams = {};
+    if (streamsObj is Map) {
+      streams = streamsObj.map((k, v) => MapEntry(k.toString(), v.toString()));
+    } else {
+      final url = item.extras?['url'] as String? ?? '';
+      if (url.isNotEmpty) {
+        streams['mp3'] = url;
+      }
+    }
+
+    if (streams.isEmpty) throw Exception("No valid stream URL found");
+
+    final prefs = await SharedPreferences.getInstance();
+    final quality = prefs.getString('streamQuality') ?? 'mp3';
+
+    final entriesPriority = [
+      if (streams.containsKey(quality))
+        MapEntry(quality, streams[quality]!),
+      ...streams.entries.where((e) => e.key != quality),
+    ];
+
+    for (int i = 0; i < entriesPriority.length; i++) {
+      final entry = entriesPriority[i];
+      try {
+        await player.setAudioSource(
+          AudioSource.uri(Uri.parse(entry.value), tag: item),
+        );
+        await play();
+        return;
+      } on PlayerInterruptedException {
+        rethrow;
+      } catch (e) {
+        if (i == entriesPriority.length - 1) rethrow;
+      }
+    }
   }
 
   /// Quickly patches metadata (like artist/song title from ICY data) into the existing MediaItem.
