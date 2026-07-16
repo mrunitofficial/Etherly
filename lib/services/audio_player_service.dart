@@ -110,8 +110,12 @@ class AudioPlayerService with ChangeNotifier {
     return _isTransitioning || isBuffering;
   }
 
-  /// Volume level on web.
-  double get volume => kIsWeb ? player.volume : 1.0;
+  /// Volume level of the player.
+  double get volume => player.volume;
+
+  /// Stream of player volume changes.
+  Stream<double> get volumeStream => player.volumeStream;
+
 
   /// Creates the service and attaches listeners to the optional cast service.
   AudioPlayerService([this._castService]) {
@@ -213,17 +217,16 @@ class AudioPlayerService with ChangeNotifier {
           }
         });
 
-    if (kIsWeb) {
-      _preMuteVolume = _prefs.getDouble(_preMuteVolumeKey) ?? 1.0;
-      _isMuted = _prefs.getBool(_isMutedKey) ?? false;
-      final savedVolume = _prefs.getDouble(_volumeKey) ?? 1.0;
+    _preMuteVolume = _prefs.getDouble(_preMuteVolumeKey) ?? 1.0;
+    _isMuted = _prefs.getBool(_isMutedKey) ?? false;
+    final savedVolume = _prefs.getDouble(_volumeKey) ?? 1.0;
 
-      if (_isMuted) {
-        player.setVolume(0.0);
-      } else {
-        player.setVolume(savedVolume);
-      }
+    if (_isMuted) {
+      player.setVolume(0.0);
+    } else {
+      player.setVolume(savedVolume);
     }
+
 
     await _loadStations();
     await _checkAutoplay();
@@ -233,38 +236,34 @@ class AudioPlayerService with ChangeNotifier {
     }
   }
 
-  /// Updates the player volume (Web only).
+  /// Updates the player volume.
   void setVolume(double value) {
-    if (kIsWeb) {
-      final clamped = value.clamp(0.0, 1.0);
-      player.setVolume(clamped);
-      _prefs.setDouble(_volumeKey, clamped);
+    final clamped = value.clamp(0.0, 1.0);
+    player.setVolume(clamped);
+    _prefs.setDouble(_volumeKey, clamped);
 
-      // If manually setting volume > 0, unmute
-      if (clamped > 0 && _isMuted) {
-        _isMuted = false;
-        _prefs.setBool(_isMutedKey, false);
-      }
-
+    // If manually setting volume > 0, unmute
+    if (clamped > 0 && _isMuted) {
+      _isMuted = false;
+      _prefs.setBool(_isMutedKey, false);
       notifyListeners();
     }
   }
 
-  /// Toggles mute state (Web only).
+  /// Toggles mute state.
   void toggleMute() {
-    if (kIsWeb) {
-      _isMuted = !_isMuted;
-      if (_isMuted) {
-        _preMuteVolume = volume;
-        _prefs.setDouble(_preMuteVolumeKey, _preMuteVolume);
-        player.setVolume(0.0);
-      } else {
-        player.setVolume(_preMuteVolume > 0 ? _preMuteVolume : 1.0);
-      }
-      _prefs.setBool(_isMutedKey, _isMuted);
-      notifyListeners();
+    _isMuted = !_isMuted;
+    if (_isMuted) {
+      _preMuteVolume = volume;
+      _prefs.setDouble(_preMuteVolumeKey, _preMuteVolume);
+      player.setVolume(0.0);
+    } else {
+      player.setVolume(_preMuteVolume > 0 ? _preMuteVolume : 1.0);
     }
+    _prefs.setBool(_isMutedKey, _isMuted);
+    notifyListeners();
   }
+
 
   /// Disposes of all timers and listeners.
   @override
