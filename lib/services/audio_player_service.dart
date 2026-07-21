@@ -494,52 +494,59 @@ class AudioPlayerService with ChangeNotifier {
     autoplayCountdownNotifier.value = 0;
   }
 
-  /// Loads the station list from the remote repository.
+  /// Loads the station list from local cache first for instant startup, then syncs the remote bundle.
   Future<void> _loadStations() async {
+    await _readStationsFromCache();
+
+    final fetchBundleFuture = _fetchAndLoadBundle();
+    if (stations.isEmpty) {
+      await fetchBundleFuture;
+      await _readStationsFromCache();
+    } else {
+      // Refresh cache in background if already populated
+      fetchBundleFuture.then((_) => _readStationsFromCache()).catchError((_) {});
+    }
+  }
+
+  Future<void> _fetchAndLoadBundle() async {
     try {
-      // 1. Download the bundle from the website host (CDN)
       final bundleUrl = Uri.parse(
-        'https://etherly-firebase.firebaseapp.com/bundles/stations_bundle?t=${DateTime.now().millisecondsSinceEpoch}',
+        'https://etherly-firebase.firebaseapp.com/bundles/stations_bundle',
       );
       final response = await http
           .get(bundleUrl)
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        final Uint8List bundleBytes = response.bodyBytes;
-        // 2. Load the bundle into Firestore local memory cache
         final LoadBundleTask task = FirebaseFirestore.instance.loadBundle(
-          bundleBytes,
+          response.bodyBytes,
         );
         await task.stream.last;
         if (kDebugMode) print('Firestore bundle loaded successfully');
-      } else {
-        if (kDebugMode) {
-          print('Failed to load Firestore bundle: ${response.statusCode}');
-        }
       }
     } catch (e) {
-      if (kDebugMode) print('Error fetching or loading Firestore bundle: $e');
+      if (kDebugMode) print('Error fetching Firestore bundle: $e');
     }
+  }
 
+  Future<void> _readStationsFromCache() async {
     try {
-      // 3. Execute the named query to unpack and read stations from local memory/cache
       final QuerySnapshot<Map<String, dynamic>> snapshot =
           await FirebaseFirestore.instance.namedQueryGet(
             'all_stations',
             options: const GetOptions(source: Source.cache),
           );
 
-      // Filter out inactive stations
       final activeDocs = snapshot.docs.where((doc) {
         final data = doc.data();
         return data['active'] == true || data['active'] == null;
       }).toList();
 
-      stations = activeDocs.map((doc) => Station.fromFirestore(doc)).toList();
+      final loaded =
+          activeDocs.map((doc) => Station.fromFirestore(doc)).toList();
+      if (loaded.isEmpty) return;
 
-      // Sort by rank if it exists, otherwise leave order or sort by name
-      stations.sort((a, b) {
+      loaded.sort((a, b) {
         if (a.rank != null && b.rank != null) {
           return a.rank!.compareTo(b.rank!);
         }
@@ -551,7 +558,7 @@ class AudioPlayerService with ChangeNotifier {
       _favoriteStationIds = _prefs.getStringList(_favoriteStationIdsKey) ?? [];
       _recentStationIds = _prefs.getStringList(_recentStationIdsKey) ?? [];
 
-      stations = stations
+      stations = loaded
           .map(
             (s) => _favoriteStationIds.contains(s.id)
                 ? s.copyWith(isFavorite: true)
@@ -560,7 +567,6 @@ class AudioPlayerService with ChangeNotifier {
           .toList();
       _stationMap = {for (var s in stations) s.id: s};
 
-      // Clean up favorite station IDs so they only contain existing stations
       _favoriteStationIds = _favoriteStationIds
           .where((id) => _stationMap.containsKey(id))
           .toList();
@@ -572,12 +578,7 @@ class AudioPlayerService with ChangeNotifier {
     } finally {
       try {
         await FirebaseFirestore.instance.disableNetwork();
-        if (kDebugMode) {
-          print('Firestore network connection disabled successfully');
-        }
-      } catch (e) {
-        if (kDebugMode) print('Error disabling Firestore network: $e');
-      }
+      } catch (_) {}
     }
   }
 
