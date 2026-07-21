@@ -96,8 +96,17 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
+      - name: Decode Android Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
       - name: Build Android APK (Release)
         run: flutter build apk --release
+        env:
+          KEYSTORE_PATH: upload-keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -195,8 +204,9 @@ jobs:
       - name: Extract version from pubspec.yaml
         id: get_version
         run: |
-          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr '+' '-' | tr -d '[:space:]"')
-          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          RAW_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr '+' '-' | tr -d '[:space:]"')
+          TAG_NAME="v${RAW_VERSION}"
+          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         env:
@@ -205,7 +215,7 @@ jobs:
           APK_FILE=$(find build/app/outputs/flutter-apk -name "*.apk" | head -n 1)
           echo "Found APK file: $APK_FILE"
           mv "$APK_FILE" build/app/outputs/flutter-apk/Etherly.apk
-          gh release create ${{ steps.get_version.outputs.tag }} build/app/outputs/flutter-apk/Etherly.apk --notes "Web App: https://etherly-firebase.web.app" --generate-notes
+          gh release create "${{ steps.get_version.outputs.tag }}" build/app/outputs/flutter-apk/Etherly.apk --notes "Web App: https://etherly-firebase.web.app" --generate-notes --clobber || true
 
       - name: Print Production Info
         run: |
