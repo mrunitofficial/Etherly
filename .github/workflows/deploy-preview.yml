@@ -1,44 +1,16 @@
-name: Pull Request Verification
+name: Deploy Preview on Merge to Preview
 
 on:
-  pull_request:
+  push:
     branches:
-      - develop
       - preview
-      - main
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 permissions:
   contents: read
+  deployments: write
 
 jobs:
-  verify_branch_rules:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verify PR branch constraints
-        run: |
-          TARGET_BRANCH="${{ github.base_ref }}"
-          SOURCE_BRANCH="${{ github.head_ref }}"
-          echo "Target branch: $TARGET_BRANCH"
-          echo "Source branch: $SOURCE_BRANCH"
-          
-          if [ "$TARGET_BRANCH" = "main" ] && [ "$SOURCE_BRANCH" != "preview" ]; then
-            echo "ERROR: Pull requests to 'main' must originate from the 'preview' branch. Got '$SOURCE_BRANCH'."
-            exit 1
-          fi
-          
-          if [ "$TARGET_BRANCH" = "preview" ] && [ "$SOURCE_BRANCH" != "develop" ]; then
-            echo "ERROR: Pull requests to 'preview' must originate from the 'develop' branch. Got '$SOURCE_BRANCH'."
-            exit 1
-          fi
-          
-          echo "PR branch constraint check passed."
-
   analyze:
-    needs: verify_branch_rules
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -81,9 +53,11 @@ jobs:
       - name: Analyze Project Code
         run: flutter analyze
 
-  build_check_apk:
+  build_apk:
     needs: analyze
     runs-on: ubuntu-latest
+    outputs:
+      artifact_id: ${{ steps.upload_apk.outputs.artifact-id }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -122,10 +96,18 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
-      - name: Build Android APK (Debug Check)
+      - name: Build Android APK (Debug)
         run: flutter build apk --debug
 
-  build_check_web:
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        id: upload_apk
+        with:
+          name: etherly-preview-apk
+          path: build/app/outputs/flutter-apk/*.apk
+          retention-days: 14
+
+  build_web:
     needs: analyze
     runs-on: ubuntu-latest
     steps:
@@ -156,12 +138,58 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
-      - name: Build Web (Release Check)
-        run: flutter build web --release
+      - name: Build Web Release
+        run: |
+          flutter build web --release
+          echo "${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}" > build/web/version.txt
 
-  verification_complete:
-    needs: [build_check_apk, build_check_web]
+      - name: Upload Web Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-preview-build
+          path: build/web
+          retention-days: 14
+
+  deploy_web:
+    needs: build_web
+    runs-on: ubuntu-latest
+    outputs:
+      details_url: ${{ steps.deploy_preview.outputs.details_url }}
+    environment:
+      name: Preview
+      url: ${{ steps.deploy_preview.outputs.details_url }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Web Build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-preview-build
+          path: build/web
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Deploy to Firebase Hosting Preview
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        id: deploy_preview
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ETHERLY_FIREBASE }}
+          projectId: etherly-firebase
+          channelId: preview
+
+  notify_preview:
+    needs: [build_apk, deploy_web]
     runs-on: ubuntu-latest
     steps:
-      - name: Log Completion
-        run: echo "All verification checks completed successfully."
+      - name: Print Preview Info
+        run: |
+          echo "### Preview Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Web Preview Link:** [Visit Preview Website](${{ needs.deploy_web.outputs.details_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "**Android Debug APK:** [Download Preview APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ needs.build_apk.outputs.artifact_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "All preview deployment actions completed successfully."
