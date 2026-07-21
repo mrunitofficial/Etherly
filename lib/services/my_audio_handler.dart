@@ -90,19 +90,36 @@ class MyAudioHandler extends BaseAudioHandler {
       ...streams.entries.where((e) => e.key != quality),
     ];
 
+    final failedQualities = <String>[];
+
     for (int i = 0; i < entriesPriority.length; i++) {
       final entry = entriesPriority[i];
+      if (entry.value.trim().isEmpty) {
+        failedQualities.add(entry.key);
+        continue;
+      }
       try {
         await player.stop();
         await player.setAudioSource(
           AudioSource.uri(Uri.parse(entry.value), tag: item),
         );
         await play();
+
+        final extras = Map<String, dynamic>.from(item.extras ?? {});
+        extras['activeQuality'] = entry.key;
+        extras['failedQualities'] = failedQualities;
+        updateMediaItem(item.copyWith(extras: extras));
         return;
       } on PlayerInterruptedException {
         rethrow;
       } catch (e) {
-        if (i == entriesPriority.length - 1) rethrow;
+        failedQualities.add(entry.key);
+        if (i == entriesPriority.length - 1) {
+          final extras = Map<String, dynamic>.from(item.extras ?? {});
+          extras['failedQualities'] = failedQualities;
+          updateMediaItem(item.copyWith(extras: extras));
+          rethrow;
+        }
       }
     }
   }
