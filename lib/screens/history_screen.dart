@@ -35,10 +35,7 @@ class HistoryScreen extends StatelessWidget {
     }
   }
 
-  List<dynamic> _buildFlatHistoryList(
-    List<Song> songs,
-    AppLocalizations? loc,
-  ) {
+  List<dynamic> _buildFlatHistoryList(List<Song> songs, AppLocalizations? loc) {
     final List<dynamic> flatList = [];
     String? currentHeader;
 

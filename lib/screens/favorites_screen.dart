@@ -150,46 +150,50 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         if (favoriteStations.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.favorite_border,
-                    size: sizes.large,
-                    color: theme.colorScheme.primary,
-                  ),
-                  SizedBox(height: spacing.medium),
-                  Text(
-                    loc?.favoritesEmptyTitle ?? 'No favorite stations yet',
-                    style: theme.textTheme.headlineMedium,
-                  ),
-                  SizedBox(height: spacing.small),
-                  Text(
-                    loc?.favoritesEmptySubtitle ??
-                        'Favorite a radio station first',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  SizedBox(height: spacing.large),
-                ],
+            child: Padding(
+              padding: EdgeInsets.only(bottom: widget.bottomPadding),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.favorite_border,
+                      size: sizes.large,
+                      color: theme.colorScheme.primary,
+                    ),
+                    SizedBox(height: spacing.medium),
+                    Text(
+                      loc?.favoritesEmptyTitle ?? 'No favorite stations yet',
+                      style: theme.textTheme.headlineMedium,
+                    ),
+                    SizedBox(height: spacing.small),
+                    Text(
+                      loc?.favoritesEmptySubtitle ??
+                          'Favorite a radio station first',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    SizedBox(height: spacing.large),
+                  ],
+                ),
               ),
             ),
           )
-        else if (_viewType == ViewType.list)
-          _buildListSlivers(favoriteStations, audioPlayerService, spacing, sizes)
-        else
-          _buildSliverGrid(
-            favoriteStations,
-            audioPlayerService,
-            spacing,
-            shapes,
+        else ...[
+          if (_viewType == ViewType.list)
+            _buildListSlivers(favoriteStations, audioPlayerService, spacing, sizes)
+          else
+            _buildSliverGrid(
+              favoriteStations,
+              audioPlayerService,
+              spacing,
+              shapes,
+            ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom: widget.bottomPadding + spacing.medium,
+            ),
           ),
-
-        SliverPadding(
-          padding: EdgeInsets.only(
-            bottom: widget.bottomPadding + spacing.medium,
-          ),
-        ),
+        ],
       ],
     );
   }

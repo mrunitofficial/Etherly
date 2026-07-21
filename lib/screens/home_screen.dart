@@ -247,31 +247,34 @@ class _HomeScreenState extends State<HomeScreen>
         if (sections.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.radio_outlined,
-                    size: sizes.large,
-                    color: theme.colorScheme.primary,
-                  ),
-                  SizedBox(height: spacing.medium),
-                  Text(
-                    loc?.homeEmptyTitle ?? 'No stations',
-                    style: theme.textTheme.headlineMedium,
-                  ),
-                  SizedBox(height: spacing.small),
-                  Text(
-                    loc?.homeEmptySubtitle ?? 'No radio stations available',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  SizedBox(height: spacing.large),
-                ],
+            child: Padding(
+              padding: EdgeInsets.only(bottom: widget.bottomPadding),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.radio_outlined,
+                      size: sizes.large,
+                      color: theme.colorScheme.primary,
+                    ),
+                    SizedBox(height: spacing.medium),
+                    Text(
+                      loc?.homeEmptyTitle ?? 'No stations',
+                      style: theme.textTheme.headlineMedium,
+                    ),
+                    SizedBox(height: spacing.small),
+                    Text(
+                      loc?.homeEmptySubtitle ?? 'No radio stations available',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    SizedBox(height: spacing.large),
+                  ],
+                ),
               ),
             ),
           )
-        else
+        else ...[
           ...sections.map(
             (section) => SliverToBoxAdapter(
               child: CategoryRow(
@@ -280,12 +283,12 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
           ),
-        // Unified bottom padding sliver
-        SliverPadding(
-          padding: EdgeInsets.only(
-            bottom: widget.bottomPadding + spacing.medium,
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom: widget.bottomPadding + spacing.medium,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

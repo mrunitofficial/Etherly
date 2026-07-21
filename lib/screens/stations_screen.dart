@@ -155,45 +155,49 @@ class _StationsScreenState extends State<StationsScreen>
         if (stations.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.radio,
-                    size: sizes.large,
-                    color: theme.colorScheme.primary,
-                  ),
-                  SizedBox(height: spacing.medium),
-                  Text(
-                    loc?.stationsEmptyTitle ?? 'No stations',
-                    style: theme.textTheme.headlineMedium,
-                  ),
-                  SizedBox(height: spacing.small),
-                  Text(
-                    loc?.stationsEmptySubtitle ?? 'No radio stations found',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  SizedBox(height: spacing.large),
-                ],
+            child: Padding(
+              padding: EdgeInsets.only(bottom: widget.bottomPadding),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.radio,
+                      size: sizes.large,
+                      color: theme.colorScheme.primary,
+                    ),
+                    SizedBox(height: spacing.medium),
+                    Text(
+                      loc?.stationsEmptyTitle ?? 'No stations',
+                      style: theme.textTheme.headlineMedium,
+                    ),
+                    SizedBox(height: spacing.small),
+                    Text(
+                      loc?.stationsEmptySubtitle ?? 'No radio stations found',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    SizedBox(height: spacing.large),
+                  ],
+                ),
               ),
             ),
           )
-        else if (_viewType == ViewType.list)
-          ..._buildListSlivers(
-            _getGroupedStations(stations),
-            audioPlayerService,
-            spacing,
-            sizes,
-          )
-        else
-          _buildSliverGrid(stations, audioPlayerService, spacing, shapes),
-
-        SliverPadding(
-          padding: EdgeInsets.only(
-            bottom: widget.bottomPadding + spacing.medium,
+        else ...[
+          if (_viewType == ViewType.list)
+            ..._buildListSlivers(
+              _getGroupedStations(stations),
+              audioPlayerService,
+              spacing,
+              sizes,
+            )
+          else
+            _buildSliverGrid(stations, audioPlayerService, spacing, shapes),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom: widget.bottomPadding + spacing.medium,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
