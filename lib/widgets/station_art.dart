@@ -52,6 +52,9 @@ class StationArt extends StatelessWidget {
       resolvedPlaceholderUrl = placeholderUrl ?? '';
     }
 
+    final speed = Theme.of(context).extension<Speed>() ?? Speed();
+    final fadeDuration = speed.medium1;
+
     final bool hasSeparatePlaceholder =
         resolvedPlaceholderUrl.isNotEmpty && resolvedPlaceholderUrl != resolvedArtUrl;
 
@@ -61,15 +64,13 @@ class StationArt extends StatelessWidget {
             imageUrl: resolvedArtUrl,
             fit: BoxFit.cover,
             useOldImageOnUrlChange: true,
-            fadeInDuration: hasSeparatePlaceholder
-                ? Duration.zero
-                : const Duration(milliseconds: 250),
+            fadeInDuration: hasSeparatePlaceholder ? Duration.zero : fadeDuration,
             placeholder: (context, url) => hasSeparatePlaceholder
                 ? CachedNetworkImage(
                     imageUrl: resolvedPlaceholderUrl,
                     fit: BoxFit.cover,
                     useOldImageOnUrlChange: true,
-                    fadeInDuration: const Duration(milliseconds: 250),
+                    fadeInDuration: fadeDuration,
                     errorWidget: (context, url, error) => fallback,
                   )
                 : fallback,
