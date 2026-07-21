@@ -10,6 +10,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:flutter/services.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
 import 'firebase_options.dart';
 import 'localization/app_localizations.dart';
 import 'services/audio_player_service.dart';
@@ -22,6 +24,7 @@ import 'models/device.dart';
 /// Entry point of the application.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting();
 
   // Check if device is Android TV
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {

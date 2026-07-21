@@ -31,7 +31,7 @@ class HistoryScreen extends StatelessWidget {
     } else if (songDate == yesterday) {
       return loc?.historyYesterday ?? 'Yesterday';
     } else {
-      return DateFormat('MMMM d, yyyy').format(timestamp);
+      return DateFormat.yMMMMd(loc?.localeName).format(timestamp);
     }
   }
 
@@ -51,13 +51,14 @@ class HistoryScreen extends StatelessWidget {
     BuildContext context,
     AudioPlayerService service,
     String artistName,
-    String songName,
-  ) async {
+    String songName, {
+    bool forceAsk = false,
+  }) async {
     final prefs = service.prefs;
-    String? selectedApp = prefs.getString('favoriteMusicApp');
+    String? selectedApp = forceAsk ? null : prefs.getString('favoriteMusicApp');
     final wasAlwaysAsk = selectedApp == 'always_ask' || selectedApp == null;
 
-    if (!wasAlwaysAsk && selectedApp != 'internet_search') {
+    if (!forceAsk && !wasAlwaysAsk && selectedApp != 'internet_search') {
       final availableApps = await MusicAppService().getAvailableApps();
       if (!availableApps.any((app) => app['id'] == selectedApp)) {
         await prefs.setString('favoriteMusicApp', 'always_ask');
@@ -65,7 +66,7 @@ class HistoryScreen extends StatelessWidget {
       }
     }
 
-    if (selectedApp == null || wasAlwaysAsk) {
+    if (forceAsk || selectedApp == null || wasAlwaysAsk) {
       if (!context.mounted) return;
       selectedApp = await showDialog<String>(
         context: context,
@@ -73,7 +74,7 @@ class HistoryScreen extends StatelessWidget {
       );
 
       if (selectedApp == null) return;
-      if (!wasAlwaysAsk) {
+      if (!forceAsk && !wasAlwaysAsk) {
         await prefs.setString('favoriteMusicApp', selectedApp);
       }
     }
@@ -199,6 +200,15 @@ class HistoryScreen extends StatelessWidget {
                               audioService,
                               item.artist,
                               item.title,
+                            );
+                          },
+                          onLongPress: () {
+                            _searchSong(
+                              context,
+                              audioService,
+                              item.artist,
+                              item.title,
+                              forceAsk: true,
                             );
                           },
                         ),
