@@ -62,11 +62,11 @@ jobs:
             
             let autoTitle = '';
             if (targetBranch === 'main') {
-              autoTitle = `release: merge preview (v${version}) to main`;
+              autoTitle = `Release: merge preview (v${version}) to main`;
             } else if (targetBranch === 'preview') {
-              autoTitle = `preview: merge develop (v${version}) to preview`;
+              autoTitle = `Preview: merge develop (v${version}) to preview`;
             } else {
-              autoTitle = `feat: merge ${sourceBranch} to ${targetBranch}`;
+              autoTitle = `Feat: merge ${sourceBranch} to ${targetBranch}`;
             }
             
             console.log(`Updating PR title to: ${autoTitle}`);
