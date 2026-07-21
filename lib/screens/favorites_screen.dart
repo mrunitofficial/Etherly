@@ -19,15 +19,11 @@ const String _favoritesViewTypeKey = 'favorites_view_type';
 
 enum ViewType { list, grid }
 
-typedef ContentLoadedCallback = void Function();
-
 class FavoritesScreen extends StatefulWidget {
-  final ContentLoadedCallback? onContentLoaded;
   final ScreenType screenType;
   final double bottomPadding;
   const FavoritesScreen({
     super.key,
-    this.onContentLoaded,
     required this.screenType,
     this.bottomPadding = 0.0,
   });
@@ -71,7 +67,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
 
     if (mounted) {
       setState(() => _isInitialized = true);
-      widget.onContentLoaded?.call();
     }
   }
 

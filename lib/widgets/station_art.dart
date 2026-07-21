@@ -52,20 +52,25 @@ class StationArt extends StatelessWidget {
       resolvedPlaceholderUrl = placeholderUrl ?? '';
     }
 
+    final bool hasSeparatePlaceholder =
+        resolvedPlaceholderUrl.isNotEmpty && resolvedPlaceholderUrl != resolvedArtUrl;
+
     Widget art = resolvedArtUrl.isEmpty
         ? fallback
         : CachedNetworkImage(
-            key: ValueKey(resolvedArtUrl),
             imageUrl: resolvedArtUrl,
             fit: BoxFit.cover,
-            fadeInDuration: Duration.zero,
-            fadeOutDuration: Duration.zero,
-            placeholder: (context, url) =>
-                resolvedPlaceholderUrl.isNotEmpty
-                ? Image(
-                    image: CachedNetworkImageProvider(resolvedPlaceholderUrl),
+            useOldImageOnUrlChange: true,
+            fadeInDuration: hasSeparatePlaceholder
+                ? Duration.zero
+                : const Duration(milliseconds: 250),
+            placeholder: (context, url) => hasSeparatePlaceholder
+                ? CachedNetworkImage(
+                    imageUrl: resolvedPlaceholderUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => fallback,
+                    useOldImageOnUrlChange: true,
+                    fadeInDuration: const Duration(milliseconds: 250),
+                    errorWidget: (context, url, error) => fallback,
                   )
                 : fallback,
             errorWidget: (context, url, error) => fallback,

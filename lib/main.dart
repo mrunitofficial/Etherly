@@ -106,7 +106,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     themeNotifier.addListener(_onThemeChange);
     _initAudioService();
-    Future.delayed(const Duration(seconds: 3), _triggerFadeIn);
+    Future.delayed(const Duration(seconds: 5), _triggerFadeIn);
   }
 
   @override
@@ -120,11 +120,9 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _triggerFadeIn() {
-    if (!_showApp) {
-      Future.delayed(const Duration(milliseconds: 450), () {
-        setState(() {
-          _showApp = true;
-        });
+    if (!_showApp && mounted) {
+      setState(() {
+        _showApp = true;
       });
     }
   }

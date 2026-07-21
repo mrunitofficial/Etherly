@@ -16,15 +16,11 @@ const String _radioViewTypeKey = 'radio_view_type';
 
 enum ViewType { list, grid }
 
-typedef ContentLoadedCallback = void Function();
-
 class StationsScreen extends StatefulWidget {
-  final ContentLoadedCallback? onContentLoaded;
   final ScreenType screenType;
   final double bottomPadding;
   const StationsScreen({
     super.key,
-    this.onContentLoaded,
     required this.screenType,
     this.bottomPadding = 0.0,
   });
@@ -68,7 +64,6 @@ class _StationsScreenState extends State<StationsScreen>
 
     if (mounted) {
       setState(() => _isInitialized = true);
-      widget.onContentLoaded?.call();
     }
   }
 

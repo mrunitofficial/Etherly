@@ -16,15 +16,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const int _minTotalCategories = 8;
 
-typedef ContentLoadedCallback = void Function();
-
 class HomeScreen extends StatefulWidget {
-  final ContentLoadedCallback? onContentLoaded;
   final double bottomPadding;
   final bool isActive;
   const HomeScreen({
     super.key,
-    this.onContentLoaded,
     this.bottomPadding = 0.0,
     this.isActive = false,
   });
@@ -93,7 +89,6 @@ class _HomeScreenState extends State<HomeScreen>
       await _loadCachedRegionalStations();
       _fetchRegionalStations();
       setState(() => _isInitialized = true);
-      widget.onContentLoaded?.call();
     }
   }
 

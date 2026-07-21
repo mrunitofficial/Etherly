@@ -15,8 +15,6 @@ import 'stations_screen.dart';
 import 'favorites_screen.dart';
 import '../widgets/cast_devices.dart';
 
-typedef HomeContentLoadedCallback = void Function();
-
 /// A destination for the app's main navigation.
 class _AppDestination {
   final String labelKey;
@@ -34,7 +32,7 @@ class _AppDestination {
 
 class AppScreen extends StatefulWidget {
   final int startingTab;
-  final HomeContentLoadedCallback? onHomeContentLoaded;
+  final VoidCallback? onHomeContentLoaded;
 
   const AppScreen({
     super.key,
@@ -74,7 +72,6 @@ class _AppScreenState extends State<AppScreen>
         icon: Icons.home_outlined,
         selectedIcon: Icons.home,
         builder: (context, _, padding, isActive) => HomeScreen(
-          onContentLoaded: widget.onHomeContentLoaded,
           bottomPadding: padding,
           isActive: isActive,
         ),
@@ -84,7 +81,6 @@ class _AppScreenState extends State<AppScreen>
         icon: Icons.radio_outlined,
         selectedIcon: Icons.radio,
         builder: (context, screenType, padding, _) => StationsScreen(
-          onContentLoaded: widget.onHomeContentLoaded,
           screenType: screenType,
           bottomPadding: padding,
         ),
@@ -94,7 +90,6 @@ class _AppScreenState extends State<AppScreen>
         icon: Icons.favorite_outline,
         selectedIcon: Icons.favorite,
         builder: (context, screenType, padding, _) => FavoritesScreen(
-          onContentLoaded: widget.onHomeContentLoaded,
           screenType: screenType,
           bottomPadding: padding,
         ),
@@ -103,18 +98,27 @@ class _AppScreenState extends State<AppScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final service = context.read<AudioPlayerService>();
-      if (service.stations.isNotEmpty) {
+      if (!mounted) return;
+
+      void triggerPrecache() {
         service.precacheAllStationArt(context).then((_) {
-          widget.onHomeContentLoaded?.call();
-        });
-      } else {
-        service.isReady.addListener(() {
-          if (service.isReady.value) {
-            service.precacheAllStationArt(context).then((_) {
-              widget.onHomeContentLoaded?.call();
-            });
+          if (mounted) {
+            widget.onHomeContentLoaded?.call();
           }
         });
+      }
+
+      if (service.stations.isNotEmpty) {
+        triggerPrecache();
+      } else {
+        void onReady() {
+          if (service.isReady.value) {
+            service.isReady.removeListener(onReady);
+            triggerPrecache();
+          }
+        }
+
+        service.isReady.addListener(onReady);
       }
     });
   }

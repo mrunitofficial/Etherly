@@ -420,19 +420,13 @@ class AudioPlayerService with ChangeNotifier {
     await playMediaItem(stations[prevIndex]);
   }
 
-  /// Pre-fetches all station art in parallel to improve UI responsiveness.
+  /// Pre-fetches all station art icons in parallel to improve UI responsiveness.
   Future<void> precacheAllStationArt(BuildContext context) async {
     final futures = <Future<void>>[];
     for (final station in stations) {
       final art128Url = station.getArtUrl(size: 128);
       if (art128Url.isNotEmpty) {
         final provider = CachedNetworkImageProvider(art128Url);
-        futures.add(precacheImage(provider, context).catchError((_) {}));
-      }
-
-      final art512Url = station.getArtUrl(size: 512);
-      if (art512Url.isNotEmpty && art512Url != art128Url) {
-        final provider = CachedNetworkImageProvider(art512Url);
         futures.add(precacheImage(provider, context).catchError((_) {}));
       }
     }
