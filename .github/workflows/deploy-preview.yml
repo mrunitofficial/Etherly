@@ -194,11 +194,31 @@ jobs:
   notify_preview:
     needs: [build_apk, deploy_web]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Print Preview Info
         run: |
           echo "### Preview Deployment Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Web Preview Link:** [Visit Preview Website](${{ needs.deploy_web.outputs.details_url }})" >> $GITHUB_STEP_SUMMARY
-          echo "**Android Debug APK:** [Download Preview APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ needs.build_apk.outputs.artifact_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Web Preview Link:** [Visit Preview Website](${{ needs.deploy_web.outputs.details_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Android APK Artifact:** [Download Preview APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ needs.build_apk.outputs.artifact_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "All preview deployment actions completed successfully."
+
+      - name: Comment Preview Link on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}/artifacts/${{ needs.build_apk.outputs.artifact_id }}`;
+            const previewUrl = "${{ needs.deploy_web.outputs.details_url }}";
+            const body = `### Preview Deployment Successful\n\n- **Web Preview Link:** [Visit Preview Website](${previewUrl})\n- **Android APK Artifact:** [Download Preview APK](${artifactUrl})\n\nAll preview deployment actions completed successfully.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

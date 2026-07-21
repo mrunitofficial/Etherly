@@ -221,7 +221,8 @@ jobs:
         run: |
           echo "### Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Web App Link:** [Visit Production Website](https://etherly-firebase.web.app)" >> $GITHUB_STEP_SUMMARY
-          echo "**Android Release APK (Release Asset):** [Download from Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.get_version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
-          echo "**Android Release APK (Workflow Artifact):** [Download Artifact](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ needs.build_apk.outputs.artifact_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Web Production Link:** [Visit Production Website](https://etherly-firebase.web.app)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Android Release APK (Release Asset):** [Download from Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.get_version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Android Release APK (Workflow Artifact):** [Download Artifact](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ needs.build_apk.outputs.artifact_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "All production deployment actions completed successfully."
