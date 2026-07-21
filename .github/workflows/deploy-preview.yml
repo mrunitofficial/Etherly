@@ -1,9 +1,9 @@
-name: Deploy Staging on Merge to Release
+name: Deploy Preview on Merge to Preview
 
 on:
   push:
     branches:
-      - release
+      - preview
 
 permissions:
   contents: read
@@ -103,7 +103,7 @@ jobs:
         uses: actions/upload-artifact@v4
         id: upload_apk
         with:
-          name: etherly-staging-apk
+          name: etherly-preview-apk
           path: build/app/outputs/flutter-apk/*.apk
           retention-days: 14
 
@@ -146,7 +146,7 @@ jobs:
       - name: Upload Web Build
         uses: actions/upload-artifact@v4
         with:
-          name: web-staging-build
+          name: web-preview-build
           path: build/web
           retention-days: 14
 
@@ -154,10 +154,10 @@ jobs:
     needs: build_web
     runs-on: ubuntu-latest
     outputs:
-      details_url: ${{ steps.deploy_staging.outputs.details_url }}
+      details_url: ${{ steps.deploy_preview.outputs.details_url }}
     environment:
-      name: Staging
-      url: ${{ steps.deploy_staging.outputs.details_url }}
+      name: Preview
+      url: ${{ steps.deploy_preview.outputs.details_url }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -165,7 +165,7 @@ jobs:
       - name: Download Web Build
         uses: actions/download-artifact@v4
         with:
-          name: web-staging-build
+          name: web-preview-build
           path: build/web
 
       - name: Set up Node.js
@@ -173,23 +173,23 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Deploy to Firebase Hosting Staging
+      - name: Deploy to Firebase Hosting Preview
         uses: FirebaseExtended/action-hosting-deploy@v0
-        id: deploy_staging
+        id: deploy_preview
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ETHERLY_FIREBASE }}
           projectId: etherly-firebase
-          channelId: staging
+          channelId: preview
 
-  notify_staging:
+  notify_preview:
     needs: [build_apk, deploy_web]
     runs-on: ubuntu-latest
     steps:
-      - name: Print Staging Info
+      - name: Print Preview Info
         run: |
-          echo "### Staging Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "### Preview Deployment Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Web Preview Link:** [Visit Staging Website](${{ needs.deploy_web.outputs.details_url }})" >> $GITHUB_STEP_SUMMARY
-          echo "**Android Debug APK:** [Download Staging APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ needs.build_apk.outputs.artifact_id }})" >> $GITHUB_STEP_SUMMARY
-          echo "All staging deployment actions completed successfully."
+          echo "**Web Preview Link:** [Visit Preview Website](${{ needs.deploy_web.outputs.details_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "**Android Debug APK:** [Download Preview APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ needs.build_apk.outputs.artifact_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "All preview deployment actions completed successfully."
