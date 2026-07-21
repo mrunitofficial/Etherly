@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:etherly/models/station.dart';
+import 'package:etherly/services/theme_data.dart';
 
 class StationArt extends StatelessWidget {
   const StationArt({
@@ -29,7 +30,21 @@ class StationArt extends StatelessWidget {
     final String resolvedPlaceholderUrl;
 
     if (station != null) {
-      resolvedArtUrl = station!.getArtUrl(size: size);
+      final sizes = Theme.of(context).extension<Sizes>();
+      final double? targetArtSize;
+      if (size != null && sizes != null) {
+        if (size! <= sizes.medium) {
+          targetArtSize = 128;
+        } else if (size! <= sizes.extraLargeIncreased) {
+          targetArtSize = 512;
+        } else {
+          targetArtSize = 1024;
+        }
+      } else {
+        targetArtSize = size;
+      }
+
+      resolvedArtUrl = station!.getArtUrl(size: targetArtSize);
       // For placeholder, use a smaller 128 resolution if available
       resolvedPlaceholderUrl = station!.getArtUrl(size: 128);
     } else {
