@@ -109,5 +109,8 @@
   "historyEmptySubtitle": "Songs you listen to will appear here",
   "historyToday": "Today",
   "historyYesterday": "Yesterday",
-  "playerHistory": "History"
+  "playerHistory": "History",
+  "historyDeleteItem": "Delete song",
+  "historyDeleteConfirmation": "Are you sure you want to remove this song from your history?",
+  "historyDelete": "Delete"
 }

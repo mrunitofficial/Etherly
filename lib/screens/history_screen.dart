@@ -4,6 +4,7 @@ import 'package:etherly/services/history_service.dart';
 import 'package:etherly/services/music_app_service.dart';
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/clear_history.dart';
+import 'package:etherly/widgets/delete_song.dart';
 import 'package:etherly/widgets/music_app_picker.dart';
 import 'package:etherly/widgets/song_card_item.dart';
 import 'package:material_ui/material_ui.dart';
@@ -12,7 +13,6 @@ import 'package:intl/intl.dart';
 import 'package:etherly/models/country.dart';
 import 'package:etherly/models/song.dart';
 import 'package:etherly/localization/app_localizations.dart';
-
 import 'package:etherly/models/music_app.dart';
 
 /// A screen that displays the history of played songs.
@@ -35,16 +35,22 @@ class HistoryScreen extends StatelessWidget {
     }
   }
 
-  Map<String, List<Song>> _groupSongsByDate(
+  List<dynamic> _buildFlatHistoryList(
     List<Song> songs,
     AppLocalizations? loc,
   ) {
-    final Map<String, List<Song>> grouped = {};
+    final List<dynamic> flatList = [];
+    String? currentHeader;
+
     for (final song in songs) {
       final header = _getDateHeader(song.timestamp, loc);
-      (grouped[header] ??= []).add(song);
+      if (header != currentHeader) {
+        currentHeader = header;
+        flatList.add(header);
+      }
+      flatList.add(song);
     }
-    return grouped;
+    return flatList;
   }
 
   Future<void> _searchSong(
@@ -143,8 +149,7 @@ class HistoryScreen extends StatelessWidget {
             );
           }
 
-          final groupedSongs = _groupSongsByDate(history, loc);
-          final headers = groupedSongs.keys.toList();
+          final flatItems = _buildFlatHistoryList(history, loc);
 
           return Center(
             child: ConstrainedBox(
@@ -154,69 +159,73 @@ class HistoryScreen extends StatelessWidget {
                   horizontal: spacing.medium,
                   vertical: spacing.medium,
                 ),
-                itemCount: history.length + headers.length,
+                itemCount: flatItems.length,
                 itemBuilder: (context, index) {
-                  int currentFlatIndex = 0;
-                  for (final header in headers) {
-                    final songsForHeader = groupedSongs[header]!;
+                  final item = flatItems[index];
 
-                    if (currentFlatIndex == index) {
-                      return Padding(
-                        padding: EdgeInsets.only(
-                          top: spacing.medium,
-                          bottom: spacing.small,
+                  if (item is String) {
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        top: spacing.medium,
+                        bottom: spacing.small,
+                      ),
+                      child: Text(
+                        item,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                        child: Text(
-                          header,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      );
-                    }
-                    currentFlatIndex++;
-
-                    if (index < currentFlatIndex + songsForHeader.length) {
-                      final songIndex = index - currentFlatIndex;
-                      final item = songsForHeader[songIndex];
-                      final timeFormatter = Country.use24HourFormat
-                          ? DateFormat('HH:mm')
-                          : DateFormat('jm');
-                      final timeStr = timeFormatter.format(item.timestamp);
-
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: spacing.small),
-                        child: SongCardItem(
-                          songName: item.title,
-                          artistName: item.artist.isNotEmpty
-                              ? item.artist
-                              : 'Unknown Artist',
-                          artUrl: item.stationArtUrl,
-                          timeLabel: timeStr,
-                          screenType: screenType,
-                          onTap: () {
-                            _searchSong(
-                              context,
-                              audioService,
-                              item.artist,
-                              item.title,
-                            );
-                          },
-                          onLongPress: () {
-                            _searchSong(
-                              context,
-                              audioService,
-                              item.artist,
-                              item.title,
-                              forceAsk: true,
-                            );
-                          },
-                        ),
-                      );
-                    }
-                    currentFlatIndex += songsForHeader.length;
+                      ),
+                    );
                   }
-                  return const SizedBox.shrink();
+
+                  final song = item as Song;
+                  final timeFormatter = Country.use24HourFormat
+                      ? DateFormat('HH:mm')
+                      : DateFormat('jm');
+                  final timeStr = timeFormatter.format(song.timestamp);
+                  final dismissKey = ValueKey(
+                    '${song.stationId}_${song.timestamp.microsecondsSinceEpoch}_${song.title}_${song.artist}',
+                  );
+
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: spacing.small),
+                    child: Dismissible(
+                      key: dismissKey,
+                      direction: DismissDirection.horizontal,
+                      confirmDismiss: (direction) async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => const DeleteSongDialog(),
+                        );
+                        return confirm ?? false;
+                      },
+                      onDismissed: (direction) {
+                        HistoryService().removeSong(song);
+                      },
+                      child: SongCardItem(
+                        songName: song.title,
+                        artistName: song.artist.isNotEmpty
+                            ? song.artist
+                            : 'Unknown Artist',
+                        artUrl: song.stationArtUrl,
+                        timeLabel: timeStr,
+                        screenType: screenType,
+                        onTap: () => _searchSong(
+                          context,
+                          audioService,
+                          song.artist,
+                          song.title,
+                        ),
+                        onLongPress: () => _searchSong(
+                          context,
+                          audioService,
+                          song.artist,
+                          song.title,
+                          forceAsk: true,
+                        ),
+                      ),
+                    ),
+                  );
                 },
               ),
             ),

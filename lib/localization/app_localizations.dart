@@ -763,6 +763,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'History'**
   String get playerHistory;
+
+  /// No description provided for @historyDeleteItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete song'**
+  String get historyDeleteItem;
+
+  /// No description provided for @historyDeleteConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove this song from your history?'**
+  String get historyDeleteConfirmation;
+
+  /// No description provided for @historyDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get historyDelete;
 }
 
 class _AppLocalizationsDelegate

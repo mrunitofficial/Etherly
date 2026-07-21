@@ -109,5 +109,8 @@
   "historyEmptySubtitle": "Nummers die je afspeelt verschijnen hier",
   "historyToday": "Vandaag",
   "historyYesterday": "Gisteren",
-  "playerHistory": "Geschiedenis"
+  "playerHistory": "Geschiedenis",
+  "historyDeleteItem": "Nummer verwijderen",
+  "historyDeleteConfirmation": "Weet je zeker dat je dit nummer uit je geschiedenis wilt verwijderen?",
+  "historyDelete": "Verwijderen"
 }
