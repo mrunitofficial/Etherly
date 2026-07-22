@@ -1,9 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import '../localization/app_localizations.dart';
 
-/// A custom confirmation dialog for clearing history.
-class ClearHistoryDialog extends StatelessWidget {
-  const ClearHistoryDialog({super.key});
+/// A custom confirmation dialog for deleting a single song from history.
+class DeleteSongDialog extends StatelessWidget {
+  const DeleteSongDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -12,14 +12,15 @@ class ClearHistoryDialog extends StatelessWidget {
 
     return AlertDialog(
       title: Text(
-        loc?.historyClear ?? 'Clear History',
+        loc?.historyDeleteItem ?? 'Delete song',
         textAlign: TextAlign.center,
         style: theme.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.bold,
         ),
       ),
       content: Text(
-        loc?.historyClearConfirmation ?? 'Are you sure you want to clear your song history? This action cannot be undone.',
+        loc?.historyDeleteConfirmation ??
+            'Are you sure you want to remove this song from your history?',
         textAlign: TextAlign.center,
       ),
       actionsAlignment: MainAxisAlignment.end,
@@ -30,7 +31,7 @@ class ClearHistoryDialog extends StatelessWidget {
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text(loc?.historyClear ?? 'Clear'),
+          child: Text(loc?.historyDelete ?? 'Delete'),
         ),
       ],
     );

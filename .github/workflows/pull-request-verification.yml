@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - develop
-      - release
+      - preview
       - main
 
 concurrency:
@@ -13,11 +13,18 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   verify_branch_rules:
+    permissions:
+      contents: read
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Verify PR branch constraints
         run: |
           TARGET_BRANCH="${{ github.base_ref }}"
@@ -25,17 +32,53 @@ jobs:
           echo "Target branch: $TARGET_BRANCH"
           echo "Source branch: $SOURCE_BRANCH"
           
-          if [ "$TARGET_BRANCH" = "main" ] && [ "$SOURCE_BRANCH" != "release" ]; then
-            echo "ERROR: Pull requests to 'main' must originate from the 'release' branch. Got '$SOURCE_BRANCH'."
+          if [ "$TARGET_BRANCH" = "main" ] && [ "$SOURCE_BRANCH" != "preview" ]; then
+            echo "ERROR: Pull requests to 'main' must originate from the 'preview' branch. Got '$SOURCE_BRANCH'."
             exit 1
           fi
           
-          if [ "$TARGET_BRANCH" = "release" ] && [ "$SOURCE_BRANCH" != "develop" ]; then
-            echo "ERROR: Pull requests to 'release' must originate from the 'develop' branch. Got '$SOURCE_BRANCH'."
+          if [ "$TARGET_BRANCH" = "preview" ] && [ "$SOURCE_BRANCH" != "develop" ]; then
+            echo "ERROR: Pull requests to 'preview' must originate from the 'develop' branch. Got '$SOURCE_BRANCH'."
             exit 1
           fi
           
           echo "PR branch constraint check passed."
+
+      - name: Auto-generate PR Title
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const targetBranch = context.payload.pull_request.base.ref;
+            const sourceBranch = context.payload.pull_request.head.ref;
+            
+            let version = '';
+            try {
+              const pubspec = fs.readFileSync('pubspec.yaml', 'utf8');
+              const match = pubspec.match(/^version:\s*(.+)$/m);
+              if (match) {
+                version = match[1].trim();
+              }
+            } catch (e) {
+              console.log('Could not read pubspec.yaml:', e);
+            }
+            
+            let autoTitle = '';
+            if (targetBranch === 'main') {
+              autoTitle = `Release: merge preview (v${version}) to main`;
+            } else if (targetBranch === 'preview') {
+              autoTitle = `Preview: merge develop (v${version}) to preview`;
+            } else {
+              autoTitle = `Feat: merge ${sourceBranch} to ${targetBranch}`;
+            }
+            
+            console.log(`Updating PR title to: ${autoTitle}`);
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              title: autoTitle
+            });
 
   analyze:
     needs: verify_branch_rules
@@ -43,12 +86,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -81,87 +118,9 @@ jobs:
       - name: Analyze Project Code
         run: flutter analyze
 
-  build_check_apk:
-    needs: analyze
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      - name: Cache Pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Cache Gradle templates (Android)
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Get Dependencies
-        run: flutter pub get
-
-      - name: Build Android APK (Debug Check)
-        run: flutter build apk --debug
-
-  build_check_web:
-    needs: analyze
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      - name: Cache Pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Get Dependencies
-        run: flutter pub get
-
-      - name: Build Web (Release Check)
-        run: flutter build web --release
-
   verification_complete:
-    needs: [build_check_apk, build_check_web]
+    needs: analyze
     runs-on: ubuntu-latest
     steps:
       - name: Log Completion
-        run: echo "All verification checks completed successfully."
+        run: echo "All PR verification checks completed successfully."

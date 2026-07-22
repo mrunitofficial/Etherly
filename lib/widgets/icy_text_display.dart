@@ -66,16 +66,18 @@ class IcyTextDisplay extends StatelessWidget {
     final loc = AppLocalizations.of(context);
     final spacing = theme.extension<Spacing>()!;
     final shapes = theme.extension<Shapes>()!;
+    final speed = theme.extension<Speed>() ?? Speed();
 
     return Consumer<AudioPlayerService>(
       builder: (context, service, _) {
-        final String? text = service.isLoading
-            ? (loc?.playerLoadingSong ?? 'Loading song...')
-            : (service.currentSongTitle?.isNotEmpty == true ? service.currentSongTitle! : null);
+        final text = service.getSecondaryText(
+          loadingText: loc?.playerLoadingSong,
+        );
 
-        if (text == null) return const SizedBox.shrink();
+        if (text.isEmpty) return const SizedBox.shrink();
 
-        final bool isSong = !service.isLoading && service.currentSongTitle?.isNotEmpty == true;
+        final bool isSong = !service.isLoading &&
+            service.currentSongTitle?.isNotEmpty == true;
 
         final padding = EdgeInsets.only(
           left: centerWhenFits ? spacing.small : 0,
@@ -83,6 +85,7 @@ class IcyTextDisplay extends StatelessWidget {
         );
 
         Widget content = Material(
+          key: ValueKey<String>(text),
           color: Colors.transparent,
           clipBehavior: Clip.antiAlias,
           shape: const StadiumBorder(),
@@ -105,11 +108,31 @@ class IcyTextDisplay extends StatelessWidget {
           ),
         );
 
+        Widget animatedContent = AnimatedSwitcher(
+          duration: speed.long1,
+          layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+            return Stack(
+              alignment: centerWhenFits ? Alignment.center : Alignment.centerLeft,
+              children: <Widget>[
+                ...previousChildren,
+                ?currentChild,
+              ],
+            );
+          },
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+          child: content,
+        );
+
         if (centerWhenFits) {
-          return Align(alignment: Alignment.center, child: content);
+          return Align(alignment: Alignment.center, child: animatedContent);
         }
 
-        return content;
+        return animatedContent;
       },
     );
   }

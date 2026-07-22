@@ -16,15 +16,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const int _minTotalCategories = 8;
 
-typedef ContentLoadedCallback = void Function();
-
 class HomeScreen extends StatefulWidget {
-  final ContentLoadedCallback? onContentLoaded;
   final double bottomPadding;
   final bool isActive;
   const HomeScreen({
     super.key,
-    this.onContentLoaded,
     this.bottomPadding = 0.0,
     this.isActive = false,
   });
@@ -93,7 +89,6 @@ class _HomeScreenState extends State<HomeScreen>
       await _loadCachedRegionalStations();
       _fetchRegionalStations();
       setState(() => _isInitialized = true);
-      widget.onContentLoaded?.call();
     }
   }
 
@@ -247,31 +242,34 @@ class _HomeScreenState extends State<HomeScreen>
         if (sections.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.radio_outlined,
-                    size: sizes.large,
-                    color: theme.colorScheme.primary,
-                  ),
-                  SizedBox(height: spacing.medium),
-                  Text(
-                    loc?.homeEmptyTitle ?? 'No stations',
-                    style: theme.textTheme.headlineMedium,
-                  ),
-                  SizedBox(height: spacing.small),
-                  Text(
-                    loc?.homeEmptySubtitle ?? 'No radio stations available',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  SizedBox(height: spacing.large),
-                ],
+            child: Padding(
+              padding: EdgeInsets.only(bottom: widget.bottomPadding),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.radio_outlined,
+                      size: sizes.large,
+                      color: theme.colorScheme.primary,
+                    ),
+                    SizedBox(height: spacing.medium),
+                    Text(
+                      loc?.homeEmptyTitle ?? 'No stations',
+                      style: theme.textTheme.headlineMedium,
+                    ),
+                    SizedBox(height: spacing.small),
+                    Text(
+                      loc?.homeEmptySubtitle ?? 'No radio stations available',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    SizedBox(height: spacing.large),
+                  ],
+                ),
               ),
             ),
           )
-        else
+        else ...[
           ...sections.map(
             (section) => SliverToBoxAdapter(
               child: CategoryRow(
@@ -280,12 +278,12 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
           ),
-        // Unified bottom padding sliver
-        SliverPadding(
-          padding: EdgeInsets.only(
-            bottom: widget.bottomPadding + spacing.medium,
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom: widget.bottomPadding + spacing.medium,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

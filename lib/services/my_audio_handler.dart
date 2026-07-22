@@ -64,6 +64,8 @@ class MyAudioHandler extends BaseAudioHandler {
     mediaItem.add(item);
   }
 
+  bool _isCurrentStation(String id) => mediaItem.value?.id == id;
+
   /// Plays a media item by setting the audio source and beginning playback.
   @override
   Future<void> playMediaItem(MediaItem item) async {
@@ -90,28 +92,50 @@ class MyAudioHandler extends BaseAudioHandler {
       ...streams.entries.where((e) => e.key != quality),
     ];
 
+    final failedQualities = <String>[];
+
     for (int i = 0; i < entriesPriority.length; i++) {
       final entry = entriesPriority[i];
+      if (entry.value.trim().isEmpty) {
+        failedQualities.add(entry.key);
+        continue;
+      }
       try {
         await player.stop();
+        if (!_isCurrentStation(item.id)) return;
         await player.setAudioSource(
           AudioSource.uri(Uri.parse(entry.value), tag: item),
         );
+        if (!_isCurrentStation(item.id)) return;
         await play();
+
+        if (_isCurrentStation(item.id)) {
+          final extras = Map<String, dynamic>.from(item.extras ?? {});
+          extras['activeQuality'] = entry.key;
+          extras['failedQualities'] = failedQualities;
+          updateMediaItem(mediaItem.value!.copyWith(extras: extras));
+        }
         return;
       } on PlayerInterruptedException {
         rethrow;
       } catch (e) {
-        if (i == entriesPriority.length - 1) rethrow;
+        failedQualities.add(entry.key);
+        if (i == entriesPriority.length - 1) {
+          if (_isCurrentStation(item.id)) {
+            final extras = Map<String, dynamic>.from(item.extras ?? {});
+            extras['failedQualities'] = failedQualities;
+            updateMediaItem(mediaItem.value!.copyWith(extras: extras));
+          }
+          rethrow;
+        }
       }
     }
   }
 
-  /// Quickly patches metadata (like artist/song title from ICY data) into the existing MediaItem.
-  void patchMediaItemMetadata({String? artist}) {
-    final current = mediaItem.value;
-    if (current == null) return;
-    updateMediaItem(current.copyWith(artist: artist));
+  /// Quickly patches metadata (like artist/song title or secondary text) into the existing MediaItem.
+  void patchMediaItemMetadata({required String stationId, String? artist}) {
+    if (!_isCurrentStation(stationId)) return;
+    updateMediaItem(mediaItem.value!.copyWith(artist: artist));
   }
 
   /// AudioService Overrides delegating directly to just_audio

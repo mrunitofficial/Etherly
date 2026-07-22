@@ -1,12 +1,12 @@
-name: Deploy Production on Merge to Main
+name: Deploy Preview on Merge to Preview
 
 on:
   push:
     branches:
-      - main
+      - preview
 
 permissions:
-  contents: write
+  contents: read
   deployments: write
 
 jobs:
@@ -94,8 +94,8 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      - name: Build Android APK (Release)
-        run: flutter build apk --release
+      - name: Build Android APK (Debug)
+        run: flutter build apk --debug
         env:
           KEYSTORE_PATH: upload-keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -106,9 +106,9 @@ jobs:
         uses: actions/upload-artifact@v4
         id: upload_apk
         with:
-          name: etherly-production-apk
+          name: etherly-preview-apk
           path: build/app/outputs/flutter-apk/*.apk
-          retention-days: 30
+          retention-days: 14
 
   build_web:
     needs: analyze
@@ -143,16 +143,18 @@ jobs:
       - name: Upload Web Build
         uses: actions/upload-artifact@v4
         with:
-          name: web-production-build
+          name: web-preview-build
           path: build/web
-          retention-days: 30
+          retention-days: 14
 
-  deploy_production_web:
+  deploy_web:
     needs: build_web
     runs-on: ubuntu-latest
+    outputs:
+      details_url: ${{ steps.deploy_preview.outputs.details_url }}
     environment:
-      name: Production
-      url: https://etherly-firebase.web.app
+      name: Preview
+      url: ${{ steps.deploy_preview.outputs.details_url }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -160,7 +162,7 @@ jobs:
       - name: Download Web Build
         uses: actions/download-artifact@v4
         with:
-          name: web-production-build
+          name: web-preview-build
           path: build/web
 
       - name: Set up Node.js
@@ -168,49 +170,43 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Deploy to Firebase Hosting Production
+      - name: Deploy to Firebase Hosting Preview
         uses: FirebaseExtended/action-hosting-deploy@v0
+        id: deploy_preview
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ETHERLY_FIREBASE }}
-          channelId: live
           projectId: etherly-firebase
+          channelId: preview
 
-  create_release:
-    needs: [build_apk, deploy_production_web]
+  notify_preview:
+    needs: [build_apk, deploy_web]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Print Preview Info
+        run: |
+          echo "### Preview Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Web Preview Link:** [Visit Preview Website](${{ needs.deploy_web.outputs.details_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Android APK Artifact:** [Download Preview APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ needs.build_apk.outputs.artifact_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All preview deployment actions completed successfully."
 
-      - name: Download Android Build
-        uses: actions/download-artifact@v4
+      - name: Comment Preview Link on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
         with:
-          name: etherly-production-apk
-          path: build/app/outputs/flutter-apk
-
-      - name: Extract version from pubspec.yaml
-        id: get_version
-        run: |
-          RAW_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr '+' '-' | tr -d '[:space:]"')
-          TAG_NAME="v${RAW_VERSION}"
-          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
-
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          APK_FILE=$(find build/app/outputs/flutter-apk -name "*.apk" | head -n 1)
-          echo "Found APK file: $APK_FILE"
-          mv "$APK_FILE" build/app/outputs/flutter-apk/Etherly.apk
-          gh release create "${{ steps.get_version.outputs.tag }}" build/app/outputs/flutter-apk/Etherly.apk --notes "Web App: https://etherly-firebase.web.app" --generate-notes --clobber || true
-
-      - name: Print Production Info
-        run: |
-          echo "### Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Web Production Link:** [Visit Production Website](https://etherly-firebase.web.app)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Android Release APK (Release Asset):** [Download from Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.get_version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
-          echo "- **Android Release APK (Workflow Artifact):** [Download Artifact](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ needs.build_apk.outputs.artifact_id }})" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "All production deployment actions completed successfully."
+          script: |
+            const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}/artifacts/${{ needs.build_apk.outputs.artifact_id }}`;
+            const previewUrl = "${{ needs.deploy_web.outputs.details_url }}";
+            const body = `### Preview Deployment Successful\n\n- **Web Preview Link:** [Visit Preview Website](${previewUrl})\n- **Android APK Artifact:** [Download Preview APK](${artifactUrl})\n\nAll preview deployment actions completed successfully.`;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

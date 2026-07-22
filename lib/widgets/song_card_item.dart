@@ -13,6 +13,7 @@ class SongCardItem extends StatelessWidget {
     required this.artUrl,
     required this.timeLabel,
     required this.onTap,
+    this.onLongPress,
     required this.screenType,
   });
 
@@ -21,6 +22,7 @@ class SongCardItem extends StatelessWidget {
   final String artUrl;
   final String timeLabel;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final ScreenType screenType;
 
   @override
@@ -40,6 +42,7 @@ class SongCardItem extends StatelessWidget {
           color: theme.colorScheme.surfaceContainerHighest,
           child: InkWell(
             onTap: onTap,
+            onLongPress: onLongPress,
             child: Padding(
               padding: EdgeInsets.all(spacing.small),
               child: Row(
@@ -57,24 +60,23 @@ class SongCardItem extends StatelessWidget {
                       children: [
                         MarqueeText(
                           text: songName,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
+                          style: theme.textTheme.titleSmall?.copyWith(
                             color: theme.colorScheme.onSurface,
                           ),
                           centerWhenFits: false,
                         ),
-                        Text(
-                          artistName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        SizedBox(height: spacing.extraSmall),
+                        MarqueeText(
+                          text: artistName,
                           style: theme.textTheme.titleSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                            color: theme.colorScheme.onSurface,
                           ),
+                          centerWhenFits: false,
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: spacing.medium),
                   Text(
                     timeLabel,
                     style: theme.textTheme.labelMedium?.copyWith(

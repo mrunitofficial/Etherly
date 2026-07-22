@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:etherly/models/station.dart';
+import 'package:etherly/services/theme_data.dart';
 
 class StationArt extends StatelessWidget {
   const StationArt({
@@ -29,7 +30,19 @@ class StationArt extends StatelessWidget {
     final String resolvedPlaceholderUrl;
 
     if (station != null) {
-      resolvedArtUrl = station!.getArtUrl(size: size);
+      final sizes = Theme.of(context).extension<Sizes>();
+      final double? targetArtSize;
+      if (size != null && sizes != null) {
+        if (size! <= sizes.extraLargeIncreased) {
+          targetArtSize = 512;
+        } else {
+          targetArtSize = 1024;
+        }
+      } else {
+        targetArtSize = size ?? 512;
+      }
+
+      resolvedArtUrl = station!.getArtUrl(size: targetArtSize);
       // For placeholder, use a smaller 128 resolution if available
       resolvedPlaceholderUrl = station!.getArtUrl(size: 128);
     } else {
@@ -37,20 +50,26 @@ class StationArt extends StatelessWidget {
       resolvedPlaceholderUrl = placeholderUrl ?? '';
     }
 
+    final speed = Theme.of(context).extension<Speed>() ?? Speed();
+    final fadeDuration = speed.medium1;
+
+    final bool hasSeparatePlaceholder =
+        resolvedPlaceholderUrl.isNotEmpty && resolvedPlaceholderUrl != resolvedArtUrl;
+
     Widget art = resolvedArtUrl.isEmpty
         ? fallback
         : CachedNetworkImage(
-            key: ValueKey(resolvedArtUrl),
             imageUrl: resolvedArtUrl,
             fit: BoxFit.cover,
-            fadeInDuration: Duration.zero,
-            fadeOutDuration: Duration.zero,
-            placeholder: (context, url) =>
-                resolvedPlaceholderUrl.isNotEmpty
-                ? Image(
-                    image: CachedNetworkImageProvider(resolvedPlaceholderUrl),
+            useOldImageOnUrlChange: true,
+            fadeInDuration: hasSeparatePlaceholder ? Duration.zero : fadeDuration,
+            placeholder: (context, url) => hasSeparatePlaceholder
+                ? CachedNetworkImage(
+                    imageUrl: resolvedPlaceholderUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => fallback,
+                    useOldImageOnUrlChange: true,
+                    fadeInDuration: fadeDuration,
+                    errorWidget: (context, url, error) => fallback,
                   )
                 : fallback,
             errorWidget: (context, url, error) => fallback,
