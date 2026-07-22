@@ -165,6 +165,7 @@ class AudioPlayerService with ChangeNotifier {
           currentTag?.id == _connectingStationId) {
         if (_isTransitioning) {
           _isTransitioning = false;
+          _syncSecondaryText();
         }
       }
 
@@ -214,8 +215,8 @@ class AudioPlayerService with ChangeNotifier {
         if (currentTag?.id == _currentMediaItem?.id) {
           currentSongTitle = title;
           _isTransitioning = false;
+          _syncSecondaryText();
           notifyListeners();
-          _audioHandler.patchMediaItemMetadata(artist: title);
         }
 
         // Record song history under the actual native source that emitted the metadata
@@ -301,6 +302,33 @@ class AudioPlayerService with ChangeNotifier {
     sleepTimerActive.dispose();
     autoplayCountdownNotifier.dispose();
     super.dispose();
+  }
+
+  /// Returns the secondary text:
+  /// - If loading and localized [loadingText] is supplied (for in-app UI), returns [loadingText].
+  /// - If ICY track title is available, returns [currentSongTitle].
+  /// - Otherwise (for notifications/head units or fallback), returns station slogan.
+  String getSecondaryText({String? loadingText}) {
+    if (isLoading && loadingText != null && loadingText.isNotEmpty) {
+      return loadingText;
+    }
+    if (currentSongTitle != null && currentSongTitle!.trim().isNotEmpty) {
+      return currentSongTitle!.trim();
+    }
+    final station = _stationMap[_currentMediaItem?.id];
+    return station?.slogan.isNotEmpty == true ? station!.slogan : '';
+  }
+
+  /// Syncs the current secondary text state to OS media notification & head units
+  void _syncSecondaryText() {
+    final text = getSecondaryText();
+    if (text.isNotEmpty && _currentMediaItem != null) {
+      _currentMediaItem = _currentMediaItem!.copyWith(artist: text);
+      _audioHandler.patchMediaItemMetadata(
+        stationId: _currentMediaItem!.id,
+        artist: text,
+      );
+    }
   }
 
   /// Switches to a specific station. If null, re-initializes the current live stream.
@@ -638,11 +666,13 @@ extension StationToMediaItem on Station {
   MediaItem toMediaItem({String? artist}) {
     // Pick first available stream if multiple exist, otherwise use the only one.
     final url = streams.values.isNotEmpty ? streams.values.first : '';
+    final initialArtist =
+        (artist != null && artist.isNotEmpty) ? artist : slogan;
     return MediaItem(
       id: id,
       title: name,
       artUri: Uri.tryParse(getArtUrl()),
-      artist: artist ?? '',
+      artist: initialArtist,
       album: slogan,
       extras: {'url': url, 'streams': streams, 'art': art},
     );
