@@ -112,5 +112,6 @@
   "playerHistory": "History",
   "historyDeleteItem": "Delete song",
   "historyDeleteConfirmation": "Are you sure you want to remove this song from your history?",
-  "historyDelete": "Delete"
+  "historyDelete": "Delete",
+  "playerAddToHomeScreen": "Pin shortcut"
 }

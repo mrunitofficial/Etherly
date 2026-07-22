@@ -84,6 +84,9 @@ class AudioPlayerService with ChangeNotifier {
   MediaItem? _currentMediaItem;
   MediaItem? get mediaItem => _currentMediaItem;
 
+  /// Currently playing station object.
+  Station? get currentStation => _stationMap[_currentMediaItem?.id];
+
   /// Mute state for web.
   bool _isMuted = false;
   double _preMuteVolume = 1.0;

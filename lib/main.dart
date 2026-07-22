@@ -17,6 +17,7 @@ import 'localization/app_localizations.dart';
 import 'services/audio_player_service.dart';
 import 'services/chrome_cast_service.dart';
 import 'services/history_service.dart';
+import 'services/shortcut_service.dart';
 import 'services/theme_data.dart';
 import 'screens/app_screen.dart';
 import 'models/device.dart';
@@ -141,6 +142,7 @@ class _MyAppState extends State<MyApp> {
       }
 
       _audioPlayerService = AudioPlayerService(_chromeCastService);
+      ShortcutService.initialize(_audioPlayerService!);
 
       if (!mounted) return;
       setState(() {

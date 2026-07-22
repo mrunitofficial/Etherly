@@ -356,4 +356,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get historyDelete => 'Verwijderen';
+
+  @override
+  String get playerAddToHomeScreen => 'Snelkoppeling';
 }

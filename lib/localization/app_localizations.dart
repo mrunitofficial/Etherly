@@ -781,6 +781,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get historyDelete;
+
+  /// No description provided for @playerAddToHomeScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin shortcut'**
+  String get playerAddToHomeScreen;
 }
 
 class _AppLocalizationsDelegate

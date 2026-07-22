@@ -6,6 +6,7 @@ import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/models/device.dart';
 import 'package:etherly/screens/history_screen.dart';
 import 'package:etherly/services/audio_player_service.dart';
+import 'package:etherly/services/shortcut_service.dart';
 import 'package:etherly/screens/settings_screen.dart';
 import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/widgets/sleep_timer.dart';
@@ -311,6 +312,13 @@ class PlayerMenuButton extends StatelessWidget {
             loc?.playerHistory ?? 'History',
             'history',
           ),
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+          _buildMenuItem(
+            context,
+            Icons.add_to_home_screen_rounded,
+            loc?.playerAddToHomeScreen ?? 'Pin shortcut',
+            'pin_shortcut',
+          ),
         if (showQualityInMenu)
           _buildMenuItem(
             context,
@@ -332,7 +340,13 @@ class PlayerMenuButton extends StatelessWidget {
         ),
       ],
       onSelected: (value) {
-        if (value == 'stream_quality') {
+        if (value == 'pin_shortcut') {
+          final service = Provider.of<AudioPlayerService>(context, listen: false);
+          final station = service.currentStation;
+          if (station != null) {
+            ShortcutService.pinStation(station);
+          }
+        } else if (value == 'stream_quality') {
           QualitySetting.show(context);
         } else if (value == 'history') {
           Navigator.of(context).push(
@@ -365,9 +379,10 @@ class PlayerMenuButton extends StatelessWidget {
 
     return PopupMenuItem<String>(
       value: value,
+      height: 40,
       child: Row(
         children: [
-          Icon(icon),
+          Icon(icon, size: 20),
           SizedBox(width: spacing.medium),
           Text(label),
         ],

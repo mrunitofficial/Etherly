@@ -354,4 +354,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get historyDelete => 'Delete';
+
+  @override
+  String get playerAddToHomeScreen => 'Pin shortcut';
 }
