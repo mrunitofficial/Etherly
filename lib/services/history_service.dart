@@ -80,6 +80,12 @@ class HistoryService extends ChangeNotifier {
     await _prefs!.setStringList(_historyKey, jsonList);
   }
 
+  Future<void> removeSong(Song song) async {
+    _history.remove(song);
+    await _saveHistory();
+    notifyListeners();
+  }
+
   Future<void> clearHistory() async {
     _history.clear();
     if (_prefs != null) {

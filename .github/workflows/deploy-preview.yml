@@ -204,7 +204,7 @@ jobs:
             const previewUrl = "${{ needs.deploy_web.outputs.details_url }}";
             const body = `### Preview Deployment Successful\n\n- **Web Preview Link:** [Visit Preview Website](${previewUrl})\n- **Android APK Artifact:** [Download Preview APK](${artifactUrl})\n\nAll preview deployment actions completed successfully.`;
             
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,

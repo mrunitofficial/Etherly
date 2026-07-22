@@ -29,7 +29,8 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
           _lastStationId = mediaItem?.id;
         }
 
-        final artUrl = mediaItem.safeArt128Url;
+        final artUrl = mediaItem.safeArt512Url;
+        final placeholderUrl = mediaItem.safeArt128Url;
         final theme = Theme.of(context);
         final loc = AppLocalizations.of(context);
         final stationName =
@@ -43,6 +44,7 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                 ignoring: true,
                 child: StationArt(
                   artUrl: artUrl,
+                  placeholderUrl: placeholderUrl,
                   size: theme.extension<Sizes>()!.normal,
                   borderRadius: theme.extension<Shapes>()!.small,
                 ),

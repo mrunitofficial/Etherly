@@ -9,12 +9,14 @@ import '../services/theme_data.dart';
 class QualitySetting extends StatelessWidget {
   final Station station;
   final String selectedQuality;
+  final List<String> failedQualities;
   final void Function(MapEntry<String, String>) onQualitySelected;
 
   const QualitySetting({
     super.key,
     required this.station,
     required this.selectedQuality,
+    this.failedQualities = const [],
     required this.onQualitySelected,
   });
 
@@ -30,17 +32,31 @@ class QualitySetting extends StatelessWidget {
     );
 
     final prefQuality = service.prefs.getString('streamQuality') ?? 'mp3';
-    final availableStreams = station.streams;
+    final activeQuality =
+        mediaItem.extras?['activeQuality'] as String? ?? prefQuality;
 
-    final selectedQuality = availableStreams.containsKey(prefQuality)
-        ? prefQuality
-        : availableStreams.keys.first;
+    final failedQualities =
+        (mediaItem.extras?['failedQualities'] as List?)?.cast<String>() ?? [];
+
+    final allStreams = <String, String>{
+      'mp3': station.streams['mp3'] ?? '',
+      'aac': station.streams['aac'] ?? '',
+      ...station.streams,
+    };
+
+    final selectedQuality = allStreams.containsKey(activeQuality)
+        ? activeQuality
+        : (allStreams.keys.firstWhere(
+            (k) => allStreams[k]!.trim().isNotEmpty,
+            orElse: () => allStreams.keys.first,
+          ));
 
     final newEntry = await showDialog<MapEntry<String, String>>(
       context: context,
       builder: (context) => QualitySetting(
         station: station,
         selectedQuality: selectedQuality,
+        failedQualities: failedQualities,
         onQualitySelected: (entry) => Navigator.of(context).pop(entry),
       ),
     );
@@ -55,8 +71,13 @@ class QualitySetting extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final streams = station.streams;
     final spacing = Theme.of(context).extension<Spacing>()!;
+
+    final allStreams = <String, String>{
+      'mp3': station.streams['mp3'] ?? '',
+      'aac': station.streams['aac'] ?? '',
+      ...station.streams,
+    };
 
     return AlertDialog(
       scrollable: true,
@@ -67,26 +88,29 @@ class QualitySetting extends StatelessWidget {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ...streams.entries.map((entry) {
-            final key = entry.key;
-            final isSelected = selectedQuality == key;
-            final label = _getQualityLabel(key, loc);
+        children: allStreams.entries.map((entry) {
+          final key = entry.key;
+          final isSelected = selectedQuality == key;
+          final label = _getQualityLabel(key, loc);
+          final isAvailable = entry.value.trim().isNotEmpty &&
+              !failedQualities.contains(key);
 
-            return Padding(
-              padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
-              child: isSelected
-                  ? FilledButton(
-                      onPressed: () => onQualitySelected(entry),
-                      child: Text(label, textAlign: TextAlign.center),
-                    )
-                  : FilledButton.tonal(
-                      onPressed: () => onQualitySelected(entry),
-                      child: Text(label, textAlign: TextAlign.center),
-                    ),
-            );
-          }),
-        ],
+          final VoidCallback? onPressed =
+              isAvailable ? () => onQualitySelected(entry) : null;
+
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
+            child: isSelected
+                ? FilledButton(
+                    onPressed: onPressed,
+                    child: Text(label, textAlign: TextAlign.center),
+                  )
+                : FilledButton.tonal(
+                    onPressed: onPressed,
+                    child: Text(label, textAlign: TextAlign.center),
+                  ),
+          );
+        }).toList(),
       ),
       actions: [
         TextButton(
@@ -104,12 +128,12 @@ class QualitySetting extends StatelessWidget {
 
   String _getQualityLabel(String key, AppLocalizations? loc) {
     final cleanKey = key.toLowerCase();
-    
+
     if (loc != null) {
       if (cleanKey == 'mp3') return loc.settingsStreamingQualityHigh;
       if (cleanKey == 'aac') return loc.settingsStreamingQualityHighest;
     }
-    
+
     return _qualityDefaultLabels[cleanKey] ?? key.toUpperCase();
   }
 }

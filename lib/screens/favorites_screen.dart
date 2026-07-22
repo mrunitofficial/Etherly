@@ -19,15 +19,11 @@ const String _favoritesViewTypeKey = 'favorites_view_type';
 
 enum ViewType { list, grid }
 
-typedef ContentLoadedCallback = void Function();
-
 class FavoritesScreen extends StatefulWidget {
-  final ContentLoadedCallback? onContentLoaded;
   final ScreenType screenType;
   final double bottomPadding;
   const FavoritesScreen({
     super.key,
-    this.onContentLoaded,
     required this.screenType,
     this.bottomPadding = 0.0,
   });
@@ -71,7 +67,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
 
     if (mounted) {
       setState(() => _isInitialized = true);
-      widget.onContentLoaded?.call();
     }
   }
 
@@ -150,46 +145,50 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         if (favoriteStations.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.favorite_border,
-                    size: sizes.large,
-                    color: theme.colorScheme.primary,
-                  ),
-                  SizedBox(height: spacing.medium),
-                  Text(
-                    loc?.favoritesEmptyTitle ?? 'No favorite stations yet',
-                    style: theme.textTheme.headlineMedium,
-                  ),
-                  SizedBox(height: spacing.small),
-                  Text(
-                    loc?.favoritesEmptySubtitle ??
-                        'Favorite a radio station first',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  SizedBox(height: spacing.large),
-                ],
+            child: Padding(
+              padding: EdgeInsets.only(bottom: widget.bottomPadding),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.favorite_border,
+                      size: sizes.large,
+                      color: theme.colorScheme.primary,
+                    ),
+                    SizedBox(height: spacing.medium),
+                    Text(
+                      loc?.favoritesEmptyTitle ?? 'No favorite stations yet',
+                      style: theme.textTheme.headlineMedium,
+                    ),
+                    SizedBox(height: spacing.small),
+                    Text(
+                      loc?.favoritesEmptySubtitle ??
+                          'Favorite a radio station first',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    SizedBox(height: spacing.large),
+                  ],
+                ),
               ),
             ),
           )
-        else if (_viewType == ViewType.list)
-          _buildListSlivers(favoriteStations, audioPlayerService, spacing, sizes)
-        else
-          _buildSliverGrid(
-            favoriteStations,
-            audioPlayerService,
-            spacing,
-            shapes,
+        else ...[
+          if (_viewType == ViewType.list)
+            _buildListSlivers(favoriteStations, audioPlayerService, spacing, sizes)
+          else
+            _buildSliverGrid(
+              favoriteStations,
+              audioPlayerService,
+              spacing,
+              shapes,
+            ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom: widget.bottomPadding + spacing.medium,
+            ),
           ),
-
-        SliverPadding(
-          padding: EdgeInsets.only(
-            bottom: widget.bottomPadding + spacing.medium,
-          ),
-        ),
+        ],
       ],
     );
   }

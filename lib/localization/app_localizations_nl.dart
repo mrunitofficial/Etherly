@@ -346,4 +346,17 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get playerHistory => 'Geschiedenis';
+
+  @override
+  String get historyDeleteItem => 'Nummer verwijderen';
+
+  @override
+  String get historyDeleteConfirmation =>
+      'Weet je zeker dat je dit nummer uit je geschiedenis wilt verwijderen?';
+
+  @override
+  String get historyDelete => 'Verwijderen';
+
+  @override
+  String get playerAddToHomeScreen => 'Snelkoppeling';
 }

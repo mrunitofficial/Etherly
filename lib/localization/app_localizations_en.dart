@@ -344,4 +344,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get playerHistory => 'History';
+
+  @override
+  String get historyDeleteItem => 'Delete song';
+
+  @override
+  String get historyDeleteConfirmation =>
+      'Are you sure you want to remove this song from your history?';
+
+  @override
+  String get historyDelete => 'Delete';
+
+  @override
+  String get playerAddToHomeScreen => 'Pin shortcut';
 }

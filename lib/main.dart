@@ -10,11 +10,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:flutter/services.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
 import 'firebase_options.dart';
 import 'localization/app_localizations.dart';
 import 'services/audio_player_service.dart';
 import 'services/chrome_cast_service.dart';
 import 'services/history_service.dart';
+import 'services/shortcut_service.dart';
 import 'services/theme_data.dart';
 import 'screens/app_screen.dart';
 import 'models/device.dart';
@@ -22,6 +25,7 @@ import 'models/device.dart';
 /// Entry point of the application.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting();
 
   // Check if device is Android TV
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
@@ -103,7 +107,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     themeNotifier.addListener(_onThemeChange);
     _initAudioService();
-    Future.delayed(const Duration(seconds: 3), _triggerFadeIn);
+    Future.delayed(const Duration(seconds: 5), _triggerFadeIn);
   }
 
   @override
@@ -117,11 +121,9 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _triggerFadeIn() {
-    if (!_showApp) {
-      Future.delayed(const Duration(milliseconds: 450), () {
-        setState(() {
-          _showApp = true;
-        });
+    if (!_showApp && mounted) {
+      setState(() {
+        _showApp = true;
       });
     }
   }
@@ -140,6 +142,7 @@ class _MyAppState extends State<MyApp> {
       }
 
       _audioPlayerService = AudioPlayerService(_chromeCastService);
+      ShortcutService.initialize(_audioPlayerService!);
 
       if (!mounted) return;
       setState(() {
