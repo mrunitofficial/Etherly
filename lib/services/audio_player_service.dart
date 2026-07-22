@@ -231,7 +231,7 @@ class AudioPlayerService with ChangeNotifier {
             artist: artistName,
             stationId: currentTag.id,
             stationName: currentTag.title,
-            stationArtUrl: currentTag.safeArt128Url,
+            stationArtUrl: currentTag.safeArt512Url,
           );
         }
       }
@@ -424,9 +424,9 @@ class AudioPlayerService with ChangeNotifier {
   Future<void> precacheAllStationArt(BuildContext context) async {
     final futures = <Future<void>>[];
     for (final station in stations) {
-      final art128Url = station.getArtUrl(size: 128);
-      if (art128Url.isNotEmpty) {
-        final provider = CachedNetworkImageProvider(art128Url);
+      final art512Url = station.getArtUrl(size: 512);
+      if (art512Url.isNotEmpty) {
+        final provider = CachedNetworkImageProvider(art512Url);
         futures.add(precacheImage(provider, context).catchError((_) {}));
       }
     }

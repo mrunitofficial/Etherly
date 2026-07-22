@@ -51,7 +51,7 @@ class FullPlayerContent extends StatelessWidget {
                         sizes.extraLargeIncreased + sizes.largeIncreased, // 280
                     child: StationArt(
                       artUrl: mediaItem.safeArt1024Url,
-                      placeholderUrl: mediaItem.safeArt512Url,
+                      placeholderUrl: mediaItem.safeArt128Url,
                     ),
                   ),
                 ),

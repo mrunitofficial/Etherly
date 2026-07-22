@@ -33,15 +33,13 @@ class StationArt extends StatelessWidget {
       final sizes = Theme.of(context).extension<Sizes>();
       final double? targetArtSize;
       if (size != null && sizes != null) {
-        if (size! <= sizes.medium) {
-          targetArtSize = 128;
-        } else if (size! <= sizes.extraLargeIncreased) {
+        if (size! <= sizes.extraLargeIncreased) {
           targetArtSize = 512;
         } else {
           targetArtSize = 1024;
         }
       } else {
-        targetArtSize = size;
+        targetArtSize = size ?? 512;
       }
 
       resolvedArtUrl = station!.getArtUrl(size: targetArtSize);
