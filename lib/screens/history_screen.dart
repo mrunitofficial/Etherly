@@ -197,7 +197,7 @@ class HistoryScreen extends StatelessWidget {
                         return confirm ?? false;
                       },
                       onDismissed: (direction) {
-                        HistoryService().removeSong(song);
+                        HistoryService().removeSong(song).catchError((_) {});
                       },
                       child: SongCardItem(
                         songName: song.title,
