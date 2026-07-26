@@ -59,3 +59,9 @@
 * **Comment Compliance**: Flag missing 1-line doc comments (`///`) on classes/methods, multi-line comments, or unannotated architectural deviations (`//`).
 
 * **Resource Leaks**: Flag business logic inside UI `build()` methods or undisposed controllers/subscriptions.
+
+## 7. Audio Architecture & Control Routing Standards
+
+* **Single Source of Truth (`AudioPlayerService`)**: `AudioPlayerService` (`lib/services/audio_player_service.dart`) wraps `Just_Audio` and is the single source of truth for all playback state, station management, timers, and live-stream reload logic. All UI widgets, screens, and home screen shortcuts must call `AudioPlayerService` methods strictly (`playMediaItem`, `pause`, `stop`).
+* **Platform Media Handler (`AppAudioHandler`)**: `AppAudioHandler` (`lib/services/app_audio_handler.dart`) handles OS-level integrations (`audio_service` for lock screen/headsets/car headunits and `audio_session` for phone interruptions).
+* **Strict Control Delegation**: External hardware controls (Bluetooth, headset buttons, lock screen, Android Auto) in `AppAudioHandler` must NEVER call raw `Just_Audio` methods (`player.play()`, `player.pause()`, etc.) directly. All system media actions (`onPlay`, `onPause`, `onStop`, `onSkipNext`, `onSkipPrev`) MUST delegate through `AudioPlayerService` callbacks so custom live-stream reloading and state management remain unified.
