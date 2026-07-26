@@ -6,12 +6,15 @@ import 'package:audio_session/audio_session.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<MyAudioHandler>? _audioHandlerFuture;
+Future<AppAudioHandler>? _audioHandlerFuture;
 
 /// Initializes the AudioService for OS-level background audio notifications and controls.
-Future<MyAudioHandler> initAudioService({
+Future<AppAudioHandler> initAudioService({
   required AudioPlayer player,
   required String channelName,
+  required Future<void> Function() onPlay,
+  required Future<void> Function() onPause,
+  required Future<void> Function() onStop,
   required Future<void> Function() onSkipToNext,
   required Future<void> Function() onSkipToPrevious,
 }) async {
@@ -19,10 +22,13 @@ Future<MyAudioHandler> initAudioService({
   final session = await AudioSession.instance;
   await session.configure(const AudioSessionConfiguration.music());
 
-  return _audioHandlerFuture ??= AudioService.init<MyAudioHandler>(
-    builder: () => MyAudioHandler(
+  return _audioHandlerFuture ??= AudioService.init<AppAudioHandler>(
+    builder: () => AppAudioHandler(
       player: player,
       session: session,
+      onPlay: onPlay,
+      onPause: onPause,
+      onStop: onStop,
       onSkipNext: onSkipToNext,
       onSkipPrev: onSkipToPrevious,
     ),
@@ -37,15 +43,21 @@ Future<MyAudioHandler> initAudioService({
 }
 
 /// A lightweight handler that syncs just_audio's state to audio_service.
-class MyAudioHandler extends BaseAudioHandler {
+class AppAudioHandler extends BaseAudioHandler {
   final AudioPlayer player;
   final AudioSession session;
+  final Future<void> Function() onPlay;
+  final Future<void> Function() onPause;
+  final Future<void> Function() onStop;
   final Future<void> Function() onSkipNext;
   final Future<void> Function() onSkipPrev;
 
-  MyAudioHandler({
+  AppAudioHandler({
     required this.player,
     required this.session,
+    required this.onPlay,
+    required this.onPause,
+    required this.onStop,
     required this.onSkipNext,
     required this.onSkipPrev,
   }) {
@@ -138,16 +150,16 @@ class MyAudioHandler extends BaseAudioHandler {
     updateMediaItem(mediaItem.value!.copyWith(artist: artist));
   }
 
-  /// AudioService Overrides delegating directly to just_audio
+  /// AudioService Overrides delegating directly to AudioPlayerService custom logic
   @override
-  Future<void> play() async => player.play();
+  Future<void> play() async => onPlay();
 
   @override
-  Future<void> pause() async => player.pause();
+  Future<void> pause() async => onPause();
 
   @override
   Future<void> stop() async {
-    await player.stop();
+    await onStop();
     await super.stop();
   }
 
