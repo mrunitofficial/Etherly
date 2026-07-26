@@ -14,6 +14,8 @@
 
 * **Native Material 3**: Rely on Flutter's native M3 widgets (`Card`, `Dialog`, `IconButton`, `NavigationBar`, etc.) and preserve framework defaults without extra configuration unless necessary.
 
+* **Explicit Semantics & Accessibility**: When custom UI components or widgets do not provide native accessibility support by default (e.g. `GestureDetector`, custom containers, interactive icons without default labels), wrap them in an explicit `Semantics` widget with descriptive labels, buttons, or state flags.
+
 * **Zero Hardcoded Design Values**:
 
   * ❌ **Prohibited**: Hardcoded colors (`Color(...)`), static padding (`EdgeInsets.all(...)`), fixed border radii (`BorderRadius.circular(...)`), or explicit animation durations (`Duration(...)`).
@@ -78,5 +80,17 @@
 * **Single Source of Truth (`AudioPlayerService`)**: `AudioPlayerService` (`lib/services/audio_player_service.dart`) wraps `Just_Audio` and is the single source of truth for all playback state, station management, timers, and live-stream reload logic. All UI widgets, screens, and home screen shortcuts must call `AudioPlayerService` methods strictly (`playMediaItem`, `pause`, `stop`).
 * **Platform Media Handler (`AppAudioHandler`)**: `AppAudioHandler` (`lib/services/app_audio_handler.dart`) handles OS-level integrations (`audio_service` for lock screen/headsets/car headunits and `audio_session` for phone interruptions).
 * **Control Routing**: All UI widgets and shortcuts call `AudioPlayerService`. `AudioPlayerService` delegates low-level stream playback to `AppAudioHandler` (`_audioHandler.playMediaItem(item)`, `_audioHandler.pause()`, `_audioHandler.stop()`), which directly controls `just_audio`.
+
+## 8. Essential Dart & Flutter Best Practices
+
+* **Null Safety & Immutability**: Write soundly null-safe code; avoid raw `!` forced unwrapping unless non-null is strictly guaranteed. Prefer `const` constructors and immutable structures.
+
+* **Async & Isolate Safety**: Handle `Future`s with `async`/`await` and explicit error handling (`try-catch`). Use `compute()` for heavy CPU operations (e.g., large JSON parsing) to avoid blocking the main UI thread.
+
+* **Performance & List Optimization**: Avoid performing computations or side effects inside `build()`. Use `ListView.builder` or `SliverList` for lazy-loaded long lists.
+
+* **Code Hygiene & Naming**: Use `PascalCase` for classes, `camelCase` for members/variables, and `snake_case` for files. Keep functions short with single responsibilities. Use `dart:developer` `log()` instead of raw `print()`.
+
+
 
 
