@@ -102,83 +102,101 @@ class _RadioPlayerState extends State<RadioPlayer> {
             .clamp(minPlayerSize, 1.0);
         _latestMinPlayerSize = minPlayerSize;
 
-        return DraggableScrollableSheet(
-          controller: _controller,
-          initialChildSize: minPlayerSize,
-          minChildSize: minPlayerSize,
-          maxChildSize: maxPlayerSize,
-          snap: true,
-          snapSizes: [minPlayerSize, maxPlayerSize],
-          builder: (context, scrollController) => LayoutBuilder(
-            builder: (context, constraints) {
-              final progress =
-                  ((constraints.maxHeight - RadioPlayer.minPlayerHeight) /
-                          (RadioPlayer.maxPlayerHeight -
-                              RadioPlayer.minPlayerHeight))
-                      .clamp(0.0, 1.0);
-              final miniPlayerOpacity = (1.0 - (progress / 0.3)).clamp(
-                0.0,
-                1.0,
-              );
-              final fullPlayerOpacity = ((progress - 0.3) / 0.3).clamp(
-                0.0,
-                1.0,
-              );
+        final bool isExpanded =
+            _controller.isAttached && _controller.size > minPlayerSize + 0.05;
 
-              return Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainer,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(32),
-                    topRight: Radius.circular(32),
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    Opacity(
-                      opacity: fullPlayerOpacity,
-                      child: FullPlayerContent(
-                        scrollController: scrollController,
-                        onClose: () => _controller.isAttached
-                            ? _controller
-                                  .animateTo(
-                                    minPlayerSize,
-                                    duration: theme.extension<Speed>()!.long3,
-                                    curve: Easing.standard,
-                                  )
-                                  .catchError((_) {})
-                            : null,
-                      ),
+        return PopScope(
+          canPop: !isExpanded,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            if (_controller.isAttached) {
+              _controller
+                  .animateTo(
+                    minPlayerSize,
+                    duration: theme.extension<Speed>()!.long3,
+                    curve: Easing.standard,
+                  )
+                  .catchError((_) {});
+            }
+          },
+          child: DraggableScrollableSheet(
+            controller: _controller,
+            initialChildSize: minPlayerSize,
+            minChildSize: minPlayerSize,
+            maxChildSize: maxPlayerSize,
+            snap: true,
+            snapSizes: [minPlayerSize, maxPlayerSize],
+            builder: (context, scrollController) => LayoutBuilder(
+              builder: (context, constraints) {
+                final progress =
+                    ((constraints.maxHeight - RadioPlayer.minPlayerHeight) /
+                            (RadioPlayer.maxPlayerHeight -
+                                RadioPlayer.minPlayerHeight))
+                        .clamp(0.0, 1.0);
+                final miniPlayerOpacity = (1.0 - (progress / 0.3)).clamp(
+                  0.0,
+                  1.0,
+                );
+                final fullPlayerOpacity = ((progress - 0.3) / 0.3).clamp(
+                  0.0,
+                  1.0,
+                );
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainer,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(32),
+                      topRight: Radius.circular(32),
                     ),
-                    IgnorePointer(
-                      ignoring: miniPlayerOpacity == 0,
-                      child: Opacity(
-                        opacity: miniPlayerOpacity,
-                        child: MiniPlayerTapRegion(
-                          onExpand: () => _controller.isAttached
+                  ),
+                  child: Stack(
+                    children: [
+                      Opacity(
+                        opacity: fullPlayerOpacity,
+                        child: FullPlayerContent(
+                          scrollController: scrollController,
+                          onClose: () => _controller.isAttached
                               ? _controller
                                     .animateTo(
-                                      maxPlayerSize,
+                                      minPlayerSize,
                                       duration: theme.extension<Speed>()!.long3,
                                       curve: Easing.standard,
                                     )
                                     .catchError((_) {})
                               : null,
-                          child: const MiniPlayerContent(),
                         ),
                       ),
-                    ),
-                    const Align(
-                      alignment: Alignment.topCenter,
-                      child: Padding(
-                        padding: EdgeInsets.only(top: 16),
-                        child: _DragHandle(),
+                      IgnorePointer(
+                        ignoring: miniPlayerOpacity == 0,
+                        child: Opacity(
+                          opacity: miniPlayerOpacity,
+                          child: MiniPlayerTapRegion(
+                            onExpand: () => _controller.isAttached
+                                ? _controller
+                                      .animateTo(
+                                        maxPlayerSize,
+                                        duration: theme.extension<Speed>()!.long3,
+                                        curve: Easing.standard,
+                                      )
+                                      .catchError((_) {})
+                                : null,
+                            child: const MiniPlayerContent(),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            },
+                      const Align(
+                        alignment: Alignment.topCenter,
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 16),
+                          child: _DragHandle(),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         );
       },
