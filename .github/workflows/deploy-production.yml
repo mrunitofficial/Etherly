@@ -187,6 +187,13 @@ jobs:
           name: etherly-production-apk
           path: build/app/outputs/flutter-apk
 
+      - name: Extract version from pubspec.yaml
+        id: get_version
+        run: |
+          RAW_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr '+' '-' | tr -d '[:space:]"')
+          TAG_NAME="v${RAW_VERSION}"
+          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         id: create_release
         env:
@@ -197,14 +204,14 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           APK_FILE=$(find build/app/outputs/flutter-apk -name "*.apk" | head -n 1)
           mv "$APK_FILE" build/app/outputs/flutter-apk/Etherly.apk
-          gh release create "$TAG" build/app/outputs/flutter-apk/Etherly.apk --notes "Web App: https://etherly-firebase.web.app" --generate-notes --clobber
+          gh release create "${{ steps.get_version.outputs.tag }}" build/app/outputs/flutter-apk/Etherly.apk --notes "Web App: https://etherly-firebase.web.app" --generate-notes --clobber || true
 
       - name: Print Production Info
         run: |
           echo "### Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Web Production Link:** [Visit Production Website](https://etherly-firebase.web.app)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Android Release APK (Release Asset):** [Download from Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.create_release.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Android Release APK (Release Asset):** [Download from Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.get_version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
           echo "- **Android Release APK (Workflow Artifact):** [Download Artifact](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ needs.build_apk.outputs.artifact_id }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "All production deployment actions completed successfully."

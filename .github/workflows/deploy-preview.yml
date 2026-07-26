@@ -168,6 +168,11 @@ jobs:
           name: web-preview-build
           path: build/web
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Deploy to Firebase Hosting Preview
         uses: FirebaseExtended/action-hosting-deploy@v0
         id: deploy_preview
