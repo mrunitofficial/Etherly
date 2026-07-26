@@ -501,9 +501,6 @@ class AudioPlayerService with ChangeNotifier {
       sleepTimerActive.value = true;
       _sleepTimer = Timer(duration, () {
         stop();
-        _sleepTimer = null;
-        sleepTimerActive.value = false;
-        notifyListeners();
       });
       notifyListeners();
     }
