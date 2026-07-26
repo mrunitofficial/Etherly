@@ -92,13 +92,10 @@ class FullPlayerContent extends StatelessWidget {
       ),
     );
 
-    if (scrollController != null) {
-      return SingleChildScrollView(
-        controller: scrollController,
-        child: content,
-      );
-    }
-    return content;
+    return SingleChildScrollView(
+      controller: scrollController,
+      child: content,
+    );
   }
 }
 
