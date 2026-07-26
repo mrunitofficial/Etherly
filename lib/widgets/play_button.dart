@@ -3,6 +3,7 @@ import 'package:etherly/services/audio_player_service.dart';
 
 enum PlayButtonSize { medium, large }
 
+/// A button widget that toggles radio playback, displaying countdown or buffer state.
 class PlayButton extends StatelessWidget {
   const PlayButton({
     super.key,
@@ -47,39 +48,53 @@ class PlayButton extends StatelessWidget {
     }
   }
 
+  /// Builds the inner icon, spinner, or countdown label wrapped in explicit semantics.
   Widget _buildButtonContent(BuildContext context) {
     final theme = Theme.of(context);
     final iconTheme = IconTheme.of(context);
     final baseSize = iconTheme.size!;
     final color = iconTheme.color;
+    final bool isPlaying = service.isPlaying;
+    final bool showSpinner = service.isLoading;
 
+    final String semanticLabel = switch ((countdown > 0, showSpinner, isPlaying)) {
+      (true, _, _) => 'Sleep timer active: $countdown seconds remaining',
+      (_, true, _) => 'Buffering stream',
+      (_, _, true) => 'Pause',
+      _ => 'Play',
+    };
+
+    Widget childWidget;
     if (countdown > 0) {
       final textStyle = switch (size) {
         PlayButtonSize.large => theme.textTheme.headlineLarge,
         PlayButtonSize.medium => theme.textTheme.titleLarge,
       };
 
-      return Text(
+      childWidget = Text(
         countdown.toString(),
         style: textStyle?.copyWith(fontWeight: FontWeight.bold, color: color),
       );
-    }
-
-    final bool isPlaying = service.isPlaying;
-    final bool showSpinner = service.isLoading;
-
-    if (showSpinner) {
-      return SizedBox.square(
+    } else if (showSpinner) {
+      childWidget = SizedBox.square(
         dimension: baseSize,
         child: CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation(color),
         ),
       );
+    } else {
+      childWidget = Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded);
     }
 
-    return Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded);
+    return Semantics(
+      button: true,
+      liveRegion: true,
+      label: semanticLabel,
+      child: childWidget,
+    );
   }
 
+  /// Toggles playback state or stops buffering/countdown.
   void _handlePlayPause() {
     final bool isPlaying = service.isPlaying;
     if (countdown > 0) {

@@ -120,54 +120,59 @@ class _MarqueeTextState extends State<MarqueeText> {
         widget.height ??
         (effectiveStyle.fontSize != null ? effectiveStyle.fontSize! * 1.4 : 28);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final painter = TextPainter(
-          text: TextSpan(text: widget.text, style: effectiveStyle),
-          maxLines: 1,
-          textDirection: TextDirection.ltr,
-        )..layout(maxWidth: double.infinity);
-        final textWidth = painter.width;
-        final containerWidth = constraints.maxWidth.isFinite
-            ? constraints.maxWidth
-            : MediaQuery.of(context).size.width;
-
-        // Center text when it fits
-        if (widget.centerWhenFits && textWidth <= containerWidth) {
-          return SizedBox(
-            height: height,
-            child: Text(
-              widget.text,
-              style: widget.style,
-              overflow: TextOverflow.ellipsis,
+    return Semantics(
+      label: widget.text,
+      child: ExcludeSemantics(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final painter = TextPainter(
+              text: TextSpan(text: widget.text, style: effectiveStyle),
               maxLines: 1,
-              textAlign: TextAlign.center,
-            ),
-          );
-        }
+              textDirection: TextDirection.ltr,
+            )..layout(maxWidth: double.infinity);
+            final textWidth = painter.width;
+            final containerWidth = constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : MediaQuery.of(context).size.width;
 
-        // Scrollable marquee
-        return SizedBox(
-          height: height,
-          width: textWidth > containerWidth ? double.infinity : null,
-          child: AnimatedOpacity(
-            opacity: _opacity,
-            duration: theme.extension<Speed>()!.long1,
-            curve: Curves.linear,
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              scrollDirection: Axis.horizontal,
-              physics: const NeverScrollableScrollPhysics(),
-              child: Text(
-                widget.text,
-                style: widget.style,
-                overflow: TextOverflow.visible,
-                maxLines: 1,
+            // Center text when it fits
+            if (widget.centerWhenFits && textWidth <= containerWidth) {
+              return SizedBox(
+                height: height,
+                child: Text(
+                  widget.text,
+                  style: widget.style,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+
+            // Scrollable marquee
+            return SizedBox(
+              height: height,
+              width: textWidth > containerWidth ? double.infinity : null,
+              child: AnimatedOpacity(
+                opacity: _opacity,
+                duration: theme.extension<Speed>()!.long1,
+                curve: Curves.linear,
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  scrollDirection: Axis.horizontal,
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: Text(
+                    widget.text,
+                    style: widget.style,
+                    overflow: TextOverflow.visible,
+                    maxLines: 1,
+                  ),
+                ),
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 }

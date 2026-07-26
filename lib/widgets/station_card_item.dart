@@ -36,38 +36,53 @@ class StationCardItem extends StatelessWidget {
           clipBehavior: Clip.hardEdge,
           margin: EdgeInsets.zero,
           color: theme.colorScheme.surfaceContainerHigh,
-          child: InkWell(
-            onTap: onTap,
-            child: Padding(
-              padding: EdgeInsets.all(spacing.small),
-              child: Row(
-                children: [
-                  StationArt(
-                    station: station,
-                    size: screenType.isLargeFormat ? sizes.large : sizes.normal,
-                    borderRadius: shapes.small,
-                  ),
-                  SizedBox(width: spacing.medium),
-                  Expanded(
-                    child: Text(
-                      station.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium!.copyWith(
-                        fontWeight: FontWeight.bold,
+          child: Row(
+            children: [
+              Expanded(
+                child: Semantics(
+                  container: true,
+                  button: true,
+                  label: station.name,
+                  excludeSemantics: true,
+                  child: InkWell(
+                    onTap: onTap,
+                    child: Padding(
+                      padding: EdgeInsets.all(spacing.small),
+                      child: Row(
+                        children: [
+                          StationArt(
+                            station: station,
+                            size: screenType.isLargeFormat ? sizes.large : sizes.normal,
+                            borderRadius: shapes.small,
+                          ),
+                          SizedBox(width: spacing.medium),
+                          Expanded(
+                            child: Text(
+                              station.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleMedium!.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    onPressed: onFavorite,
-                  ),
-                ],
+                ),
               ),
-            ),
+              IconButton(
+                tooltip: isFavorite
+                    ? 'Remove ${station.name} from favorites'
+                    : 'Add ${station.name} to favorites',
+                icon: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: theme.colorScheme.onSurface,
+                ),
+                onPressed: onFavorite,
+              ),
+            ],
           ),
         ),
       ),

@@ -26,21 +26,26 @@ class StationGridItem extends StatelessWidget {
           borderRadius: borderRadius,
           clipBehavior: Clip.antiAlias,
           color: theme.colorScheme.surfaceContainerHigh,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: StationArt(
-                  station: station,
-                  size: 512,
+          child: Semantics(
+            container: true,
+            button: true,
+            label: station.name,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: StationArt(
+                    station: station,
+                    size: 512,
+                  ),
                 ),
-              ),
-              Positioned.fill(
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(onTap: onTap),
+                Positioned.fill(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(onTap: onTap),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

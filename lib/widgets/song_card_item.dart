@@ -40,51 +40,57 @@ class SongCardItem extends StatelessWidget {
           clipBehavior: Clip.hardEdge,
           margin: EdgeInsets.zero,
           color: theme.colorScheme.surfaceContainerHighest,
-          child: InkWell(
-            onTap: onTap,
-            onLongPress: onLongPress,
-            child: Padding(
-              padding: EdgeInsets.all(spacing.small),
-              child: Row(
-                children: [
-                  StationArt(
-                    artUrl: artUrl,
-                    size: screenType.isLargeFormat ? sizes.large : sizes.normal,
-                    borderRadius: shapes.small,
-                  ),
-                  SizedBox(width: spacing.medium),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        MarqueeText(
-                          text: songName,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: theme.colorScheme.onSurface,
-                          ),
-                          centerWhenFits: false,
-                        ),
-                        SizedBox(height: spacing.extraSmall),
-                        MarqueeText(
-                          text: artistName,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: theme.colorScheme.onSurface,
-                          ),
-                          centerWhenFits: false,
-                        ),
-                      ],
+          child: Semantics(
+            container: true,
+            button: true,
+            label: '$songName by $artistName, $timeLabel',
+            excludeSemantics: true,
+            child: InkWell(
+              onTap: onTap,
+              onLongPress: onLongPress,
+              child: Padding(
+                padding: EdgeInsets.all(spacing.small),
+                child: Row(
+                  children: [
+                    StationArt(
+                      artUrl: artUrl,
+                      size: screenType.isLargeFormat ? sizes.large : sizes.normal,
+                      borderRadius: shapes.small,
                     ),
-                  ),
-                  SizedBox(width: spacing.medium),
-                  Text(
-                    timeLabel,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    SizedBox(width: spacing.medium),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          MarqueeText(
+                            text: songName,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: theme.colorScheme.onSurface,
+                            ),
+                            centerWhenFits: false,
+                          ),
+                          SizedBox(height: spacing.extraSmall),
+                          MarqueeText(
+                            text: artistName,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: theme.colorScheme.onSurface,
+                            ),
+                            centerWhenFits: false,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(width: spacing.small),
-                ],
+                    SizedBox(width: spacing.medium),
+                    Text(
+                      timeLabel,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    SizedBox(width: spacing.small),
+                  ],
+                ),
               ),
             ),
           ),
