@@ -27,60 +27,52 @@ class _StationGridItemState extends State<StationGridItem> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final speed = theme.extension<Speed>() ?? Speed();
+    final spacing = theme.extension<Spacing>()!;
 
     return RepaintBoundary(
-      child: AnimatedScale(
-        scale: _isFocused ? 1.04 : 1.0,
-        duration: speed.short2,
-        curve: Curves.easeOutCubic,
-        child: Tooltip(
-          message: widget.station.name,
-          triggerMode: TooltipTriggerMode.manual,
-          child: Material(
-            borderRadius: widget.borderRadius,
+      child: Tooltip(
+        message: widget.station.name,
+        triggerMode: TooltipTriggerMode.manual,
+        child: Material(
+            shape: RoundedRectangleBorder(
+              borderRadius: widget.borderRadius,
+              side: _isFocused
+                  ? BorderSide(
+                      color: theme.colorScheme.primary,
+                      width: spacing.extraSmall,
+                    )
+                  : BorderSide.none,
+            ),
             clipBehavior: Clip.antiAlias,
             color: theme.colorScheme.surfaceContainerHigh,
             child: Semantics(
               container: true,
               button: true,
               label: widget.station.name,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: widget.borderRadius,
-                  border: _isFocused
-                      ? Border.all(
-                          color: theme.colorScheme.primary,
-                          width: 3.0,
-                        )
-                      : null,
-                ),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: StationArt(
-                        station: widget.station,
-                        size: 512,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: StationArt(
+                      station: widget.station,
+                      size: 512,
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onFocusChange: (focused) {
+                          setState(() => _isFocused = focused);
+                        },
+                        onTap: widget.onTap,
                       ),
                     ),
-                    Positioned.fill(
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onFocusChange: (focused) {
-                            setState(() => _isFocused = focused);
-                          },
-                          onTap: widget.onTap,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 }

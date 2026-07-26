@@ -270,16 +270,20 @@ class _AppScreenState extends State<AppScreen>
               Expanded(
                 child: Scaffold(
                   appBar: appBar,
-                  body: FocusTraversalGroup(
-                    child: Row(
-                      children: [
-                        Expanded(child: mainContent),
-                        SizedBox(
-                          width: 360,
+                  body: Row(
+                    children: [
+                      Expanded(
+                        child: FocusTraversalGroup(
+                          child: mainContent,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 360,
+                        child: FocusTraversalGroup(
                           child: RadioPlayer(screenType: screenType),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                   bottomNavigationBar: SizedBox(height: spacing.medium),
                 ),
