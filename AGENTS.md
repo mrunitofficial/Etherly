@@ -20,13 +20,26 @@
 
   * ✅ **Mandatory**: When custom parameters are required, retrieve visual/motion properties strictly via `Theme.of(context)` or custom `ThemeExtension` tokens (`lib/services/theme_data.dart`).
 
-## 3. Strict Single-Line Commenting Standards
+## 3. Strict Code Structure, Ordering & Commenting Standards
 
 * **Single-Line Limitation**: All comments must strictly be a single line. Multi-line comments are prohibited.
 
 * **Public & Major API Documentation**: All major declarations (classes, top-level methods, state classes, public methods) must include a 1-line doc comment using `///`.
 
 * **Deviations & Exceptions**: Any intentional divergence from general project conventions or framework defaults must be explicitly annotated with a 1-line comment using `//`.
+
+* **Standard Member Ordering**: All Dart files and classes must adhere to standard ordering:
+  1. Top-Level Directives (`import` order: `dart:` $\rightarrow$ `package:` $\rightarrow$ relative) & Constants
+  2. Class Static Fields & Constants (`static const`, `static final`)
+  3. Class Instance Fields (public properties $\rightarrow$ private `_` properties)
+  4. Constructors (`const`, named, factory)
+  5. Lifecycle & State Overrides (`initState()`, `didChangeDependencies()`, `dispose()`)
+  6. Widget `build()` Method
+  7. Public Methods & Action Handlers
+  8. Private Helper Methods
+
+* **Avoid In-Class Helper Methods**: Inline helper functions (e.g. `_buildHeader()`) inside class bodies are discouraged. Prefer keeping logic clean inline within `build()`, or extract reusable UI into a dedicated widget in `lib/widgets/` if substantial or repeated.
+
 
 ## 4. UI Consistency & Interactive Experience
 
@@ -64,4 +77,6 @@
 
 * **Single Source of Truth (`AudioPlayerService`)**: `AudioPlayerService` (`lib/services/audio_player_service.dart`) wraps `Just_Audio` and is the single source of truth for all playback state, station management, timers, and live-stream reload logic. All UI widgets, screens, and home screen shortcuts must call `AudioPlayerService` methods strictly (`playMediaItem`, `pause`, `stop`).
 * **Platform Media Handler (`AppAudioHandler`)**: `AppAudioHandler` (`lib/services/app_audio_handler.dart`) handles OS-level integrations (`audio_service` for lock screen/headsets/car headunits and `audio_session` for phone interruptions).
-* **Strict Control Delegation**: External hardware controls (Bluetooth, headset buttons, lock screen, Android Auto) in `AppAudioHandler` must NEVER call raw `Just_Audio` methods (`player.play()`, `player.pause()`, etc.) directly. All system media actions (`onPlay`, `onPause`, `onStop`, `onSkipNext`, `onSkipPrev`) MUST delegate through `AudioPlayerService` callbacks so custom live-stream reloading and state management remain unified.
+* **Control Routing**: All UI widgets and shortcuts call `AudioPlayerService`. `AudioPlayerService` delegates low-level stream playback to `AppAudioHandler` (`_audioHandler.playMediaItem(item)`, `_audioHandler.pause()`, `_audioHandler.stop()`), which directly controls `just_audio`.
+
+

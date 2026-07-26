@@ -12,9 +12,6 @@ Future<AppAudioHandler>? _audioHandlerFuture;
 Future<AppAudioHandler> initAudioService({
   required AudioPlayer player,
   required String channelName,
-  required Future<void> Function() onPlay,
-  required Future<void> Function() onPause,
-  required Future<void> Function() onStop,
   required Future<void> Function() onSkipToNext,
   required Future<void> Function() onSkipToPrevious,
 }) async {
@@ -26,9 +23,6 @@ Future<AppAudioHandler> initAudioService({
     builder: () => AppAudioHandler(
       player: player,
       session: session,
-      onPlay: onPlay,
-      onPause: onPause,
-      onStop: onStop,
       onSkipNext: onSkipToNext,
       onSkipPrev: onSkipToPrevious,
     ),
@@ -46,18 +40,12 @@ Future<AppAudioHandler> initAudioService({
 class AppAudioHandler extends BaseAudioHandler {
   final AudioPlayer player;
   final AudioSession session;
-  final Future<void> Function() onPlay;
-  final Future<void> Function() onPause;
-  final Future<void> Function() onStop;
   final Future<void> Function() onSkipNext;
   final Future<void> Function() onSkipPrev;
 
   AppAudioHandler({
     required this.player,
     required this.session,
-    required this.onPlay,
-    required this.onPause,
-    required this.onStop,
     required this.onSkipNext,
     required this.onSkipPrev,
   }) {
@@ -119,7 +107,7 @@ class AppAudioHandler extends BaseAudioHandler {
           AudioSource.uri(Uri.parse(entry.value), tag: item),
         );
         if (!_isCurrentStation(item.id)) return;
-        await play();
+        await player.play();
 
         if (_isCurrentStation(item.id)) {
           final extras = Map<String, dynamic>.from(item.extras ?? {});
@@ -150,16 +138,23 @@ class AppAudioHandler extends BaseAudioHandler {
     updateMediaItem(mediaItem.value!.copyWith(artist: artist));
   }
 
-  /// AudioService Overrides delegating directly to AudioPlayerService custom logic
+  /// AudioService Overrides delegating directly to just_audio player
   @override
-  Future<void> play() async => onPlay();
+  Future<void> play() async {
+    final current = mediaItem.value;
+    if (current != null) {
+      await playMediaItem(current);
+    } else {
+      await player.play();
+    }
+  }
 
   @override
-  Future<void> pause() async => onPause();
+  Future<void> pause() async => player.pause();
 
   @override
   Future<void> stop() async {
-    await onStop();
+    await player.stop();
     await super.stop();
   }
 

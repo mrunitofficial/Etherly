@@ -149,9 +149,6 @@ class AudioPlayerService with ChangeNotifier {
     _audioHandler = await initAudioService(
       player: player,
       channelName: 'Etherly Radio',
-      onPlay: () => playMediaItem(null),
-      onPause: pause,
-      onStop: stop,
       onSkipToNext: skipToNext,
       onSkipToPrevious: skipToPrevious,
     );
