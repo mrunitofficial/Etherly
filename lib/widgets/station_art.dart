@@ -43,8 +43,9 @@ class StationArt extends StatelessWidget {
       }
 
       resolvedArtUrl = station!.getArtUrl(size: targetArtSize);
-      // For placeholder, use a smaller 128 resolution if available
-      resolvedPlaceholderUrl = station!.getArtUrl(size: 128);
+      // For placeholder, use 512 if target size is 1024, otherwise 128
+      resolvedPlaceholderUrl =
+          station!.getArtUrl(size: targetArtSize == 1024 ? 512 : 128);
     } else {
       resolvedArtUrl = artUrl ?? '';
       resolvedPlaceholderUrl = placeholderUrl ?? '';
