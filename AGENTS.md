@@ -8,6 +8,8 @@
 
 * **Single Source of Truth (SSOT)**: Never duplicate state, data models, or design constants. App state belongs in dedicated services managed via `Provider` or `ValueNotifier`. Data models must strictly encapsulate their own formatting and fallbacks.
 
+* **Keep It Simple & Future-Proof**: Avoid deeply nested `if`/`else` trees, artificial hardcoded threshold logic, or complex inline conditionals inside UI components. Delegate data resolution and formatting directly to domain models (`lib/models/`) to ensure code remains clean, readable, scalable, and resilient to future schema or database updates.
+
 * **Resource Safety**: Always clean up subscriptions, controllers (`StreamSubscription`, `AnimationController`, `TextEditingController`), and timers in `dispose()`.
 
 ## 2. Material 3 & Design System Standards
