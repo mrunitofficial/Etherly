@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:etherly/models/cast_device.dart';
 import 'package:etherly/models/station.dart';
 import 'package:etherly/services/app_audio_handler.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
@@ -88,6 +89,9 @@ class AudioPlayerService with ChangeNotifier {
   /// Timer to track network buffering timeout and trigger live-edge reconnection.
   Timer? _bufferingTimeoutTimer;
 
+  /// Timer to safeguard against hung Cast transitions.
+  Timer? _castTransitionTimer;
+
   /// Current media item.
   MediaItem? _currentMediaItem;
   MediaItem? get mediaItem => _currentMediaItem;
@@ -103,49 +107,100 @@ class AudioPlayerService with ChangeNotifier {
   /// Preferences.
   SharedPreferences get prefs => _prefs;
 
-  /// Cast loading status.
-  bool get isCastLoading => _castService?.isRemoteLoading.value ?? false;
+  /// Whether a Cast session is currently connected.
   bool get isCasting => _castService?.isConnected ?? false;
 
   /// Unified play state for UI
-  bool get isPlaying {
-    if (_castService != null && _castService.isConnected) {
-      return _castService.isRemotePlaying.value;
-    }
-    return _isPlayIntended;
-  }
+  bool get isPlaying => _isPlayIntended;
 
   /// Unified loading and buffering state for UI
   bool get isLoading {
-    if (_castService != null && _castService.isConnected) {
-      return _castService.isRemoteLoading.value;
+    if (isCasting) {
+      if (_isTransitioning) return true;
+      if (_isPlayIntended && !(_castService?.isRemotePlaying.value ?? false)) {
+        return true;
+      }
+      return false;
     }
+
+    if (_isTransitioning) return true;
     final isBuffering =
         player.processingState == ProcessingState.loading ||
         (player.processingState == ProcessingState.buffering && !kIsWeb);
-    return _isTransitioning || isBuffering;
+    return isBuffering;
   }
 
-  /// Volume level of the player.
-  double get volume => player.volume;
+  /// Volume level of the player or active cast session.
+  double get volume => isCasting ? (_castService?.remoteVolume.value ?? player.volume) : player.volume;
 
   /// Stream of player volume changes.
   Stream<double> get volumeStream => player.volumeStream;
 
+  /// Updates the player or remote cast volume.
+  void setVolume(double value) {
+    final clamped = value.clamp(0.0, 1.0);
+    if (isCasting) {
+      _castService?.setRemoteVolume(clamped);
+    } else {
+      player.setVolume(clamped);
+    }
+    _prefs.setDouble(_volumeKey, clamped);
+
+    // If manually setting volume > 0, unmute
+    if (clamped > 0 && _isMuted) {
+      _isMuted = false;
+      _prefs.setBool(_isMutedKey, false);
+      notifyListeners();
+    }
+  }
+
   /// Creates the service and attaches listeners to the optional cast service.
   AudioPlayerService([this._castService]) {
-    _castService?.isRemotePlaying.addListener(notifyListeners);
-    _castService?.isRemoteLoading.addListener(notifyListeners);
+    _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
     _castService?.isCastingActive.addListener(_onCastingStateChanged);
+    _castService?.remoteVolume.addListener(notifyListeners);
     _init();
+  }
+
+
+  /// Handles remote play state changes during active casting.
+  void _onCastRemotePlayingChanged() {
+    if (isCasting) {
+      if (_castService?.isRemotePlaying.value == true) {
+        _isTransitioning = false;
+        _isPlayIntended = true;
+        _castTransitionTimer?.cancel();
+        _castTransitionTimer = null;
+      }
+    }
+    notifyListeners();
+  }
+
+  /// Starts a safeguard timer to cancel stuck cast loading state.
+  void _startCastTransitionTimeout() {
+    _castTransitionTimer?.cancel();
+    _castTransitionTimer = Timer(const Duration(seconds: 7), () {
+      if (_isTransitioning && isCasting) {
+        _isTransitioning = false;
+        if (!(_castService?.isRemotePlaying.value ?? false)) {
+          _isPlayIntended = false;
+        }
+        notifyListeners();
+      }
+    });
   }
 
   /// Handles switching notification visibility when casting status changes.
   void _onCastingStateChanged() {
-    if (_castService?.isCastingActive.value ?? false) {
-      _audioHandler.hideNotification();
-    } else {
-      _audioHandler.showNotification();
+    _castTransitionTimer?.cancel();
+    if (isReady.value) {
+      if (_castService?.isCastingActive.value ?? false) {
+        _audioHandler.hideNotification();
+      } else {
+        _audioHandler.showNotification();
+        _isTransitioning = false;
+        _isPlayIntended = false;
+      }
     }
     notifyListeners();
   }
@@ -163,6 +218,7 @@ class AudioPlayerService with ChangeNotifier {
 
     // Sync unified just_audio player state to our listeners
     player.playerStateStream.listen((state) {
+      if (isCasting) return;
       final processingState = state.processingState;
 
       // Sync play intent with native player once we are no longer connecting
@@ -219,6 +275,7 @@ class AudioPlayerService with ChangeNotifier {
     player.icyMetadataStream.map((m) => m?.info?.title?.trim()).distinct().listen((
       title,
     ) {
+      if (isCasting) return;
       if (title != null && title.isNotEmpty) {
         final currentTag =
             player.sequenceState.currentSource?.tag as MediaItem?;
@@ -268,20 +325,6 @@ class AudioPlayerService with ChangeNotifier {
     }
   }
 
-  /// Updates the player volume.
-  void setVolume(double value) {
-    final clamped = value.clamp(0.0, 1.0);
-    player.setVolume(clamped);
-    _prefs.setDouble(_volumeKey, clamped);
-
-    // If manually setting volume > 0, unmute
-    if (clamped > 0 && _isMuted) {
-      _isMuted = false;
-      _prefs.setBool(_isMutedKey, false);
-      notifyListeners();
-    }
-  }
-
   /// Toggles mute state.
   void toggleMute() {
     _isMuted = !_isMuted;
@@ -299,14 +342,16 @@ class AudioPlayerService with ChangeNotifier {
   /// Disposes of all timers and listeners.
   @override
   void dispose() {
-    _castService?.isRemotePlaying.removeListener(notifyListeners);
-    _castService?.isRemoteLoading.removeListener(notifyListeners);
+    _castService?.isRemotePlaying.removeListener(_onCastRemotePlayingChanged);
     _castService?.isCastingActive.removeListener(_onCastingStateChanged);
+
+    _castService?.remoteVolume.removeListener(notifyListeners);
     _stationsSubscription?.cancel();
     _audioHandler.customAction('dispose');
     _autoplayTimer?.cancel();
     _sleepTimer?.cancel();
     _bufferingTimeoutTimer?.cancel();
+    _castTransitionTimer?.cancel();
 
     try {
       _castService?.endCasting();
@@ -321,9 +366,10 @@ class AudioPlayerService with ChangeNotifier {
   /// - If ICY track title is available, returns [currentSongTitle].
   /// - Otherwise (for notifications/head units or fallback), returns station slogan.
   String getSecondaryText({String? loadingText}) {
-    if (isLoading && loadingText != null && loadingText.isNotEmpty) {
+    if (!isCasting && isLoading && loadingText != null && loadingText.isNotEmpty) {
       return loadingText;
     }
+
     if (currentSongTitle != null && currentSongTitle!.trim().isNotEmpty) {
       return currentSongTitle!.trim();
     }
@@ -343,8 +389,10 @@ class AudioPlayerService with ChangeNotifier {
     }
   }
 
-  /// Switches to a specific station. If null, re-initializes the current live stream.
-  Future<void> playMediaItem(Station? station) async {
+  /// Switches to a specific station or connects to a Cast device.
+  /// If [station] is null, re-initializes the current live stream.
+  /// If [castDevice] is provided, connects to the Cast device before streaming.
+  Future<void> playMediaItem(Station? station, {CastDevice? castDevice}) async {
     cancelAutoplayCountdown();
     final resolved =
         station ??
@@ -355,12 +403,47 @@ class AudioPlayerService with ChangeNotifier {
     final item = resolved.toMediaItem();
     _setMediaItem(item);
 
-    if (_castService != null && _castService.isConnected) {
-      currentSongTitle = null;
-      _isTransitioning = false;
-      await _audioHandler.stop();
-      await _castService.castAudio(mediaItem: item);
-      notifyListeners();
+    if (castDevice != null && _castService != null) {
+      try {
+        _connectingStationId = 'cast_${castDevice.id}';
+        currentSongTitle = null;
+        _isTransitioning = true;
+        _isPlayIntended = true;
+        notifyListeners();
+        _startCastTransitionTimeout();
+
+        await player.stop();
+        await _audioHandler.stop();
+        await _castService.connectAndWait(castDevice);
+        await _castService.castAudio(mediaItem: item);
+      } catch (e) {
+        if (kDebugMode) print('Error casting to device: $e');
+        _isTransitioning = false;
+        _isPlayIntended = false;
+        _connectingStationId = null;
+        notifyListeners();
+      }
+      return;
+    }
+
+    if (isCasting) {
+      try {
+        _connectingStationId = 'cast_${item.id}';
+        currentSongTitle = null;
+        _isTransitioning = true;
+        _isPlayIntended = true;
+        notifyListeners();
+        _startCastTransitionTimeout();
+
+        await _audioHandler.stop();
+        await _castService!.castAudio(mediaItem: item);
+      } catch (e) {
+        if (kDebugMode) print('Error casting media item: $e');
+        _isTransitioning = false;
+        _isPlayIntended = false;
+        _connectingStationId = null;
+        notifyListeners();
+      }
       return;
     }
 
@@ -369,6 +452,7 @@ class AudioPlayerService with ChangeNotifier {
     _isPlayIntended = true;
     _connectingStationId = item.id;
     notifyListeners();
+
     try {
       if (_currentMediaItem?.id != item.id) return;
       await _audioHandler.playMediaItem(item);
@@ -398,13 +482,9 @@ class AudioPlayerService with ChangeNotifier {
   Future<void> play() async {
     cancelAutoplayCountdown();
     if (_castService != null && _castService.isConnected) {
-      if (_currentMediaItem != null) {
-        await _audioHandler.stop();
-        await _castService.castAudio(mediaItem: _currentMediaItem!);
-      } else {
-        await _castService.play();
-      }
+      _isPlayIntended = true;
       notifyListeners();
+      await _castService.play();
       return;
     }
     await playMediaItem(null);
@@ -413,31 +493,34 @@ class AudioPlayerService with ChangeNotifier {
   /// Pauses playback.
   Future<void> pause() async {
     cancelAutoplayCountdown();
+    _castTransitionTimer?.cancel();
     _isTransitioning = false;
     _isPlayIntended = false;
     notifyListeners();
     if (_castService != null && _castService.isConnected) {
-      await _audioHandler.pause();
       await _castService.pause();
       return;
     }
     await _audioHandler.pause();
   }
 
+
   /// Stops playback.
   Future<void> stop() async {
     cancelAutoplayCountdown();
     cancelSleepTimer();
+    _castTransitionTimer?.cancel();
     _isTransitioning = false;
     _isPlayIntended = false;
     notifyListeners();
     if (_castService != null && _castService.isConnected) {
       await _audioHandler.stop();
-      await _castService.pause();
+      await _castService.stop();
       return;
     }
     await _audioHandler.stop();
   }
+
 
   /// Skips to the next station in the list.
   Future<void> skipToNext() async {

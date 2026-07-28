@@ -18,13 +18,35 @@ class CastDevices extends StatefulWidget {
 }
 
 class _CastDevicesState extends State<CastDevices> {
+  ChromeCastService? _castService;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _castService ??= context.read<ChromeCastService>();
+  }
+
   @override
   void initState() {
     super.initState();
-    final cast = context.read<ChromeCastService>();
-    if (cast.isCastSupported() && !cast.initialized) {
-      cast.init();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final cast = _castService ?? context.read<ChromeCastService>();
+      if (cast.isCastSupported()) {
+        if (!cast.isInitialized) {
+          cast.init();
+        }
+        cast.startDiscovery();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    if (_castService != null && _castService!.isCastSupported()) {
+      _castService!.stopDiscovery();
     }
+    super.dispose();
   }
 
   /// Build the Cast devices dialog.
@@ -44,7 +66,7 @@ class _CastDevicesState extends State<CastDevices> {
           final connected = cast.connectedDevice;
           final spacing = Theme.of(context).extension<Spacing>()!;
 
-          if (!cast.initialized) {
+          if (!cast.isInitialized) {
             cast.init();
           }
           if (devices.isEmpty) {
@@ -58,15 +80,18 @@ class _CastDevicesState extends State<CastDevices> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ...devices.map((device) {
-                final isSelected = connected?.id == device.id;
+                final isSelected = (connected?.id == device.id) ||
+                    (connected?.name.isNotEmpty == true &&
+                        connected?.name == device.name);
 
                 return Padding(
                   key: ValueKey(device.id),
                   padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
                   child: isSelected
-                      ? FilledButton(
+                      ? FilledButton.icon(
                           onPressed: () => _onDevicePressed(device, cast),
-                          child: Text(
+                          icon: const Icon(Icons.cast_connected_rounded),
+                          label: Text(
                             device.name,
                             textAlign: TextAlign.center,
                           ),
@@ -80,6 +105,7 @@ class _CastDevicesState extends State<CastDevices> {
                         ),
                 );
               }),
+
             ],
           );
         },
@@ -111,15 +137,8 @@ class _CastDevicesState extends State<CastDevices> {
       Navigator.of(context).pop();
     }
     final audio = context.read<AudioPlayerService>();
-    final mediaItem = audio.mediaItem;
-    if (mediaItem == null) return;
-
-    try {
-      await audio.stop();
-      await cast.connectAndWait(device);
-      await cast.castAudio(mediaItem: mediaItem);
-    } catch (_) {
-      // Connection or casting failed
-    }
+    await audio.playMediaItem(null, castDevice: device);
   }
+
+
 }

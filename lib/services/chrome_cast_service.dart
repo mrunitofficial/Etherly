@@ -8,25 +8,23 @@ import 'package:etherly/models/cast_device.dart';
 /// Manages Chromecast device discovery, connection, and media casting via native platform channel.
 class ChromeCastService with ChangeNotifier {
   static const MethodChannel _channel = MethodChannel('com.mrunit.etherly/cast_control');
-  // ignore: unused_field
   static const EventChannel _eventChannel = EventChannel('com.mrunit.etherly/cast_events');
 
   bool _disposed = false;
   bool _initialized = false;
 
   final List<CastDevice> _devices = [];
+
   /// List of currently discovered Cast devices.
   List<CastDevice> get devices => List.unmodifiable(_devices);
 
   CastDevice? _connectedDevice;
+
   /// Currently connected Cast device, if any.
   CastDevice? get connectedDevice => _connectedDevice;
 
   /// Notifier for remote playback state.
   final ValueNotifier<bool> isRemotePlaying = ValueNotifier(false);
-
-  /// Notifier for remote loading/buffering state.
-  final ValueNotifier<bool> isRemoteLoading = ValueNotifier(false);
 
   /// Notifier for active casting status.
   final ValueNotifier<bool> isCastingActive = ValueNotifier(false);
@@ -35,55 +33,100 @@ class ChromeCastService with ChangeNotifier {
   final ValueNotifier<double> remoteVolume = ValueNotifier(1.0);
 
   StreamSubscription<dynamic>? _eventsSub;
-  Timer? _loadingTimeout;
-  DateTime? _loadingStartTime;
 
   /// Whether Chromecast is initialized.
-  bool get initialized => _initialized;
+  bool get isInitialized => _initialized;
 
-  /// Whether a Cast device is currently connected.
+  /// Whether a Cast session is currently connected.
   bool get isConnected => _connectedDevice != null;
 
-  /// Checks if casting is supported on the current platform.
-  bool isCastSupported({bool horizontalWeb = false}) {
-    if (horizontalWeb || kIsWeb) return false;
+  /// Checks if Google Cast framework is available on the current platform.
+  bool isCastSupported() {
     return defaultTargetPlatform == TargetPlatform.android;
   }
 
-  /// Initializes the Chromecast service and platform channel listeners.
-  Future<void> init({String? appId}) async {
-    if (_initialized) return;
-    if (!isCastSupported()) {
-      _initialized = true;
-      return;
-    }
+  /// Initializes device discovery and attaches event listeners.
+  Future<void> init() async {
+    if (_initialized || !isCastSupported()) return;
+    _initialized = true;
 
     try {
-      _eventsSub?.cancel();
-      _loadingTimeout?.cancel();
-    } catch (_) {}
+      _eventsSub = _eventChannel.receiveBroadcastStream().listen(
+        _handleNativeEvent,
+        onError: (Object e) {
+          if (kDebugMode) print('Cast EventChannel error: $e');
+        },
+      );
 
-    _initialized = true;
-    if (!_disposed) notifyListeners();
+      await _channel.invokeMethod('init');
+      await refreshConnectedState();
+    } catch (e) {
+      if (kDebugMode) print('Failed to init ChromeCastService: $e');
+    }
   }
 
-  /// Connects to the specified Cast device.
+  /// Refreshes the active connected Cast device from native side.
+  Future<void> refreshConnectedState() async {
+    if (!isCastSupported()) return;
+    try {
+      final String? deviceName = await _channel.invokeMethod<String>('getConnectedDevice');
+      if (deviceName != null && deviceName.isNotEmpty) {
+        _connectedDevice = CastDevice(id: 'connected', name: deviceName);
+        isCastingActive.value = true;
+      } else {
+        _connectedDevice = null;
+        isCastingActive.value = false;
+      }
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  /// Starts discovering nearby Cast devices.
+  Future<void> startDiscovery() async {
+    if (!isCastSupported()) return;
+    await init();
+    try {
+      await _channel.invokeMethod('startDiscovery');
+    } catch (e) {
+      if (kDebugMode) print('Failed to start Cast discovery: $e');
+    }
+  }
+
+  /// Stops Cast device discovery.
+  Future<void> stopDiscovery() async {
+    if (!isCastSupported()) return;
+    try {
+      await _channel.invokeMethod('stopDiscovery');
+    } catch (_) {}
+  }
+
+  /// Connects to the specified Cast device and waits until session is established.
   Future<void> connectAndWait(
     CastDevice device, {
-    Duration timeout = const Duration(seconds: 5),
+    Duration timeout = const Duration(seconds: 10),
   }) async {
     if (!isCastSupported()) return;
-    if (_connectedDevice?.id == device.id) return;
+    if (_connectedDevice?.id == device.id && isConnected) return;
 
-    _setLoading(true);
     if (!_disposed) isCastingActive.value = true;
-    _connectedDevice = device;
 
     try {
       await _channel.invokeMethod('connect', {'id': device.id});
-    } catch (_) {}
+      final deadline = DateTime.now().add(timeout);
+      while (!_disposed && !isConnected && DateTime.now().isBefore(deadline)) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
 
-    _setLoading(false);
+      if (!isConnected && !_disposed) {
+        isCastingActive.value = false;
+        throw TimeoutException('Cast session connection timed out');
+      }
+    } catch (e) {
+      if (!_disposed) isCastingActive.value = false;
+      rethrow;
+    } finally {
+      if (!_disposed) notifyListeners();
+    }
   }
 
   /// Casts audio content to the connected Cast device.
@@ -97,40 +140,44 @@ class ChromeCastService with ChangeNotifier {
   }) async {
     if (!isConnected) throw StateError('No Cast device connected');
 
-    _setLoading(true);
     await Future.delayed(const Duration(milliseconds: 50));
 
     if (mediaItem != null) {
       final urlStr = mediaItem.extras?['url'] as String?;
-      if (urlStr == null || urlStr.isEmpty) {
-        _setLoading(false);
-        return;
-      }
+      if (urlStr == null || urlStr.isEmpty) return;
 
       contentUrl = Uri.parse(urlStr);
       contentType = urlStr.toLowerCase().contains('aac') ? 'audio/aac' : 'audio/mpeg';
       title = mediaItem.title ?? 'Etherly Radio';
+      subtitle = mediaItem.artist ?? mediaItem.album ?? '';
       imageUrl = mediaItem.artUri;
     }
 
     if (contentUrl == null) {
-      _setLoading(false);
       throw ArgumentError('contentUrl is required');
     }
 
-    if (!_disposed) isRemotePlaying.value = true;
-    _setLoading(false);
+    try {
+      await _channel.invokeMethod('loadMedia', {
+        'url': contentUrl.toString(),
+        'title': title ?? 'Etherly Radio',
+        'subtitle': subtitle ?? '',
+        'imageUrl': imageUrl?.toString() ?? '',
+        'contentType': contentType ?? 'audio/mpeg',
+      });
+      if (!_disposed) isRemotePlaying.value = true;
+    } catch (e) {
+      if (kDebugMode) print('Failed to load media on Cast: $e');
+    }
   }
 
   /// Sends play command to the remote Cast session.
   Future<void> play() async {
     if (!isConnected) return;
-    _setLoading(true);
     try {
       await _channel.invokeMethod('play');
+      if (!_disposed) isRemotePlaying.value = true;
     } catch (_) {}
-    if (!_disposed) isRemotePlaying.value = true;
-    _setLoading(false);
   }
 
   /// Sends pause command to the remote Cast session.
@@ -138,8 +185,17 @@ class ChromeCastService with ChangeNotifier {
     if (!isConnected) return;
     try {
       await _channel.invokeMethod('pause');
+      if (!_disposed) isRemotePlaying.value = false;
     } catch (_) {}
-    if (!_disposed) isRemotePlaying.value = false;
+  }
+
+  /// Sends stop command to the remote Cast session.
+  Future<void> stop() async {
+    if (!isConnected) return;
+    try {
+      await _channel.invokeMethod('stop');
+      if (!_disposed) isRemotePlaying.value = false;
+    } catch (_) {}
   }
 
   /// Sets volume for the active remote Cast session (0.0 to 1.0).
@@ -152,11 +208,23 @@ class ChromeCastService with ChangeNotifier {
     } catch (_) {}
   }
 
+  /// Fetches volume level from the active remote Cast session.
+  Future<double?> getRemoteVolume() async {
+    if (!isConnected) return null;
+    try {
+      final vol = await _channel.invokeMethod<double>('getVolume');
+      if (vol != null && !_disposed) {
+        remoteVolume.value = vol.clamp(0.0, 1.0);
+      }
+      return vol;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Ends the current casting session.
   Future<void> endCasting() async {
     if (!isCastSupported()) return;
-
-    _loadingTimeout?.cancel();
 
     try {
       await _channel.invokeMethod('disconnect');
@@ -165,58 +233,56 @@ class ChromeCastService with ChangeNotifier {
     _connectedDevice = null;
     if (!_disposed) {
       isRemotePlaying.value = false;
-      isRemoteLoading.value = false;
       isCastingActive.value = false;
       notifyListeners();
     }
   }
 
-  /// Manages loading state with a minimum display timeout.
-  void _setLoading(bool loading) {
-    if (_disposed) return;
-    if (!loading) {
-      final startTime = _loadingStartTime;
-      if (startTime != null) {
-        final elapsed = DateTime.now().difference(startTime);
-        final remaining = const Duration(milliseconds: 400) - elapsed;
+  /// Handles incoming real-time events from native Android EventChannel.
+  void _handleNativeEvent(dynamic data) {
+    if (_disposed || data is! Map) return;
 
-        if (remaining > Duration.zero) {
-          _loadingTimeout?.cancel();
-          _loadingTimeout = Timer(remaining, () {
-            if (_disposed) return;
-            isRemoteLoading.value = false;
-            _loadingTimeout = null;
-            _loadingStartTime = null;
-          });
-          return;
+    final eventType = data['event'] as String?;
+    switch (eventType) {
+      case 'devicesChanged':
+        final list = data['devices'] as List?;
+        if (list != null) {
+          _devices
+            ..clear()
+            ..addAll(list.map((item) => CastDevice.fromMap(Map<String, dynamic>.from(item as Map))));
+          notifyListeners();
         }
-      }
 
-      _loadingTimeout?.cancel();
-      _loadingTimeout = null;
-      _loadingStartTime = null;
-      if (!_disposed) isRemoteLoading.value = false;
-      return;
+      case 'sessionState':
+        final connected = data['connected'] == true;
+        if (connected) {
+          final id = data['deviceId'] as String? ?? '';
+          final name = data['deviceName'] as String? ?? 'Cast Device';
+          _connectedDevice = CastDevice(id: id, name: name);
+          isCastingActive.value = true;
+        } else {
+          _connectedDevice = null;
+          isCastingActive.value = false;
+          isRemotePlaying.value = false;
+        }
+        notifyListeners();
+
+      case 'playbackState':
+        final isPlaying = data['isPlaying'] == true;
+        isRemotePlaying.value = isPlaying;
+
+      case 'volumeChanged':
+        if (data['volume'] is num) {
+          remoteVolume.value = (data['volume'] as num).toDouble().clamp(0.0, 1.0);
+        }
     }
-
-    _loadingStartTime = DateTime.now();
-    if (!_disposed) isRemoteLoading.value = true;
-    _loadingTimeout?.cancel();
-    _loadingTimeout = Timer(const Duration(seconds: 5), () {
-      if (_disposed) return;
-      isRemoteLoading.value = false;
-      _loadingTimeout = null;
-      _loadingStartTime = null;
-    });
   }
 
   @override
   void dispose() {
     _disposed = true;
-    _loadingTimeout?.cancel();
     _eventsSub?.cancel();
     isRemotePlaying.dispose();
-    isRemoteLoading.dispose();
     isCastingActive.dispose();
     remoteVolume.dispose();
     super.dispose();

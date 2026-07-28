@@ -14,6 +14,7 @@ class MainActivity : AudioServiceActivity() {
     private val SHORTCUT_CHANNEL = "com.mrunit.etherly/shortcut"
 
     private var shortcutChannel: MethodChannel? = null
+    private var chromeCastHelper: ChromeCast? = null
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -34,6 +35,16 @@ class MainActivity : AudioServiceActivity() {
                 createShortcut.handleMethodCall(call, result, intent)
             }
         }
+
+        chromeCastHelper = ChromeCast(this).apply {
+            register(flutterEngine.dartExecutor.binaryMessenger)
+        }
+    }
+
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        chromeCastHelper?.unregister()
+        chromeCastHelper = null
+        super.cleanUpFlutterEngine(flutterEngine)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -46,6 +57,3 @@ class MainActivity : AudioServiceActivity() {
         }
     }
 }
-
-
-
