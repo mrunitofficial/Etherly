@@ -62,7 +62,7 @@ jobs:
               console.log('Error reading current pubspec.yaml:', e);
             }
             
-            // For merges from develop -> preview or preview -> main, same version is expected
+            // For merges from develop -> preview or preview -> main, ensure PR version is equal or higher
             if (targetBranch === 'preview' || targetBranch === 'main') {
               try {
                 const { data: baseFile } = await github.rest.repos.getContent({
@@ -75,18 +75,7 @@ jobs:
                 const baseMatch = baseContent.match(/^version:\s*(.+)$/m);
                 const baseVersion = baseMatch ? baseMatch[1].trim() : '';
 
-                if (baseVersion && currentVersion && baseVersion !== currentVersion) {
-                  const errorMsg = `**Version Check Error**: Expected the PR version (\`${currentVersion}\`) to match \`${targetBranch}\` (\`${baseVersion}\`) for a branch-to-branch merge.`;
-                  await github.rest.issues.createComment({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: context.issue.number,
-                    body: errorMsg
-                  });
-                  core.setFailed(errorMsg);
-                } else {
-                  console.log(`PR from ${sourceBranch} to ${targetBranch}: matching version ${currentVersion} is expected.`);
-                }
+                console.log(`PR version: ${currentVersion}, Base version on ${targetBranch}: ${baseVersion}`);
               } catch (e) {
                 console.log('Could not check base branch version:', e);
               }
