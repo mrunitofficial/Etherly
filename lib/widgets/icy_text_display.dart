@@ -56,13 +56,8 @@ class IcyTextDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Only rebuild this root if casting state changes
-    final isCasting = context.select<AudioPlayerService, bool>(
-      (s) => s.isCasting,
-    );
-    if (isCasting) return const SizedBox.shrink();
-
     final theme = Theme.of(context);
+
     final loc = AppLocalizations.of(context);
     final spacing = theme.extension<Spacing>()!;
     final shapes = theme.extension<Shapes>()!;

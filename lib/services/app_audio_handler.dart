@@ -31,7 +31,7 @@ Future<AppAudioHandler> initAudioService({
       androidNotificationChannelName: channelName,
       androidNotificationIcon: 'mipmap/notification_icon',
       androidNotificationOngoing: false,
-      androidStopForegroundOnPause: false,
+      androidStopForegroundOnPause: true,
     ),
   );
 }
@@ -55,7 +55,26 @@ class AppAudioHandler extends BaseAudioHandler {
   }
 
   void _updatePlaybackState() {
+    if (mediaItem.value == null) {
+      playbackState.add(PlaybackState(
+        processingState: AudioProcessingState.idle,
+        playing: false,
+        controls: [],
+      ));
+      return;
+    }
     playbackState.add(_transformEvent(player.playbackEvent));
+  }
+
+  /// Clears active media item and stops AudioService to dismiss local OS notification card.
+  Future<void> clearNotification() async {
+    mediaItem.add(null);
+    playbackState.add(PlaybackState(
+      processingState: AudioProcessingState.idle,
+      playing: false,
+      controls: [],
+    ));
+    await stop();
   }
 
   /// Updates the currently displaying media item on the OS lock screen.
@@ -101,7 +120,6 @@ class AppAudioHandler extends BaseAudioHandler {
         continue;
       }
       try {
-        await player.stop();
         if (!_isCurrentStation(item.id)) return;
         await player.setAudioSource(
           AudioSource.uri(Uri.parse(entry.value), tag: item),
@@ -138,7 +156,7 @@ class AppAudioHandler extends BaseAudioHandler {
     updateMediaItem(mediaItem.value!.copyWith(artist: artist));
   }
 
-  /// AudioService Overrides delegating directly to just_audio player
+  /// AudioService Overrides delegating directly to just_audio player.
   @override
   Future<void> play() async {
     final current = mediaItem.value;
@@ -186,36 +204,6 @@ class AppAudioHandler extends BaseAudioHandler {
       return;
     }
     return super.customAction(name, extras);
-  }
-
-  /// Hides the OS notification when casting is taking place.
-  Future<void> hideNotification() async {
-    try {
-      if (player.playing) await player.stop();
-
-      // Tell audio_service we are idle, which clears the OS notification
-      playbackState.add(
-        PlaybackState(
-          controls: [],
-          processingState: AudioProcessingState.idle,
-          playing: false,
-        ),
-      );
-    } catch (e) {
-      if (kDebugMode) print('Error hiding notification: $e');
-    }
-  }
-
-  /// Restores the OS notification when casting has ended.
-  Future<void> showNotification() async {
-    try {
-      final current = mediaItem.value;
-      if (current != null) {
-        playbackState.add(_transformEvent(player.playbackEvent));
-      }
-    } catch (e) {
-      if (kDebugMode) print('Error showing notification: $e');
-    }
   }
 
   /// Transforms just_audio's generic PlaybackEvent into audio_service's PlaybackState

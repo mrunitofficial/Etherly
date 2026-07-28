@@ -17,16 +17,10 @@
     android:icon="@mipmap/ic_launcher"
     android:usesCleartextTraffic="true"
     android:localeConfig="@xml/locales_config">
-    <!-- Google Cast framework configuration -->
+    <!-- Google Cast framework options provider -->
     <meta-data
       android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
-      android:value="com.felnanuke.google_cast.GoogleCastOptionsProvider" />
-
-    <!-- Media notification service for cast controls -->
-    <service
-      android:name="com.google.android.gms.cast.framework.media.MediaNotificationService"
-      android:exported="false"
-      android:foregroundServiceType="mediaPlayback" />
+      android:value="com.mrunit.etherly.CastOptionsProvider" />
 
         <activity
             android:name=".MainActivity"

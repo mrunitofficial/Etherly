@@ -1,284 +1,277 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
 
-/// Manages Chromecast device discovery, connection, and media casting.
+import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+
+import 'package:etherly/models/cast_device.dart';
+
+/// Manages Chromecast device discovery, connection, and media casting via native platform channel.
 class ChromeCastService with ChangeNotifier {
-  bool isCastSupported({bool horizontalWeb = false}) {
-    if (horizontalWeb) return false;
-    if (kIsWeb) return false;
+  static const MethodChannel _channel = MethodChannel(
+    'com.mrunit.etherly/cast_control',
+  );
+  static const EventChannel _eventChannel = EventChannel(
+    'com.mrunit.etherly/cast_events',
+  );
+
+  /// Notifier for remote playback state.
+  final ValueNotifier<bool> isRemotePlaying = ValueNotifier(false);
+
+  /// Notifier for remote volume level (0.0 to 1.0).
+  final ValueNotifier<double> remoteVolume = ValueNotifier(1.0);
+
+  /// List of currently discovered Cast devices.
+  List<CastDevice> get devices => List.unmodifiable(_devices);
+
+  /// Currently connected Cast device, if any.
+  CastDevice? get connectedDevice => _connectedDevice;
+
+  /// Whether a Cast session is currently connected.
+  bool get isConnected => _connectedDevice != null;
+
+  /// Whether Chromecast is initialized.
+  bool get isInitialized => _initialized;
+
+  bool _disposed = false;
+  bool _initialized = false;
+  final List<CastDevice> _devices = [];
+  CastDevice? _connectedDevice;
+  StreamSubscription<dynamic>? _eventsSub;
+  Completer<void>? _connectionCompleter;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _eventsSub?.cancel();
+    isRemotePlaying.dispose();
+    remoteVolume.dispose();
+    super.dispose();
+  }
+
+  /// Checks if Google Cast framework is available on the current platform.
+  bool isCastSupported() {
     return defaultTargetPlatform == TargetPlatform.android;
   }
 
-  bool _disposed = false;
-
-  final List<GoogleCastDevice> _devices = [];
-  List<GoogleCastDevice> get devices => List.unmodifiable(_devices);
-
-  GoogleCastDevice? _connectedDevice;
-  GoogleCastDevice? get connectedDevice => _connectedDevice;
-
-  final ValueNotifier<bool> isRemotePlaying = ValueNotifier(false);
-  final ValueNotifier<bool> isRemoteLoading = ValueNotifier(false);
-  final ValueNotifier<bool> isCastingActive = ValueNotifier(false);
-
-  StreamSubscription<List<GoogleCastDevice>>? _devicesSub;
-  StreamSubscription<GoogleCastSession?>? _sessionSub;
-  Timer? _loadingTimeout;
-  DateTime? _loadingStartTime;
-
-  bool _initialized = false;
-  bool get initialized => _initialized;
-
-  bool get isConnected => _connectedDevice != null;
-
-  /// Initializes the Chromecast service.
+  /// Initializes device discovery and attaches event listeners.
   Future<void> init() async {
-    if (_initialized) return;
-    if (!isCastSupported()) {
-      _initialized = true;
-      return;
-    }
+    if (_initialized || !isCastSupported()) return;
+    _initialized = true;
 
     try {
-      _devicesSub?.cancel();
-      _sessionSub?.cancel();
-      _loadingTimeout?.cancel();
-      // Don't stop existing cast sessions during initialization
-      // This allows hot restart without interrupting casting
-    } catch (_) {
-      // Ignore all cleanup errors
+      _eventsSub = _eventChannel.receiveBroadcastStream().listen(
+        _handleNativeEvent,
+        onError: (Object e) {
+          if (kDebugMode) print('Cast EventChannel error: $e');
+        },
+      );
+      await _channel.invokeMethod('init');
+    } catch (e) {
+      if (kDebugMode) print('Failed to init ChromeCastService: $e');
     }
-
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    const appId = GoogleCastDiscoveryCriteria.kDefaultApplicationId;
-    final options = GoogleCastOptionsAndroid(appId: appId);
-
-    await GoogleCastContext.instance.setSharedInstanceWithOptions(options);
-
-    _devicesSub = GoogleCastDiscoveryManager.instance.devicesStream.listen((
-      devices,
-    ) {
-      if (_disposed) return;
-      _devices
-        ..clear()
-        ..addAll(devices);
-      if (!_disposed) notifyListeners();
-    });
-
-    _initialized = true;
-    if (!_disposed) notifyListeners();
-    _setupSessionListener();
   }
 
-  /// Sets up the session state listener.
-  void _setupSessionListener() {
-    _sessionSub?.cancel();
-
-    _sessionSub = GoogleCastSessionManager.instance.currentSessionStream.listen(
-      (session) {
-        if (_disposed) return;
-        final connected =
-            session != null &&
-            GoogleCastSessionManager.instance.connectionState ==
-                GoogleCastConnectState.connected;
-
-        if (connected) {
-          _connectedDevice = session.device;
-          if (!_disposed) isCastingActive.value = true;
-          if (!_devices.any((d) => d.uniqueID == _connectedDevice!.uniqueID)) {
-            _devices.insert(0, _connectedDevice!);
-          }
-        } else {
-          _connectedDevice = null;
-          if (!_disposed) isCastingActive.value = false;
-          if (!isRemoteLoading.value) {
-            if (!_disposed) isRemotePlaying.value = false;
-          }
-        }
-        if (!_disposed) notifyListeners();
-      },
-    );
+  /// Starts discovering nearby Cast devices.
+  Future<void> startDiscovery() async {
+    if (!isCastSupported()) return;
+    await init();
+    try {
+      await _channel.invokeMethod('startDiscovery');
+    } catch (e) {
+      if (kDebugMode) print('Failed to start Cast discovery: $e');
+    }
   }
 
-  /// Connects to the specified Cast device and waits until the connection is established.
+  /// Stops Cast device discovery.
+  Future<void> stopDiscovery() async {
+    if (!isCastSupported()) return;
+    try {
+      await _channel.invokeMethod('stopDiscovery');
+    } catch (e) {
+      if (kDebugMode) print('Failed to stop Cast discovery: $e');
+    }
+  }
+
+  /// Connects to the specified Cast device and waits until session is established.
   Future<void> connectAndWait(
-    GoogleCastDevice device, {
-    Duration timeout = const Duration(seconds: 5),
+    CastDevice device, {
+    Duration timeout = const Duration(seconds: 10),
   }) async {
     if (!isCastSupported()) return;
-    if (_connectedDevice?.uniqueID == device.uniqueID) return;
+    if (_connectedDevice?.id == device.id && isConnected) return;
 
-    _setLoading(true);
-
-    // Immediately signal that we're about to cast to trigger notification hiding
-    if (!_disposed) isCastingActive.value = true;
-
-    await GoogleCastSessionManager.instance.startSessionWithDevice(device);
-
-    final deadline = DateTime.now().add(timeout);
-    while (_connectedDevice?.uniqueID != device.uniqueID) {
-      if (DateTime.now().isAfter(deadline)) {
-        if (!_disposed) isCastingActive.value = false;
-        throw TimeoutException('Connection timeout');
-      }
-      await Future.delayed(const Duration(milliseconds: 200));
+    _connectionCompleter = Completer<void>();
+    try {
+      await _channel.invokeMethod('connect', {'id': device.id});
+      await _connectionCompleter!.future.timeout(timeout);
+    } on TimeoutException {
+      throw TimeoutException('Cast session connection timed out');
+    } finally {
+      _connectionCompleter = null;
     }
   }
 
-  /// Casts audio content to the connected Cast device.
-  /// Can accept either a MediaItem or direct parameters.
-  Future<void> castAudio({
-    dynamic mediaItem,
-    Uri? contentUrl,
-    String? contentType,
-    String? title,
-    String? subtitle,
-    Uri? imageUrl,
-  }) async {
+  /// Casts audio content of the specified [mediaItem] to the connected Cast device.
+  Future<void> castAudio(MediaItem mediaItem) async {
     if (!isConnected) throw StateError('No Cast device connected');
 
-    _setLoading(true);
+    final urlStr = mediaItem.extras?['url'] as String?;
+    if (urlStr == null || urlStr.isEmpty) return;
 
-    // Small delay to ensure UI can update before loading starts
-    await Future.delayed(const Duration(milliseconds: 50));
+    final contentType = urlStr.toLowerCase().contains('aac')
+        ? 'audio/aac'
+        : 'audio/mpeg';
 
-    if (mediaItem != null) {
-      final urlStr = mediaItem.extras?['url'] as String?;
-      if (urlStr == null || urlStr.isEmpty) {
-        _setLoading(false);
-        return;
-      }
-
-      contentUrl = Uri.parse(urlStr);
-      contentType = urlStr.toLowerCase().contains('aac')
-          ? 'audio/aac'
-          : 'audio/mpeg';
-      title = mediaItem.title ?? 'Etherly Radio';
-      imageUrl = mediaItem.artUri;
+    try {
+      await _channel.invokeMethod('loadMedia', {
+        'url': urlStr,
+        'title': mediaItem.title,
+        'subtitle': mediaItem.artist ?? mediaItem.album ?? '',
+        'imageUrl': mediaItem.artUri?.toString() ?? '',
+        'contentType': contentType,
+      });
+    } catch (e) {
+      if (kDebugMode) print('Failed to load media on Cast: $e');
     }
-
-    if (contentUrl == null) {
-      _setLoading(false);
-      throw ArgumentError('contentUrl is required');
-    }
-
-    await GoogleCastRemoteMediaClient.instance.loadMedia(
-      GoogleCastMediaInformation(
-        contentId: title ?? 'Etherly Radio',
-        streamType: CastMediaStreamType.live,
-        contentUrl: contentUrl,
-        contentType: contentType ?? 'audio/mpeg',
-        metadata: GoogleCastGenericMediaMetadata(
-          title: title ?? 'Etherly Radio',
-          subtitle: subtitle,
-          images:
-              imageUrl != null &&
-                  (imageUrl.scheme == 'http' || imageUrl.scheme == 'https')
-              ? [GoogleCastImage(url: imageUrl, height: 512, width: 512)]
-              : null,
-        ),
-      ),
-      autoPlay: true,
-      playPosition: Duration.zero,
-      playbackRate: 1.0,
-    );
-
-    if (!_disposed) isRemotePlaying.value = true;
-    _setLoading(false);
   }
 
-  /// Controls for the cast session.
+  /// Sends play command to the remote Cast session.
   Future<void> play() async {
     if (!isConnected) return;
-    _setLoading(true);
-    await GoogleCastRemoteMediaClient.instance.play();
-    if (!_disposed) isRemotePlaying.value = true;
-    _setLoading(false);
+    try {
+      await _channel.invokeMethod('play');
+    } catch (e) {
+      if (kDebugMode) print('Failed to send play command: $e');
+    }
   }
 
+  /// Sends pause command to the remote Cast session.
   Future<void> pause() async {
     if (!isConnected) return;
-    await GoogleCastRemoteMediaClient.instance.pause();
-    if (!_disposed) isRemotePlaying.value = false;
+    try {
+      await _channel.invokeMethod('pause');
+      if (!_disposed) isRemotePlaying.value = false;
+    } catch (e) {
+      if (kDebugMode) print('Failed to send pause command: $e');
+    }
+  }
+
+  /// Sends stop command to the remote Cast session.
+  Future<void> stop() async {
+    if (!isConnected) return;
+    try {
+      await _channel.invokeMethod('stop');
+      if (!_disposed) isRemotePlaying.value = false;
+    } catch (e) {
+      if (kDebugMode) print('Failed to send stop command: $e');
+    }
+  }
+
+  /// Sets volume for the active remote Cast session (0.0 to 1.0).
+  Future<void> setRemoteVolume(double volume) async {
+    if (!isConnected) return;
+    final clamped = volume.clamp(0.0, 1.0);
+    remoteVolume.value = clamped;
+    try {
+      await _channel.invokeMethod('setVolume', {'volume': clamped});
+    } catch (e) {
+      if (kDebugMode) print('Failed to set remote volume: $e');
+    }
+  }
+
+  /// Fetches volume level from the active remote Cast session.
+  Future<double?> getRemoteVolume() async {
+    if (!isConnected) return null;
+    try {
+      final vol = await _channel.invokeMethod<double>('getVolume');
+      if (vol != null && !_disposed) {
+        remoteVolume.value = vol.clamp(0.0, 1.0);
+      }
+      return vol;
+    } catch (e) {
+      if (kDebugMode) print('Failed to get remote volume: $e');
+      return null;
+    }
+  }
+
+  /// Natively terminates local AudioService and MediaSession on Android.
+  Future<void> destroyLocalMediaSession() async {
+    if (!isCastSupported()) return;
+    try {
+      await _channel.invokeMethod('destroyLocalMediaSession');
+    } catch (e) {
+      if (kDebugMode) print('Failed to destroy local media session: $e');
+    }
   }
 
   /// Ends the current casting session.
   Future<void> endCasting() async {
     if (!isCastSupported()) return;
-
-    _loadingTimeout?.cancel();
-
     try {
-      // Add timeouts to prevent hanging
-      await GoogleCastRemoteMediaClient.instance.stop().timeout(
-        const Duration(seconds: 1),
-        onTimeout: () {},
-      );
-      await GoogleCastSessionManager.instance
-          .endSessionAndStopCasting()
-          .timeout(const Duration(seconds: 1), onTimeout: () => false);
-    } catch (_) {
-      // Ignore cleanup errors.
+      await _channel.invokeMethod('disconnect');
+    } catch (e) {
+      if (kDebugMode) print('Failed to disconnect Cast session: $e');
     }
 
     _connectedDevice = null;
     if (!_disposed) {
       isRemotePlaying.value = false;
-      isRemoteLoading.value = false;
-      isCastingActive.value = false;
       notifyListeners();
     }
   }
 
-  /// Manages the loading state with a timeout.
-  void _setLoading(bool loading) {
-    if (_disposed) return;
-    if (!loading) {
-      // Ensure minimum loading duration of 400ms for better UX
-      final startTime = _loadingStartTime;
-      if (startTime != null) {
-        final elapsed = DateTime.now().difference(startTime);
-        final remaining = const Duration(milliseconds: 400) - elapsed;
+  /// Handles incoming real-time events from native Android EventChannel.
+  void _handleNativeEvent(dynamic data) {
+    if (_disposed || data is! Map) return;
 
-        if (remaining > Duration.zero) {
-          // Delay turning off the loading state
-          _loadingTimeout?.cancel();
-          _loadingTimeout = Timer(remaining, () {
-            if (_disposed) return;
-            isRemoteLoading.value = false;
-            _loadingTimeout = null;
-            _loadingStartTime = null;
-          });
-          return;
+    final eventType = data['event'] as String?;
+    switch (eventType) {
+      case 'devicesChanged':
+        final list = data['devices'] as List?;
+        if (list != null) {
+          _devices
+            ..clear()
+            ..addAll(
+              list.map(
+                (item) =>
+                    CastDevice.fromMap(Map<String, dynamic>.from(item as Map)),
+              ),
+            );
+          notifyListeners();
         }
-      }
 
-      _loadingTimeout?.cancel();
-      _loadingTimeout = null;
-      _loadingStartTime = null;
-      if (!_disposed) isRemoteLoading.value = false;
-      return;
+      case 'sessionState':
+        final connected = data['connected'] == true;
+        if (connected) {
+          final id = data['deviceId'] as String? ?? '';
+          final name = data['deviceName'] as String? ?? 'Cast Device';
+          _connectedDevice = CastDevice(id: id, name: name);
+          if (_connectionCompleter?.isCompleted == false) {
+            _connectionCompleter?.complete();
+          }
+        } else {
+          _connectedDevice = null;
+          isRemotePlaying.value = false;
+          if (_connectionCompleter?.isCompleted == false) {
+            _connectionCompleter?.completeError(
+              StateError('Cast session disconnected'),
+            );
+          }
+        }
+        notifyListeners();
+
+      case 'playbackState':
+        final isPlaying = data['isPlaying'] == true;
+        isRemotePlaying.value = isPlaying;
+
+      case 'volumeChanged':
+        if (data['volume'] is num) {
+          remoteVolume.value = (data['volume'] as num).toDouble().clamp(
+            0.0,
+            1.0,
+          );
+        }
     }
-
-    _loadingStartTime = DateTime.now();
-    if (!_disposed) isRemoteLoading.value = true;
-    _loadingTimeout?.cancel();
-    _loadingTimeout = Timer(const Duration(seconds: 5), () {
-      if (_disposed) return;
-      isRemoteLoading.value = false;
-      _loadingTimeout = null;
-      _loadingStartTime = null;
-    });
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    _loadingTimeout?.cancel();
-    _devicesSub?.cancel();
-    _sessionSub?.cancel();
-    super.dispose();
   }
 }
