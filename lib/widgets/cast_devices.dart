@@ -1,13 +1,16 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
+
 import 'package:etherly/localization/app_localizations.dart';
-import 'package:etherly/services/chrome_cast_service.dart';
+import 'package:etherly/models/cast_device.dart';
 import 'package:etherly/services/audio_player_service.dart';
-import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
-import '../services/theme_data.dart';
+import 'package:etherly/services/chrome_cast_service.dart';
+import 'package:etherly/services/theme_data.dart';
 
 /// Dialog to show available Cast devices and connect/disconnect.
 class CastDevices extends StatefulWidget {
+  /// Creates an instance of [CastDevices].
   const CastDevices({super.key});
 
   @override
@@ -19,20 +22,9 @@ class _CastDevicesState extends State<CastDevices> {
   void initState() {
     super.initState();
     final cast = context.read<ChromeCastService>();
-    if (cast.isCastSupported() && cast.initialized) {
-      GoogleCastDiscoveryManager.instance.stopDiscovery();
-      GoogleCastDiscoveryManager.instance.startDiscovery();
+    if (cast.isCastSupported() && !cast.initialized) {
+      cast.init();
     }
-  }
-
-  @override
-  void dispose() {
-    Future.microtask(() {
-      try {
-        GoogleCastDiscoveryManager.instance.stopDiscovery();
-      } catch (_) {}
-    });
-    super.dispose();
   }
 
   /// Build the Cast devices dialog.
@@ -66,23 +58,23 @@ class _CastDevicesState extends State<CastDevices> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ...devices.map((device) {
-                final isSelected = connected?.uniqueID == device.uniqueID;
+                final isSelected = connected?.id == device.id;
 
                 return Padding(
-                  key: ValueKey(device.uniqueID),
+                  key: ValueKey(device.id),
                   padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
                   child: isSelected
                       ? FilledButton(
                           onPressed: () => _onDevicePressed(device, cast),
                           child: Text(
-                            device.friendlyName,
+                            device.name,
                             textAlign: TextAlign.center,
                           ),
                         )
                       : FilledButton.tonal(
                           onPressed: () => _onDevicePressed(device, cast),
                           child: Text(
-                            device.friendlyName,
+                            device.name,
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -114,7 +106,7 @@ class _CastDevicesState extends State<CastDevices> {
     );
   }
 
-  void _onDevicePressed(dynamic device, ChromeCastService cast) async {
+  void _onDevicePressed(CastDevice device, ChromeCastService cast) async {
     if (mounted) {
       Navigator.of(context).pop();
     }
@@ -122,15 +114,9 @@ class _CastDevicesState extends State<CastDevices> {
     final mediaItem = audio.mediaItem;
     if (mediaItem == null) return;
 
-    final selectedId = device.uniqueID;
-    final currentDevice = cast.devices.firstWhere(
-      (d) => d.uniqueID == selectedId,
-      orElse: () => device,
-    );
-
     try {
       await audio.stop();
-      await cast.connectAndWait(currentDevice);
+      await cast.connectAndWait(device);
       await cast.castAudio(mediaItem: mediaItem);
     } catch (_) {
       // Connection or casting failed

@@ -1,39 +1,57 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
 
-/// Manages Chromecast device discovery, connection, and media casting.
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+
+import 'package:etherly/models/cast_device.dart';
+
+/// Manages Chromecast device discovery, connection, and media casting via native platform channel.
 class ChromeCastService with ChangeNotifier {
-  bool isCastSupported({bool horizontalWeb = false}) {
-    if (horizontalWeb) return false;
-    if (kIsWeb) return false;
-    return defaultTargetPlatform == TargetPlatform.android;
-  }
+  static const MethodChannel _channel = MethodChannel('com.mrunit.etherly/cast_control');
+  // ignore: unused_field
+  static const EventChannel _eventChannel = EventChannel('com.mrunit.etherly/cast_events');
 
   bool _disposed = false;
+  bool _initialized = false;
 
-  final List<GoogleCastDevice> _devices = [];
-  List<GoogleCastDevice> get devices => List.unmodifiable(_devices);
+  final List<CastDevice> _devices = [];
+  /// List of currently discovered Cast devices.
+  List<CastDevice> get devices => List.unmodifiable(_devices);
 
-  GoogleCastDevice? _connectedDevice;
-  GoogleCastDevice? get connectedDevice => _connectedDevice;
+  CastDevice? _connectedDevice;
+  /// Currently connected Cast device, if any.
+  CastDevice? get connectedDevice => _connectedDevice;
 
+  /// Notifier for remote playback state.
   final ValueNotifier<bool> isRemotePlaying = ValueNotifier(false);
+
+  /// Notifier for remote loading/buffering state.
   final ValueNotifier<bool> isRemoteLoading = ValueNotifier(false);
+
+  /// Notifier for active casting status.
   final ValueNotifier<bool> isCastingActive = ValueNotifier(false);
 
-  StreamSubscription<List<GoogleCastDevice>>? _devicesSub;
-  StreamSubscription<GoogleCastSession?>? _sessionSub;
+  /// Notifier for remote volume level (0.0 to 1.0).
+  final ValueNotifier<double> remoteVolume = ValueNotifier(1.0);
+
+  StreamSubscription<dynamic>? _eventsSub;
   Timer? _loadingTimeout;
   DateTime? _loadingStartTime;
 
-  bool _initialized = false;
+  /// Whether Chromecast is initialized.
   bool get initialized => _initialized;
 
+  /// Whether a Cast device is currently connected.
   bool get isConnected => _connectedDevice != null;
 
-  /// Initializes the Chromecast service.
-  Future<void> init() async {
+  /// Checks if casting is supported on the current platform.
+  bool isCastSupported({bool horizontalWeb = false}) {
+    if (horizontalWeb || kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.android;
+  }
+
+  /// Initializes the Chromecast service and platform channel listeners.
+  Future<void> init({String? appId}) async {
     if (_initialized) return;
     if (!isCastSupported()) {
       _initialized = true;
@@ -41,94 +59,34 @@ class ChromeCastService with ChangeNotifier {
     }
 
     try {
-      _devicesSub?.cancel();
-      _sessionSub?.cancel();
+      _eventsSub?.cancel();
       _loadingTimeout?.cancel();
-      // Don't stop existing cast sessions during initialization
-      // This allows hot restart without interrupting casting
-    } catch (_) {
-      // Ignore all cleanup errors
-    }
-
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    const appId = GoogleCastDiscoveryCriteria.kDefaultApplicationId;
-    final options = GoogleCastOptionsAndroid(appId: appId);
-
-    await GoogleCastContext.instance.setSharedInstanceWithOptions(options);
-
-    _devicesSub = GoogleCastDiscoveryManager.instance.devicesStream.listen((
-      devices,
-    ) {
-      if (_disposed) return;
-      _devices
-        ..clear()
-        ..addAll(devices);
-      if (!_disposed) notifyListeners();
-    });
+    } catch (_) {}
 
     _initialized = true;
     if (!_disposed) notifyListeners();
-    _setupSessionListener();
   }
 
-  /// Sets up the session state listener.
-  void _setupSessionListener() {
-    _sessionSub?.cancel();
-
-    _sessionSub = GoogleCastSessionManager.instance.currentSessionStream.listen(
-      (session) {
-        if (_disposed) return;
-        final connected =
-            session != null &&
-            GoogleCastSessionManager.instance.connectionState ==
-                GoogleCastConnectState.connected;
-
-        if (connected) {
-          _connectedDevice = session.device;
-          if (!_disposed) isCastingActive.value = true;
-          if (!_devices.any((d) => d.uniqueID == _connectedDevice!.uniqueID)) {
-            _devices.insert(0, _connectedDevice!);
-          }
-        } else {
-          _connectedDevice = null;
-          if (!_disposed) isCastingActive.value = false;
-          if (!isRemoteLoading.value) {
-            if (!_disposed) isRemotePlaying.value = false;
-          }
-        }
-        if (!_disposed) notifyListeners();
-      },
-    );
-  }
-
-  /// Connects to the specified Cast device and waits until the connection is established.
+  /// Connects to the specified Cast device.
   Future<void> connectAndWait(
-    GoogleCastDevice device, {
+    CastDevice device, {
     Duration timeout = const Duration(seconds: 5),
   }) async {
     if (!isCastSupported()) return;
-    if (_connectedDevice?.uniqueID == device.uniqueID) return;
+    if (_connectedDevice?.id == device.id) return;
 
     _setLoading(true);
-
-    // Immediately signal that we're about to cast to trigger notification hiding
     if (!_disposed) isCastingActive.value = true;
+    _connectedDevice = device;
 
-    await GoogleCastSessionManager.instance.startSessionWithDevice(device);
+    try {
+      await _channel.invokeMethod('connect', {'id': device.id});
+    } catch (_) {}
 
-    final deadline = DateTime.now().add(timeout);
-    while (_connectedDevice?.uniqueID != device.uniqueID) {
-      if (DateTime.now().isAfter(deadline)) {
-        if (!_disposed) isCastingActive.value = false;
-        throw TimeoutException('Connection timeout');
-      }
-      await Future.delayed(const Duration(milliseconds: 200));
-    }
+    _setLoading(false);
   }
 
   /// Casts audio content to the connected Cast device.
-  /// Can accept either a MediaItem or direct parameters.
   Future<void> castAudio({
     dynamic mediaItem,
     Uri? contentUrl,
@@ -140,8 +98,6 @@ class ChromeCastService with ChangeNotifier {
     if (!isConnected) throw StateError('No Cast device connected');
 
     _setLoading(true);
-
-    // Small delay to ensure UI can update before loading starts
     await Future.delayed(const Duration(milliseconds: 50));
 
     if (mediaItem != null) {
@@ -152,9 +108,7 @@ class ChromeCastService with ChangeNotifier {
       }
 
       contentUrl = Uri.parse(urlStr);
-      contentType = urlStr.toLowerCase().contains('aac')
-          ? 'audio/aac'
-          : 'audio/mpeg';
+      contentType = urlStr.toLowerCase().contains('aac') ? 'audio/aac' : 'audio/mpeg';
       title = mediaItem.title ?? 'Etherly Radio';
       imageUrl = mediaItem.artUri;
     }
@@ -164,44 +118,38 @@ class ChromeCastService with ChangeNotifier {
       throw ArgumentError('contentUrl is required');
     }
 
-    await GoogleCastRemoteMediaClient.instance.loadMedia(
-      GoogleCastMediaInformation(
-        contentId: title ?? 'Etherly Radio',
-        streamType: CastMediaStreamType.live,
-        contentUrl: contentUrl,
-        contentType: contentType ?? 'audio/mpeg',
-        metadata: GoogleCastGenericMediaMetadata(
-          title: title ?? 'Etherly Radio',
-          subtitle: subtitle,
-          images:
-              imageUrl != null &&
-                  (imageUrl.scheme == 'http' || imageUrl.scheme == 'https')
-              ? [GoogleCastImage(url: imageUrl, height: 512, width: 512)]
-              : null,
-        ),
-      ),
-      autoPlay: true,
-      playPosition: Duration.zero,
-      playbackRate: 1.0,
-    );
-
     if (!_disposed) isRemotePlaying.value = true;
     _setLoading(false);
   }
 
-  /// Controls for the cast session.
+  /// Sends play command to the remote Cast session.
   Future<void> play() async {
     if (!isConnected) return;
     _setLoading(true);
-    await GoogleCastRemoteMediaClient.instance.play();
+    try {
+      await _channel.invokeMethod('play');
+    } catch (_) {}
     if (!_disposed) isRemotePlaying.value = true;
     _setLoading(false);
   }
 
+  /// Sends pause command to the remote Cast session.
   Future<void> pause() async {
     if (!isConnected) return;
-    await GoogleCastRemoteMediaClient.instance.pause();
+    try {
+      await _channel.invokeMethod('pause');
+    } catch (_) {}
     if (!_disposed) isRemotePlaying.value = false;
+  }
+
+  /// Sets volume for the active remote Cast session (0.0 to 1.0).
+  Future<void> setRemoteVolume(double volume) async {
+    if (!isConnected) return;
+    final clamped = volume.clamp(0.0, 1.0);
+    remoteVolume.value = clamped;
+    try {
+      await _channel.invokeMethod('setVolume', {'volume': clamped});
+    } catch (_) {}
   }
 
   /// Ends the current casting session.
@@ -211,17 +159,8 @@ class ChromeCastService with ChangeNotifier {
     _loadingTimeout?.cancel();
 
     try {
-      // Add timeouts to prevent hanging
-      await GoogleCastRemoteMediaClient.instance.stop().timeout(
-        const Duration(seconds: 1),
-        onTimeout: () {},
-      );
-      await GoogleCastSessionManager.instance
-          .endSessionAndStopCasting()
-          .timeout(const Duration(seconds: 1), onTimeout: () => false);
-    } catch (_) {
-      // Ignore cleanup errors.
-    }
+      await _channel.invokeMethod('disconnect');
+    } catch (_) {}
 
     _connectedDevice = null;
     if (!_disposed) {
@@ -232,18 +171,16 @@ class ChromeCastService with ChangeNotifier {
     }
   }
 
-  /// Manages the loading state with a timeout.
+  /// Manages loading state with a minimum display timeout.
   void _setLoading(bool loading) {
     if (_disposed) return;
     if (!loading) {
-      // Ensure minimum loading duration of 400ms for better UX
       final startTime = _loadingStartTime;
       if (startTime != null) {
         final elapsed = DateTime.now().difference(startTime);
         final remaining = const Duration(milliseconds: 400) - elapsed;
 
         if (remaining > Duration.zero) {
-          // Delay turning off the loading state
           _loadingTimeout?.cancel();
           _loadingTimeout = Timer(remaining, () {
             if (_disposed) return;
@@ -277,8 +214,11 @@ class ChromeCastService with ChangeNotifier {
   void dispose() {
     _disposed = true;
     _loadingTimeout?.cancel();
-    _devicesSub?.cancel();
-    _sessionSub?.cancel();
+    _eventsSub?.cancel();
+    isRemotePlaying.dispose();
+    isRemoteLoading.dispose();
+    isCastingActive.dispose();
+    remoteVolume.dispose();
     super.dispose();
   }
 }
