@@ -1,9 +1,10 @@
 import 'package:etherly/models/station.dart';
+import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/widgets/station_art.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A grid item widget representing a radio station with artwork.
-class StationGridItem extends StatelessWidget {
+class StationGridItem extends StatefulWidget {
   const StationGridItem({
     super.key,
     required this.station,
@@ -16,34 +17,62 @@ class StationGridItem extends StatelessWidget {
   final BorderRadius borderRadius;
 
   @override
+  State<StationGridItem> createState() => _StationGridItemState();
+}
+
+/// State for StationGridItem handling focus animation and visual highlight.
+class _StationGridItemState extends State<StationGridItem> {
+  bool _isFocused = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+
     return RepaintBoundary(
       child: Tooltip(
-        message: station.name,
+        message: widget.station.name,
         triggerMode: TooltipTriggerMode.manual,
         child: Material(
-          borderRadius: borderRadius,
-          clipBehavior: Clip.antiAlias,
-          color: theme.colorScheme.surfaceContainerHigh,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: StationArt(
-                  station: station,
-                  size: 512,
-                ),
+            shape: RoundedRectangleBorder(
+              borderRadius: widget.borderRadius,
+              side: _isFocused
+                  ? BorderSide(
+                      color: theme.colorScheme.primary,
+                      width: spacing.extraSmall,
+                    )
+                  : BorderSide.none,
+            ),
+            clipBehavior: Clip.antiAlias,
+            color: theme.colorScheme.surfaceContainerHigh,
+            child: Semantics(
+              container: true,
+              button: true,
+              label: widget.station.name,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: StationArt(
+                      station: widget.station,
+                      size: 512,
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onFocusChange: (focused) {
+                          setState(() => _isFocused = focused);
+                        },
+                        onTap: widget.onTap,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Positioned.fill(
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(onTap: onTap),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 }

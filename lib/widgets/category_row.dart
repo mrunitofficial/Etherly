@@ -26,13 +26,16 @@ class CategoryRow extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.all(spacing.medium),
-          child: Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+          child: Semantics(
+            header: true,
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
         SizedBox(

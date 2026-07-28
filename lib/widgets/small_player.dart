@@ -111,10 +111,15 @@ class MiniPlayerTapRegion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: onExpand,
-      child: child,
+    final loc = AppLocalizations.of(context);
+    return Semantics(
+      button: true,
+      label: loc?.playerHintExpand ?? 'Expand radio player',
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: onExpand,
+        child: child,
+      ),
     );
   }
 }

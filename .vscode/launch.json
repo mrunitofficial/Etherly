@@ -22,10 +22,17 @@
             "flutterMode": "release"
         },
         {
-            "name": "Emulator (debug mode)",
+            "name": "Etherly (tablet)",
             "type": "dart",
             "request": "launch",
             "preLaunchTask": "launch-vulkan-emulator",
+            "deviceId": "emulator-5554"
+        },
+        {
+            "name": "Etherly (Google TV)",
+            "type": "dart",
+            "request": "launch",
+            "preLaunchTask": "launch-google-tv-emulator",
             "deviceId": "emulator-5554"
         }
     ]

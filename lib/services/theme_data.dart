@@ -22,7 +22,7 @@ class AppTheme {
       appBarTheme: const AppBarTheme(toolbarHeight: 80, titleSpacing: 0.0),
       tooltipTheme: TooltipThemeData(waitDuration: _speed.long1),
       dialogTheme: const DialogThemeData(
-        constraints: BoxConstraints(minWidth: 320, maxWidth: 320),
+        constraints: BoxConstraints(minWidth: 280, maxWidth: 560),
       ),
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: colorScheme.surfaceContainer,
@@ -42,7 +42,7 @@ class AppTheme {
       appBarTheme: const AppBarTheme(toolbarHeight: 80, titleSpacing: 0.0),
       tooltipTheme: TooltipThemeData(waitDuration: _speed.long1),
       dialogTheme: const DialogThemeData(
-        constraints: BoxConstraints(minWidth: 320, maxWidth: 320),
+        constraints: BoxConstraints(minWidth: 280, maxWidth: 560),
       ),
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: colorScheme.surfaceContainer,

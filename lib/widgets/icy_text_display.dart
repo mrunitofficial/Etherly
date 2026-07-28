@@ -108,24 +108,30 @@ class IcyTextDisplay extends StatelessWidget {
           ),
         );
 
-        Widget animatedContent = AnimatedSwitcher(
-          duration: speed.long1,
-          layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-            return Stack(
-              alignment: centerWhenFits ? Alignment.center : Alignment.centerLeft,
-              children: <Widget>[
-                ...previousChildren,
-                ?currentChild,
-              ],
-            );
-          },
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          child: content,
+        Widget animatedContent = Semantics(
+          liveRegion: true,
+          button: isSong,
+          label: text,
+          hint: isSong ? 'Tap to search song, press and hold to copy' : null,
+          child: AnimatedSwitcher(
+            duration: speed.long1,
+            layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+              return Stack(
+                alignment: centerWhenFits ? Alignment.center : Alignment.centerLeft,
+                children: <Widget>[
+                  ...previousChildren,
+                  ?currentChild,
+                ],
+              );
+            },
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            child: content,
+          ),
         );
 
         if (centerWhenFits) {

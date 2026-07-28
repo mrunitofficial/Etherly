@@ -9,13 +9,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:etherly/models/station.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
 import 'package:etherly/services/history_service.dart';
-import 'package:etherly/services/my_audio_handler.dart';
+import 'package:etherly/services/app_audio_handler.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 /// Service that manages the [AudioPlayer] instance, station list, and playback logic.
 class AudioPlayerService with ChangeNotifier {
   final AudioPlayer player = AudioPlayer();
-  late final MyAudioHandler _audioHandler;
+  late final AppAudioHandler _audioHandler;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
   _stationsSubscription;
 
@@ -501,9 +501,6 @@ class AudioPlayerService with ChangeNotifier {
       sleepTimerActive.value = true;
       _sleepTimer = Timer(duration, () {
         stop();
-        _sleepTimer = null;
-        sleepTimerActive.value = false;
-        notifyListeners();
       });
       notifyListeners();
     }

@@ -100,15 +100,22 @@ class QualitySetting extends StatelessWidget {
 
           return Padding(
             padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
-            child: isSelected
-                ? FilledButton(
-                    onPressed: onPressed,
-                    child: Text(label, textAlign: TextAlign.center),
-                  )
-                : FilledButton.tonal(
-                    onPressed: onPressed,
-                    child: Text(label, textAlign: TextAlign.center),
-                  ),
+            child: Semantics(
+              selected: isSelected,
+              button: true,
+              enabled: isAvailable,
+              label: label,
+              excludeSemantics: true,
+              child: isSelected
+                  ? FilledButton(
+                      onPressed: onPressed,
+                      child: Text(label, textAlign: TextAlign.center),
+                    )
+                  : FilledButton.tonal(
+                      onPressed: onPressed,
+                      child: Text(label, textAlign: TextAlign.center),
+                    ),
+            ),
           );
         }).toList(),
       ),

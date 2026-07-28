@@ -235,55 +235,70 @@ class _AppScreenState extends State<AppScreen>
 
         // Navigation logic
         if (screenType.isLargeFormat) {
-          return Row(
+          final Widget bodyRow = Row(
             children: [
-              NavigationRail(
-                selectedIndex: _selectedIndex,
-                onDestinationSelected: _onTabSelected,
-                labelType: NavigationRailLabelType.all,
-                leading: Padding(
-                  padding: EdgeInsets.only(
-                    top: spacing.small,
-                    bottom: spacing.medium,
+              FocusTraversalGroup(
+                child: NavigationRail(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: _onTabSelected,
+                  labelType: NavigationRailLabelType.all,
+                  leading: Padding(
+                    padding: EdgeInsets.only(
+                      top: spacing.small,
+                      bottom: spacing.medium,
+                    ),
+                    child: _LogoButton(
+                      onPressed: () => _onTabSelected(0),
+                      size: spacing.extraLarge,
+                    ),
                   ),
-                  child: _LogoButton(
-                    onPressed: () => _onTabSelected(0),
-                    size: spacing.extraLarge,
-                  ),
+                  destinations: _destinations.map((d) {
+                    String label = d.labelKey;
+                    if (loc != null) {
+                      if (d.labelKey == 'navHome') label = loc.navHome;
+                      if (d.labelKey == 'navStations') label = loc.navStations;
+                      if (d.labelKey == 'navFavorites') label = loc.navFavorites;
+                    }
+                    return NavigationRailDestination(
+                      selectedIcon: Icon(d.selectedIcon),
+                      icon: Icon(d.icon),
+                      label: Text(label),
+                    );
+                  }).toList(),
                 ),
-                destinations: _destinations.map((d) {
-                  String label = d.labelKey;
-                  if (loc != null) {
-                    if (d.labelKey == 'navHome') label = loc.navHome;
-                    if (d.labelKey == 'navStations') label = loc.navStations;
-                    if (d.labelKey == 'navFavorites') label = loc.navFavorites;
-                  }
-                  return NavigationRailDestination(
-                    selectedIcon: Icon(d.selectedIcon),
-                    icon: Icon(d.icon),
-                    label: Text(label),
-                  );
-                }).toList(),
               ),
               Expanded(
                 child: Scaffold(
-                  resizeToAvoidBottomInset: false,
                   appBar: appBar,
                   body: Row(
                     children: [
-                      Expanded(child: mainContent),
+                      Expanded(
+                        child: FocusTraversalGroup(
+                          child: mainContent,
+                        ),
+                      ),
                       SizedBox(
                         width: 360,
-                        child: RadioPlayer(screenType: screenType),
+                        child: FocusTraversalGroup(
+                          child: RadioPlayer(screenType: screenType),
+                        ),
                       ),
                     ],
                   ),
-                  // Bottom spacer for large format
                   bottomNavigationBar: SizedBox(height: spacing.medium),
                 ),
               ),
             ],
           );
+
+          if (screenType == ScreenType.tv) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              child: bodyRow,
+            );
+          }
+
+          return bodyRow;
         }
 
         // Small layout (Mobile)

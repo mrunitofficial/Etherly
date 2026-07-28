@@ -118,6 +118,9 @@ jobs:
       - name: Analyze Project Code
         run: flutter analyze
 
+      - name: Run Unit & Widget Tests
+        run: flutter test
+
   verification_complete:
     needs: analyze
     runs-on: ubuntu-latest

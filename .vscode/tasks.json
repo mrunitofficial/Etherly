@@ -4,8 +4,17 @@
         {
             "label": "launch-vulkan-emulator",
             "type": "shell",
-            "command": "~/Android/Sdk/emulator/emulator -avd Pixel_Tablet -gpu host -no-snapshot -feature -Vulkan",
-            "isBackground": true,
+            "command": "bash -c 'nohup ~/Android/Sdk/emulator/emulator -avd Pixel_Tablet -gpu host -no-snapshot -feature -Vulkan > /dev/null 2>&1 & disown; ~/Android/Sdk/platform-tools/adb -e wait-for-device; while [ \"$(~/Android/Sdk/platform-tools/adb -e shell getprop sys.boot_completed 2>/dev/null | tr -d \"\\r\")\" != \"1\" ]; do sleep 1; done; sleep 5'",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "launch-google-tv-emulator",
+            "type": "shell",
+            "command": "bash -c 'nohup ~/Android/Sdk/emulator/emulator -avd Google_TV_1080p -no-snapshot-load > /dev/null 2>&1 & disown; ~/Android/Sdk/platform-tools/adb -e wait-for-device; while [ \"$(~/Android/Sdk/platform-tools/adb -e shell getprop sys.boot_completed 2>/dev/null | tr -d \"\\r\")\" != \"1\" ]; do sleep 1; done; sleep 5'",
             "presentation": {
                 "reveal": "always",
                 "panel": "new"

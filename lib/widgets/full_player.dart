@@ -92,13 +92,10 @@ class FullPlayerContent extends StatelessWidget {
       ),
     );
 
-    if (scrollController != null) {
-      return SingleChildScrollView(
-        controller: scrollController,
-        child: content,
-      );
-    }
-    return content;
+    return SingleChildScrollView(
+      controller: scrollController,
+      child: content,
+    );
   }
 }
 
@@ -173,68 +170,80 @@ class FullPlayerControls extends StatelessWidget {
 
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: spacing.extraLarge),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ValueListenableBuilder<bool>(
-                valueListenable: service.sleepTimerActive,
-                builder: (context, isSleepTimerSet, _) =>
-                    IconButton.filledTonal(
-                      onPressed: isSleepTimerSet
-                          ? () => service.cancelSleepTimer()
-                          : () async {
-                              final selected = await showDialog<Duration>(
-                                context: context,
-                                builder: (context) => SleepTimer(
-                                  onTimerSelected: (duration) =>
-                                      Navigator.of(context).pop(duration),
-                                ),
-                              );
-                              if (selected != null) {
-                                service.setSleepTimer(selected);
-                              }
-                            },
-                      icon: Icon(
-                        isSleepTimerSet ? Icons.timer : Icons.timer_outlined,
-                        color: isSleepTimerSet ? colorScheme.primary : null,
-                      ),
-                      tooltip: isSleepTimerSet
-                          ? (loc?.playerCancelSleepTimer ??
-                                'Cancel sleep timer')
-                          : (loc?.playerSleepTimer ??
-                                'Sleep timer'),
-                      padding: EdgeInsets.all(spacing.medium),
+          child: FocusTraversalGroup(
+            policy: OrderedTraversalPolicy(),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FocusTraversalOrder(
+                  order: const NumericFocusOrder(1),
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: service.sleepTimerActive,
+                    builder: (context, isSleepTimerSet, _) =>
+                        IconButton.filledTonal(
+                          onPressed: isSleepTimerSet
+                              ? () => service.cancelSleepTimer()
+                              : () async {
+                                  final selected = await showDialog<Duration>(
+                                    context: context,
+                                    builder: (context) => SleepTimer(
+                                      onTimerSelected: (duration) =>
+                                          Navigator.of(context).pop(duration),
+                                    ),
+                                  );
+                                  if (selected != null) {
+                                    service.setSleepTimer(selected);
+                                  }
+                                },
+                          icon: Icon(
+                            isSleepTimerSet ? Icons.timer : Icons.timer_outlined,
+                            color: isSleepTimerSet ? colorScheme.primary : null,
+                          ),
+                          tooltip: isSleepTimerSet
+                              ? (loc?.playerCancelSleepTimer ??
+                                    'Cancel sleep timer')
+                              : (loc?.playerSleepTimer ??
+                                    'Sleep timer'),
+                          padding: EdgeInsets.all(spacing.medium),
+                        ),
+                  ),
+                ),
+                SizedBox(width: spacing.extraLarge),
+                FocusTraversalOrder(
+                  order: const NumericFocusOrder(2),
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: service.autoplayCountdownNotifier,
+                    builder: (context, countdown, _) => PlayButton(
+                      service: service,
+                      countdown: countdown,
+                      heroTag: "full_player_fab",
+                      elevation: 0,
+                      tooltip: service.isPlaying
+                          ? (loc?.playerPause ?? 'Pause')
+                          : (loc?.playerPlay ?? 'Play'),
+                      size: PlayButtonSize.large,
                     ),
-              ),
-              SizedBox(width: spacing.extraLarge),
-              ValueListenableBuilder<int>(
-                valueListenable: service.autoplayCountdownNotifier,
-                builder: (context, countdown, _) => PlayButton(
-                  service: service,
-                  countdown: countdown,
-                  heroTag: "full_player_fab",
-                  elevation: 0,
-                  tooltip: service.isPlaying
-                      ? (loc?.playerPause ?? 'Pause')
-                      : (loc?.playerPlay ?? 'Play'),
-                  size: PlayButtonSize.large,
+                  ),
                 ),
-              ),
-              SizedBox(width: spacing.extraLarge),
-              IconButton.filledTonal(
-                onPressed: station == null
-                    ? null
-                    : () => service.toggleFavorite(station),
-                icon: Icon(
-                  isFavorite
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  color: isFavorite ? colorScheme.primary : null,
+                SizedBox(width: spacing.extraLarge),
+                FocusTraversalOrder(
+                  order: const NumericFocusOrder(3),
+                  child: IconButton.filledTonal(
+                    onPressed: station == null
+                        ? null
+                        : () => service.toggleFavorite(station),
+                    icon: Icon(
+                      isFavorite
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      color: isFavorite ? colorScheme.primary : null,
+                    ),
+                    tooltip: loc?.playerFavorite ?? 'Favorite',
+                    padding: EdgeInsets.all(spacing.medium),
+                  ),
                 ),
-                tooltip: loc?.playerFavorite ?? 'Favorite',
-                padding: EdgeInsets.all(spacing.medium),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

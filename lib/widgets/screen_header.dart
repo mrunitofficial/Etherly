@@ -28,9 +28,12 @@ class ScreenHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Text(
-                title,
-                style: theme.textTheme.headlineMedium,
+              child: Semantics(
+                header: true,
+                child: Text(
+                  title,
+                  style: theme.textTheme.headlineMedium,
+                ),
               ),
             ),
             ?actions,

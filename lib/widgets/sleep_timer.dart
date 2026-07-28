@@ -43,10 +43,12 @@ class SleepTimer extends StatelessWidget {
         loc?.sleepTimerTitle ?? 'Sleep timer',
         textAlign: TextAlign.center,
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           ...options.map((option) {
             final duration = option['duration'] as Duration;
             final label = option['label'] as String;
@@ -71,12 +73,31 @@ class SleepTimer extends StatelessWidget {
             padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
             child: FilledButton(
               onPressed: () async {
+                final is24Hour = MediaQuery.of(context).alwaysUse24HourFormat ||
+                    Localizations.localeOf(context).languageCode == 'nl';
+
                 final time = await showTimePicker(
                   context: context,
                   initialTime: TimeOfDay.now(),
+                  initialEntryMode: TimePickerEntryMode.dial,
+                  builder: (context, child) {
+                    return MediaQuery(
+                      data: MediaQuery.of(context).copyWith(
+                        alwaysUse24HourFormat: is24Hour,
+                      ),
+                      child: child!,
+                    );
+                  },
                 );
                 if (time != null && context.mounted) {
                   final now = DateTime.now();
+                  final nowMinute = DateTime(
+                    now.year,
+                    now.month,
+                    now.day,
+                    now.hour,
+                    now.minute,
+                  );
                   var selected = DateTime(
                     now.year,
                     now.month,
@@ -84,10 +105,13 @@ class SleepTimer extends StatelessWidget {
                     time.hour,
                     time.minute,
                   );
-                  if (selected.isBefore(now)) {
+                  if (selected.isBefore(nowMinute)) {
                     selected = selected.add(const Duration(days: 1));
                   }
-                  onTimerSelected(selected.difference(now));
+                  final diff = selected.difference(now);
+                  if (diff.inSeconds > 0) {
+                    onTimerSelected(diff);
+                  }
                 }
               },
               child: Text(
@@ -98,6 +122,7 @@ class SleepTimer extends StatelessWidget {
           ),
         ],
       ),
+    ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),

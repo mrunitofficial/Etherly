@@ -47,6 +47,9 @@ jobs:
       - name: Analyze Project Code
         run: flutter analyze
 
+      - name: Run Unit & Widget Tests
+        run: flutter test
+
   build_apk:
     needs: analyze
     runs-on: ubuntu-latest
@@ -163,11 +166,6 @@ jobs:
           name: web-production-build
           path: build/web
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Deploy to Firebase Hosting Production
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -197,11 +195,14 @@ jobs:
           echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
+        id: create_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          RAW_VERSION=$(grep '^version:' pubspec.yaml | head -n 1 | sed 's/version: //' | tr '+' '-' | tr -d '[:space:]"')
+          TAG="v${RAW_VERSION}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
           APK_FILE=$(find build/app/outputs/flutter-apk -name "*.apk" | head -n 1)
-          echo "Found APK file: $APK_FILE"
           mv "$APK_FILE" build/app/outputs/flutter-apk/Etherly.apk
           gh release create "${{ steps.get_version.outputs.tag }}" build/app/outputs/flutter-apk/Etherly.apk --notes "Web App: https://etherly-firebase.web.app" --generate-notes --clobber || true
 
