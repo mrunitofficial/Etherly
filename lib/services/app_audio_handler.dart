@@ -43,11 +43,6 @@ class AppAudioHandler extends BaseAudioHandler {
   final Future<void> Function() onSkipNext;
   final Future<void> Function() onSkipPrev;
 
-  Future<void> Function()? onCastPlay;
-  Future<void> Function()? onCastPause;
-  Future<void> Function()? onCastStop;
-  bool _isCasting = false;
-
   AppAudioHandler({
     required this.player,
     required this.session,
@@ -60,53 +55,9 @@ class AppAudioHandler extends BaseAudioHandler {
   }
 
   void _updatePlaybackState() {
-    if (_isCasting) return;
     playbackState.add(_transformEvent(player.playbackEvent));
   }
 
-  static const _closeMediaControl = MediaControl(
-    androidIcon: 'drawable/cast_ic_notification_disconnect',
-    label: 'Stop casting',
-    action: MediaAction.stop,
-  );
-
-  /// Updates the casting state and syncs remote playback state to OS MediaSession.
-  void updateCastState({
-    required bool isCasting,
-    required bool isPlaying,
-    required bool isLoading,
-    MediaItem? item,
-  }) {
-    _isCasting = isCasting;
-    if (!isCasting) {
-      _updatePlaybackState();
-      return;
-    }
-
-    if (item != null) {
-      mediaItem.add(item);
-    }
-    playbackState.add(
-      PlaybackState(
-        controls: [
-          _closeMediaControl,
-          MediaControl.skipToPrevious,
-          if (isPlaying) MediaControl.pause else MediaControl.play,
-          MediaControl.skipToNext,
-        ],
-        systemActions: const {
-          MediaAction.skipToNext,
-          MediaAction.skipToPrevious,
-          MediaAction.stop,
-        },
-        androidCompactActionIndices: const [0, 2],
-        processingState: isLoading
-            ? AudioProcessingState.buffering
-            : AudioProcessingState.ready,
-        playing: isPlaying,
-      ),
-    );
-  }
 
 
   /// Updates the currently displaying media item on the OS lock screen.
@@ -189,13 +140,9 @@ class AppAudioHandler extends BaseAudioHandler {
     updateMediaItem(mediaItem.value!.copyWith(artist: artist));
   }
 
-  /// AudioService Overrides delegating directly to just_audio player or Cast session.
+  /// AudioService Overrides delegating directly to just_audio player.
   @override
   Future<void> play() async {
-    if (_isCasting) {
-      await onCastPlay?.call();
-      return;
-    }
     final current = mediaItem.value;
     if (current != null) {
       await playMediaItem(current);
@@ -205,23 +152,16 @@ class AppAudioHandler extends BaseAudioHandler {
   }
 
   @override
-  Future<void> pause() async {
-    if (_isCasting) {
-      await onCastPause?.call();
-      return;
-    }
-    await player.pause();
-  }
+  Future<void> pause() async => player.pause();
 
   @override
   Future<void> stop() async {
-    if (_isCasting) {
-      await onCastStop?.call();
-      return;
-    }
     await player.stop();
+    mediaItem.add(null);
     await super.stop();
   }
+
+
 
   @override
   Future<void> onTaskRemoved() async {

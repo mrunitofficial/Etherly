@@ -172,7 +172,6 @@ class AudioPlayerService with ChangeNotifier {
         _castTransitionTimer?.cancel();
         _castTransitionTimer = null;
       }
-      _syncCastStateToAudioHandler();
     }
     notifyListeners();
   }
@@ -196,13 +195,8 @@ class AudioPlayerService with ChangeNotifier {
     _castTransitionTimer?.cancel();
     if (isReady.value) {
       if (isCasting) {
-        _syncCastStateToAudioHandler();
+        _audioHandler.stop();
       } else {
-        _audioHandler.updateCastState(
-          isCasting: false,
-          isPlaying: false,
-          isLoading: false,
-        );
         _isTransitioning = false;
         _isPlayIntended = false;
       }
@@ -210,21 +204,6 @@ class AudioPlayerService with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Syncs current Cast session state and media metadata to OS MediaSession.
-  void _syncCastStateToAudioHandler() {
-    if (!isCasting) return;
-    final item = _currentMediaItem;
-    final castDeviceName = _castService?.connectedDevice?.name ?? 'Cast';
-    final updatedItem = item?.copyWith(
-      artist: 'Casting to $castDeviceName',
-    );
-    _audioHandler.updateCastState(
-      isCasting: true,
-      isPlaying: isPlaying,
-      isLoading: isLoading,
-      item: updatedItem,
-    );
-  }
 
   /// Initializes the audio service, listeners, and loads user data.
   Future<void> _init() async {
@@ -236,9 +215,7 @@ class AudioPlayerService with ChangeNotifier {
       onSkipToNext: skipToNext,
       onSkipToPrevious: skipToPrevious,
     );
-    _audioHandler.onCastPlay = play;
-    _audioHandler.onCastPause = pause;
-    _audioHandler.onCastStop = stop;
+
 
 
     // Sync unified just_audio player state to our listeners
@@ -510,7 +487,6 @@ class AudioPlayerService with ChangeNotifier {
     if (isCasting) {
       _isPlayIntended = true;
       notifyListeners();
-      _syncCastStateToAudioHandler();
       await _castService?.play();
       return;
     }
@@ -525,12 +501,12 @@ class AudioPlayerService with ChangeNotifier {
     _isPlayIntended = false;
     notifyListeners();
     if (isCasting) {
-      _syncCastStateToAudioHandler();
       await _castService?.pause();
       return;
     }
     await _audioHandler.pause();
   }
+
 
   /// Stops playback or ends active Cast session.
   Future<void> stop() async {
