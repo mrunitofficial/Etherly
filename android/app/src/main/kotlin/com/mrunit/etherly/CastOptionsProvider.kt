@@ -6,7 +6,6 @@ import com.google.android.gms.cast.framework.CastOptions
 import com.google.android.gms.cast.framework.OptionsProvider
 import com.google.android.gms.cast.framework.SessionProvider
 import com.google.android.gms.cast.framework.media.CastMediaOptions
-import com.google.android.gms.cast.framework.media.NotificationOptions
 
 /// Provides Google Cast framework options and receiver configuration.
 class CastOptionsProvider : OptionsProvider {
@@ -18,12 +17,8 @@ class CastOptionsProvider : OptionsProvider {
     override fun getCastOptions(context: Context): CastOptions {
         val appId = customReceiverAppId ?: CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID
 
-        val notificationOptions = NotificationOptions.Builder()
-            .setTargetActivityClassName(MainActivity::class.java.name)
-            .build()
-
         val mediaOptions = CastMediaOptions.Builder()
-            .setNotificationOptions(notificationOptions)
+            .setNotificationOptions(null)
             .build()
 
         return CastOptions.Builder()

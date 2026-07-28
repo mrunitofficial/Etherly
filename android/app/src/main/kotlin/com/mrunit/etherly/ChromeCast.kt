@@ -87,7 +87,7 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         val mediaSession = getAudioServiceMediaSession()
         mediaSession?.setPlaybackToLocal(AudioManager.STREAM_MUSIC)
         volumeProvider = null
-        mediaRouter?.setMediaSessionCompat(null)
+        setMediaSessionCompat(null)
         methodChannel?.setMethodCallHandler(null)
         eventChannel?.setStreamHandler(null)
         methodChannel = null
@@ -292,7 +292,18 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             volumeProvider?.currentVolume = (newVol * 100).toInt()
             sendVolumeUpdate()
         } catch (e: Exception) {
-            // Ignored
+            android.util.Log.d("ChromeCast", "Failed to adjust volume", e)
+        }
+    }
+
+    /// Safely sets or clears the MediaSessionCompat instance on MediaRouter via reflection.
+    private fun setMediaSessionCompat(session: MediaSessionCompat?) {
+        val router = mediaRouter ?: return
+        try {
+            val method = router.javaClass.getMethod("setMediaSessionCompat", MediaSessionCompat::class.java)
+            method.invoke(router, session)
+        } catch (e: Exception) {
+            android.util.Log.d("ChromeCast", "Could not set MediaSessionCompat on MediaRouter", e)
         }
     }
 
@@ -319,7 +330,7 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
 
         val mediaSession = getAudioServiceMediaSession()
         if (mediaSession != null) {
-            mediaRouter?.setMediaSessionCompat(mediaSession)
+            setMediaSessionCompat(mediaSession)
             val initialVolPercent = (session.volume * 100).toInt().coerceIn(0, 100)
             val provider = object : VolumeProviderCompat(VOLUME_CONTROL_ABSOLUTE, 100, initialVolPercent) {
                 override fun onSetVolumeTo(volume: Int) {
@@ -351,7 +362,7 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         val mediaSession = getAudioServiceMediaSession()
         mediaSession?.setPlaybackToLocal(AudioManager.STREAM_MUSIC)
         volumeProvider = null
-        mediaRouter?.setMediaSessionCompat(null)
+        setMediaSessionCompat(null)
 
         sendSessionStateUpdate()
         sendPlaybackStateUpdate()
