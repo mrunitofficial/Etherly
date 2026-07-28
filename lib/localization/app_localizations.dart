@@ -218,6 +218,12 @@ abstract class AppLocalizations {
   /// **'Recent stations'**
   String get homeRecentsTitle;
 
+  /// No description provided for @homeMostListenedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Most listened by you'**
+  String get homeMostListenedTitle;
+
   /// No description provided for @homeCategoriesTitle.
   ///
   /// In en, this message translates to:

@@ -1,19 +1,19 @@
+import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
+import 'package:etherly/localization/app_localizations.dart';
+import 'package:etherly/models/country.dart';
 import 'package:etherly/models/device.dart';
-import 'package:etherly/services/theme_data.dart';
-import 'package:etherly/services/history_service.dart';
-import 'package:etherly/services/music_app_service.dart';
+import 'package:etherly/models/music_app.dart';
+import 'package:etherly/models/song.dart';
 import 'package:etherly/services/audio_player_service.dart';
+import 'package:etherly/services/listening_stats_service.dart';
+import 'package:etherly/services/music_app_service.dart';
+import 'package:etherly/services/theme_data.dart';
 import 'package:etherly/widgets/clear_history.dart';
 import 'package:etherly/widgets/delete_song.dart';
 import 'package:etherly/widgets/music_app_picker.dart';
 import 'package:etherly/widgets/song_card_item.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import 'package:etherly/models/country.dart';
-import 'package:etherly/models/song.dart';
-import 'package:etherly/localization/app_localizations.dart';
-import 'package:etherly/models/music_app.dart';
 
 /// A screen that displays the history of played songs.
 class HistoryScreen extends StatelessWidget {
@@ -109,15 +109,15 @@ class HistoryScreen extends StatelessWidget {
                 builder: (context) => const ClearHistoryDialog(),
               );
               if (confirm == true) {
-                HistoryService().clearHistory();
+                ListeningStatsService().clearHistory();
               }
             },
           ),
         ],
       ),
-      body: Consumer<HistoryService>(
-        builder: (context, historyService, _) {
-          final history = historyService.history;
+      body: Consumer<ListeningStatsService>(
+        builder: (context, statsService, _) {
+          final history = statsService.history;
 
           if (history.isEmpty) {
             return Center(
@@ -197,7 +197,7 @@ class HistoryScreen extends StatelessWidget {
                         return confirm ?? false;
                       },
                       onDismissed: (direction) {
-                        HistoryService().removeSong(song).catchError((_) {});
+                        ListeningStatsService().removeSong(song).catchError((_) {});
                       },
                       child: SongCardItem(
                         songName: song.title,

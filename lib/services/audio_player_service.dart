@@ -1,14 +1,14 @@
 import 'dart:async';
-import 'package:http/http.dart' as http;
+import 'package:audio_service/audio_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
-import 'package:audio_service/audio_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:etherly/models/station.dart';
-import 'package:etherly/services/chrome_cast_service.dart';
-import 'package:etherly/services/history_service.dart';
 import 'package:etherly/services/app_audio_handler.dart';
+import 'package:etherly/services/chrome_cast_service.dart';
+import 'package:etherly/services/listening_stats_service.dart';
 
 /// Service that manages the [AudioPlayer] instance, station list, and playback logic.
 class AudioPlayerService with ChangeNotifier {
@@ -42,19 +42,26 @@ class AudioPlayerService with ChangeNotifier {
   /// Keys for SharedPreferences.
   static const String _lastStationIdKey = 'last_station_id';
   static const String _favoriteStationIdsKey = 'favorite_station_ids';
-  static const String _recentStationIdsKey = 'recent_station_ids';
   static const String _volumeKey = 'volume';
   static const String _isMutedKey = 'is_muted';
   static const String _preMuteVolumeKey = 'pre_mute_volume';
-  static const int _maxRecentStations = 10;
   static const int _autoPlayCountdownStart = 3;
 
   /// List of all available stations and their metadata.
   List<Station> stations = [];
   Map<String, Station> _stationMap = {};
   List<String> _favoriteStationIds = [];
-  List<String> _recentStationIds = [];
-  List<Station> get recentStations => _recentStationIds
+
+  /// List of recently played stations.
+  List<Station> get recentStations => ListeningStatsService()
+      .recentStationIds
+      .map((id) => _stationMap[id])
+      .whereType<Station>()
+      .toList();
+
+  /// List of most listened stations in the last 500 minutes.
+  List<Station> get mostListenedStations => ListeningStatsService()
+      .getMostListenedStationIds()
       .map((id) => _stationMap[id])
       .whereType<Station>()
       .toList();
@@ -64,6 +71,9 @@ class AudioPlayerService with ChangeNotifier {
       .map((id) => _stationMap[id])
       .whereType<Station>()
       .toList();
+
+  /// Listening time ticker (runs every 1 minute while audio is playing).
+  Timer? _listeningMinuteTimer;
 
   /// Autoplay countdown timer.
   Timer? _autoplayTimer;
@@ -193,6 +203,7 @@ class AudioPlayerService with ChangeNotifier {
         _bufferingTimeoutTimer = null;
       }
 
+      _updateListeningMinuteTimer();
       notifyListeners();
     });
 
@@ -228,7 +239,7 @@ class AudioPlayerService with ChangeNotifier {
               ? parts.sublist(1).join(' - ').trim()
               : title;
 
-          HistoryService().addSong(
+          ListeningStatsService().addSong(
             title: songName,
             artist: artistName,
             stationId: currentTag.id,
@@ -378,7 +389,8 @@ class AudioPlayerService with ChangeNotifier {
     _currentMediaItem = item;
     _audioHandler.updateMediaItem(item);
     _saveLastStation(item.id);
-    _addRecentStation(item.id);
+    ListeningStatsService().addRecentStation(item.id);
+    _updateListeningMinuteTimer();
     notifyListeners();
   }
 
@@ -569,7 +581,6 @@ class AudioPlayerService with ChangeNotifier {
       });
 
       _favoriteStationIds = _prefs.getStringList(_favoriteStationIdsKey) ?? [];
-      _recentStationIds = _prefs.getStringList(_recentStationIdsKey) ?? [];
 
       stations = loaded
           .map(
@@ -595,15 +606,21 @@ class AudioPlayerService with ChangeNotifier {
     }
   }
 
-  /// Adds a station to the recently played history.
-  Future<void> _addRecentStation(String stationId) async {
-    _recentStationIds.remove(stationId);
-    _recentStationIds.insert(0, stationId);
-    if (_recentStationIds.length > _maxRecentStations) {
-      _recentStationIds = _recentStationIds.sublist(0, _maxRecentStations);
+  /// Starts or stops the 1-minute listening ticker based on playback state.
+  void _updateListeningMinuteTimer() {
+    if (isPlaying && _currentMediaItem != null) {
+      _listeningMinuteTimer ??= Timer.periodic(const Duration(minutes: 1), (_) {
+        if (isPlaying && _currentMediaItem != null) {
+          ListeningStatsService().recordListeningMinute(_currentMediaItem!.id);
+        } else {
+          _listeningMinuteTimer?.cancel();
+          _listeningMinuteTimer = null;
+        }
+      });
+    } else {
+      _listeningMinuteTimer?.cancel();
+      _listeningMinuteTimer = null;
     }
-    await _prefs.setStringList(_recentStationIdsKey, _recentStationIds);
-    notifyListeners();
   }
 
   /// Persists the ID of the last played station.

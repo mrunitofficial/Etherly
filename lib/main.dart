@@ -1,27 +1,25 @@
-import 'dart:ui';
-import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'dart:async';
+import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dynamic_system_colors/dynamic_system_colors.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'package:flutter/services.dart';
-import 'package:intl/date_symbol_data_local.dart';
-
-import 'firebase_options.dart';
-import 'localization/app_localizations.dart';
-import 'services/audio_player_service.dart';
-import 'services/chrome_cast_service.dart';
-import 'services/history_service.dart';
-import 'services/shortcut_service.dart';
-import 'services/theme_data.dart';
-import 'screens/app_screen.dart';
-import 'models/device.dart';
+import 'package:etherly/localization/app_localizations.dart';
+import 'package:etherly/models/device.dart';
+import 'package:etherly/firebase_options.dart';
+import 'package:etherly/services/audio_player_service.dart';
+import 'package:etherly/services/chrome_cast_service.dart';
+import 'package:etherly/services/listening_stats_service.dart';
+import 'package:etherly/services/shortcut_service.dart';
+import 'package:etherly/services/theme_data.dart';
+import 'package:etherly/screens/app_screen.dart';
 
 /// Entry point of the application.
 Future<void> main() async {
@@ -48,8 +46,8 @@ Future<void> main() async {
     debugPrint('Firebase initialization issue: $e\n$stackTrace');
   }
 
-  // Initialize HistoryService
-  await HistoryService().init();
+  // Initialize ListeningStatsService
+  await ListeningStatsService().init();
 
   try {
     // Enable Firestore persistence for web (Firebase).
@@ -202,8 +200,8 @@ class _MyAppState extends State<MyApp> {
                     ChangeNotifierProvider<ChromeCastService>(
                       create: (_) => _chromeCastService!,
                     ),
-                    ChangeNotifierProvider<HistoryService>.value(
-                      value: HistoryService(),
+                    ChangeNotifierProvider<ListeningStatsService>.value(
+                      value: ListeningStatsService(),
                     ),
                   ],
                   child: MaterialApp(

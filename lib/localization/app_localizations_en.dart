@@ -69,6 +69,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeRecentsTitle => 'Recent stations';
 
   @override
+  String get homeMostListenedTitle => 'Most listened by you';
+
+  @override
   String get homeCategoriesTitle => 'Popular stations';
 
   @override
