@@ -54,7 +54,7 @@ void main() {
           );
     });
 
-    test('Station favorite toggle logic works on model', () {
+    test('Station favorite toggle logic works via copyWith', () {
       final station = Station(
         id: 'st_1',
         name: 'Test Radio',
@@ -67,8 +67,9 @@ void main() {
       );
 
       expect(station.isFavorite, isFalse);
-      station.isFavorite = true;
-      expect(station.isFavorite, isTrue);
+      final updated = station.copyWith(isFavorite: true);
+      expect(updated.isFavorite, isTrue);
+      expect(station.isFavorite, isFalse);
     });
   });
 }

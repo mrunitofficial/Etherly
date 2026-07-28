@@ -4,15 +4,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/play_button.dart';
 
+/// Minimal mock that only implements fields used by PlayButton.
 class MockAudioPlayerService extends Fake implements AudioPlayerService {
   bool mockIsPlaying = false;
   bool mockIsLoading = false;
+  bool playCalled = false;
+  bool pauseCalled = false;
+  bool stopCalled = false;
 
   @override
   bool get isPlaying => mockIsPlaying;
 
   @override
   bool get isLoading => mockIsLoading;
+
+  @override
+  Future<void> play() async => playCalled = true;
+
+  @override
+  Future<void> pause() async => pauseCalled = true;
+
+  @override
+  Future<void> stop() async => stopCalled = true;
 }
 
 void main() {

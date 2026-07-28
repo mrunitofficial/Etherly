@@ -29,10 +29,8 @@ class QualitySetting extends StatelessWidget {
     final mediaItem = service.mediaItem;
     if (mediaItem == null) return;
 
-    final station = service.stations.firstWhere(
-      (s) => s.id == mediaItem.id,
-      orElse: () => service.stations.first,
-    );
+    final station = service.currentStation;
+    if (station == null) return;
 
     final prefQuality = service.prefs.getString('streamQuality') ?? 'mp3';
     final activeQuality =

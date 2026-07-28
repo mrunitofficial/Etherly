@@ -43,12 +43,12 @@ class Song {
   /// Deserializes a JSON map into a [Song] instance.
   factory Song.fromJson(Map<String, dynamic> json) {
     return Song(
-      title: json['title'] as String,
-      artist: json['artist'] as String,
-      timestamp: DateTime.parse(json['timestamp'] as String),
-      stationId: json['stationId'] as String,
-      stationName: json['stationName'] as String,
-      stationArtUrl: json['stationArtUrl'] as String,
+      title: json['title'] as String? ?? '',
+      artist: json['artist'] as String? ?? '',
+      timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
+      stationId: json['stationId'] as String? ?? '',
+      stationName: json['stationName'] as String? ?? '',
+      stationArtUrl: json['stationArtUrl'] as String? ?? '',
     );
   }
 }

@@ -164,12 +164,7 @@ class FullPlayerControls extends StatelessWidget {
         final colorScheme = theme.colorScheme;
         final spacing = theme.extension<Spacing>()!;
         final loc = AppLocalizations.of(context);
-        final station = service.mediaItem == null
-            ? null
-            : service.stations.firstWhere(
-                (s) => s.id == service.mediaItem!.id,
-                orElse: () => service.stations.first,
-              );
+        final station = service.currentStation;
         final isFavorite = station?.isFavorite ?? false;
 
         return Padding(

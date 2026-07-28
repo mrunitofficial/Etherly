@@ -33,7 +33,7 @@ class Station {
   final bool active;
 
   /// Whether the station is marked as user favorite.
-  bool isFavorite;
+  final bool isFavorite;
 
   // Cached numeric resolutions and sorted sizes to optimize getArtUrl lookups
   final List<int> _sortedSizes;

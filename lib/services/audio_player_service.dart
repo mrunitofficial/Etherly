@@ -86,6 +86,7 @@ class AudioPlayerService with ChangeNotifier {
     _sleepTimer?.cancel();
     _bufferingTimeoutTimer?.cancel();
     _castTransitionTimer?.cancel();
+    _listeningMinuteTimer?.cancel();
 
     try {
       _castService?.endCasting();
