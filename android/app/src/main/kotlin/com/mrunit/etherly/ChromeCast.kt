@@ -1,9 +1,12 @@
 package com.mrunit.etherly
 
 import android.content.Context
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.support.v4.media.session.MediaSessionCompat
+import androidx.media.VolumeProviderCompat
 import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.CastDevice
@@ -27,6 +30,9 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         const val CONTROL_CHANNEL = "com.mrunit.etherly/cast_control"
         const val EVENTS_CHANNEL = "com.mrunit.etherly/cast_events"
     }
+
+    val isCasting: Boolean get() = currentSession != null && currentSession?.isConnected == true
+    private var volumeProvider: VolumeProviderCompat? = null
 
     private var methodChannel: MethodChannel? = null
     private var eventChannel: EventChannel? = null
@@ -78,6 +84,10 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             castContext?.sessionManager?.removeSessionManagerListener(sessionManagerListener, CastSession::class.java)
             isListenerAdded = false
         }
+        val mediaSession = getAudioServiceMediaSession()
+        mediaSession?.setPlaybackToLocal(AudioManager.STREAM_MUSIC)
+        volumeProvider = null
+        mediaRouter?.setMediaSessionCompat(null)
         methodChannel?.setMethodCallHandler(null)
         eventChannel?.setStreamHandler(null)
         methodChannel = null
@@ -259,6 +269,7 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         val volume = call.argument<Double>("volume") ?: 1.0
         try {
             session.volume = volume
+            volumeProvider?.currentVolume = (volume * 100).toInt()
             result.success(true)
         } catch (e: Exception) {
             result.error("SET_VOLUME_FAILED", e.localizedMessage, null)
@@ -271,9 +282,63 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         else result.error("NO_SESSION", "No active Cast session", null)
     }
 
+    /// Adjusts active cast volume by delta step.
+    fun adjustVolume(delta: Double) {
+        val session = currentSession ?: return
+        try {
+            val current = session.volume
+            val newVol = (current + delta).coerceIn(0.0, 1.0)
+            session.volume = newVol
+            volumeProvider?.currentVolume = (newVol * 100).toInt()
+            sendVolumeUpdate()
+        } catch (e: Exception) {
+            // Ignored
+        }
+    }
+
+    /// Resolves AudioService's active MediaSessionCompat instance.
+    private fun getAudioServiceMediaSession(): MediaSessionCompat? {
+        return try {
+            val clazz = Class.forName("com.ryanheise.audioservice.AudioServicePlugin")
+            val method = clazz.getMethod("getMediaSession", Context::class.java)
+            method.invoke(null, context) as? MediaSessionCompat
+        } catch (e: Exception) {
+            try {
+                val clazz = Class.forName("com.ryanheise.audioservice.AudioServicePlugin")
+                val field = clazz.getField("mediaSession")
+                field.get(null) as? MediaSessionCompat
+            } catch (e2: Exception) {
+                null
+            }
+        }
+    }
+
     private fun onSessionConnected(session: CastSession) {
         currentSession = session
         session.remoteMediaClient?.registerCallback(remoteMediaClientCallback)
+
+        val mediaSession = getAudioServiceMediaSession()
+        if (mediaSession != null) {
+            mediaRouter?.setMediaSessionCompat(mediaSession)
+            val initialVolPercent = (session.volume * 100).toInt().coerceIn(0, 100)
+            val provider = object : VolumeProviderCompat(VOLUME_CONTROL_ABSOLUTE, 100, initialVolPercent) {
+                override fun onSetVolumeTo(volume: Int) {
+                    val target = (volume / 100.0).coerceIn(0.0, 1.0)
+                    session.volume = target
+                    sendVolumeUpdate()
+                }
+
+                override fun onAdjustVolume(direction: Int) {
+                    val delta = if (direction > 0) 0.05 else if (direction < 0) -0.05 else 0.0
+                    if (delta != 0.0) {
+                        adjustVolume(delta)
+                    }
+                }
+            }
+            mediaSession.setPlaybackToRemote(provider)
+            volumeProvider = provider
+        }
+
         sendSessionStateUpdate()
         sendPlaybackStateUpdate()
         sendVolumeUpdate()
@@ -282,6 +347,12 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
     private fun onSessionDisconnected() {
         currentSession?.remoteMediaClient?.unregisterCallback(remoteMediaClientCallback)
         currentSession = null
+
+        val mediaSession = getAudioServiceMediaSession()
+        mediaSession?.setPlaybackToLocal(AudioManager.STREAM_MUSIC)
+        volumeProvider = null
+        mediaRouter?.setMediaSessionCompat(null)
+
         sendSessionStateUpdate()
         sendPlaybackStateUpdate()
     }
