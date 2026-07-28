@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,7 +9,6 @@ import 'package:etherly/models/station.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
 import 'package:etherly/services/history_service.dart';
 import 'package:etherly/services/app_audio_handler.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Service that manages the [AudioPlayer] instance, station list, and playback logic.
 class AudioPlayerService with ChangeNotifier {
@@ -449,19 +447,6 @@ class AudioPlayerService with ChangeNotifier {
     if (currentIndex == -1 || stations.isEmpty) return;
     final prevIndex = (currentIndex - 1 + stations.length) % stations.length;
     await playMediaItem(stations[prevIndex]);
-  }
-
-  /// Pre-fetches all station art icons in parallel to improve UI responsiveness.
-  Future<void> precacheAllStationArt(BuildContext context) async {
-    final futures = <Future<void>>[];
-    for (final station in stations) {
-      final art512Url = station.getArtUrl(size: 512);
-      if (art512Url.isNotEmpty) {
-        final provider = CachedNetworkImageProvider(art512Url);
-        futures.add(precacheImage(provider, context).catchError((_) {}));
-      }
-    }
-    await Future.wait(futures);
   }
 
   /// Updates favorite status and persists it.

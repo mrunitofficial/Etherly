@@ -206,6 +206,7 @@ class _StationSearchBarState extends State<StationSearchBar> {
                     vertical: spacing.extraSmall,
                   ),
                   child: StationCardItem(
+                    key: ValueKey(station.id),
                     station: currentStation,
                     isFavorite: currentStation.isFavorite,
                     screenType: screenType,

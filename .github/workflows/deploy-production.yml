@@ -198,13 +198,11 @@ jobs:
         id: create_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.get_version.outputs.tag }}
         run: |
-          RAW_VERSION=$(grep '^version:' pubspec.yaml | head -n 1 | sed 's/version: //' | tr '+' '-' | tr -d '[:space:]"')
-          TAG="v${RAW_VERSION}"
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
           APK_FILE=$(find build/app/outputs/flutter-apk -name "*.apk" | head -n 1)
           mv "$APK_FILE" build/app/outputs/flutter-apk/Etherly.apk
-          gh release create "${{ steps.get_version.outputs.tag }}" build/app/outputs/flutter-apk/Etherly.apk --notes "Web App: https://etherly-firebase.web.app" --generate-notes --clobber || true
+          gh release create "$TAG" build/app/outputs/flutter-apk/Etherly.apk --title "$TAG" --notes "Web App: https://etherly-firebase.web.app"
 
       - name: Print Production Info
         run: |
