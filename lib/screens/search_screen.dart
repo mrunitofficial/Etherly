@@ -1,12 +1,16 @@
-import 'package:etherly/models/station.dart';
-import 'package:etherly/models/device.dart';
-import 'package:etherly/services/audio_player_service.dart';
-import 'package:etherly/services/theme_data.dart';
-import 'package:etherly/widgets/station_card_item.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
-import 'package:etherly/localization/app_localizations.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+
+import 'package:etherly/localization/app_localizations.dart';
+
+import 'package:etherly/models/device.dart';
+import 'package:etherly/models/station.dart';
+
+import 'package:etherly/services/audio_player_service.dart';
+import 'package:etherly/services/theme_data.dart';
+
+import 'package:etherly/widgets/station_card_item.dart';
 
 /// A native search bar that allows users to search for radio stations.
 class StationSearchBar extends StatefulWidget {

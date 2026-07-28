@@ -1,11 +1,15 @@
-import 'package:etherly/services/theme_data.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import 'package:etherly/localization/app_localizations.dart';
+
+import 'package:etherly/models/music_app.dart';
+
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/services/music_app_service.dart';
-import 'package:etherly/models/music_app.dart';
+import 'package:etherly/services/theme_data.dart';
+
 import 'package:etherly/widgets/marquee_text.dart';
 import 'package:etherly/widgets/music_app_picker.dart';
 
@@ -56,13 +60,8 @@ class IcyTextDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Only rebuild this root if casting state changes
-    final isCasting = context.select<AudioPlayerService, bool>(
-      (s) => s.isCasting,
-    );
-    if (isCasting) return const SizedBox.shrink();
-
     final theme = Theme.of(context);
+
     final loc = AppLocalizations.of(context);
     final spacing = theme.extension<Spacing>()!;
     final shapes = theme.extension<Shapes>()!;

@@ -99,6 +99,8 @@
 
 * **Async & Isolate Safety**: Handle `Future`s with `async`/`await` and explicit error handling (`try-catch`). Use `compute()` for heavy CPU operations (e.g., large JSON parsing) to avoid blocking the main UI thread.
 
+* **Explicit Error Logging**: All `catch` blocks must include debug prints wrapped in `if (kDebugMode) print(...)` or `log()`. Silent empty catch blocks (`catch (_) {}`) are prohibited.
+
 * **Performance & List Optimization**: Avoid performing computations or side effects inside `build()`. Use `ListView.builder` or `SliverList` for lazy-loaded long lists.
 
 * **Code Hygiene & Naming**: Use `PascalCase` for classes, `camelCase` for members/variables, and `snake_case` for files. Keep functions short with single responsibilities. Use `dart:developer` `log()` instead of raw `print()`.

@@ -2,8 +2,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'package:etherly/models/station.dart';
+
 import 'package:etherly/services/theme_data.dart';
 
+/// Artwork widget for rendering station image with fallback states.
 class StationArt extends StatelessWidget {
   /// Standard widget constructor.
   const StationArt({
@@ -78,6 +80,7 @@ class StationArt extends StatelessWidget {
             fit: BoxFit.cover,
             useOldImageOnUrlChange: true,
             fadeInDuration: fadeDuration,
+            fadeOutDuration: fadeDuration,
             placeholderFadeInDuration: fadeDuration,
             placeholder: (context, url) => fallback,
             errorWidget: (context, url, error) => fallback,

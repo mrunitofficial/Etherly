@@ -1,20 +1,24 @@
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import 'package:etherly/localization/app_localizations.dart';
 
 import 'package:etherly/models/device.dart';
-import 'package:etherly/screens/history_screen.dart';
+
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/services/shortcut_service.dart';
-import 'package:etherly/screens/settings_screen.dart';
 import 'package:etherly/services/theme_data.dart';
-import 'package:etherly/widgets/sleep_timer.dart';
-import 'package:etherly/widgets/station_art.dart';
-import 'package:etherly/widgets/quality_setting.dart';
+
+import 'package:etherly/screens/history_screen.dart';
+import 'package:etherly/screens/settings_screen.dart';
+
+import 'package:etherly/widgets/icy_text_display.dart';
 import 'package:etherly/widgets/marquee_text.dart';
 import 'package:etherly/widgets/play_button.dart';
-import 'package:etherly/widgets/icy_text_display.dart';
+import 'package:etherly/widgets/quality_setting.dart';
+import 'package:etherly/widgets/sleep_timer.dart';
+import 'package:etherly/widgets/station_art.dart';
 
 /// Full player content shown in the expanded state of the radio player.
 class FullPlayerContent extends StatelessWidget {
@@ -160,12 +164,7 @@ class FullPlayerControls extends StatelessWidget {
         final colorScheme = theme.colorScheme;
         final spacing = theme.extension<Spacing>()!;
         final loc = AppLocalizations.of(context);
-        final station = service.mediaItem == null
-            ? null
-            : service.stations.firstWhere(
-                (s) => s.id == service.mediaItem!.id,
-                orElse: () => service.stations.first,
-              );
+        final station = service.currentStation;
         final isFavorite = station?.isFavorite ?? false;
 
         return Padding(

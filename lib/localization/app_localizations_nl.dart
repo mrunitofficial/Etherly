@@ -69,6 +69,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get homeRecentsTitle => 'Recente zenders';
 
   @override
+  String get homeMostListenedTitle => 'Meest beluisterd door jou';
+
+  @override
   String get homeCategoriesTitle => 'Populaire zenders';
 
   @override

@@ -1,9 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Service for detecting installed external music applications and managing search deep links.
 class MusicAppService {
   static final MusicAppService _instance = MusicAppService._internal();
-  factory MusicAppService() => _instance;
-  MusicAppService._internal();
 
   final List<Map<String, dynamic>> _allApps = [
     {
@@ -56,6 +56,11 @@ class MusicAppService {
 
   List<Map<String, String>>? _cachedAvailableApps;
 
+  /// Factory constructor returning the singleton instance.
+  factory MusicAppService() => _instance;
+  MusicAppService._internal();
+
+  /// Resolves all available installed music applications.
   Future<List<Map<String, String>>> getAvailableApps({
     bool forceRefresh = false,
   }) async {
@@ -83,8 +88,8 @@ class MusicAppService {
             'scheme': app['scheme'] as String,
           });
         }
-      } catch (_) {
-        // Ignore errors
+      } catch (e) {
+        if (kDebugMode) print('Error checking app availability: $e');
       }
     }
 

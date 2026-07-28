@@ -1,11 +1,12 @@
 import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:audio_session/audio_session.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Singleton future backing audio service handler initialization.
 Future<AppAudioHandler>? _audioHandlerFuture;
 
 /// Initializes the AudioService for OS-level background audio notifications and controls.
@@ -31,7 +32,7 @@ Future<AppAudioHandler> initAudioService({
       androidNotificationChannelName: channelName,
       androidNotificationIcon: 'mipmap/notification_icon',
       androidNotificationOngoing: false,
-      androidStopForegroundOnPause: false,
+      androidStopForegroundOnPause: true,
     ),
   );
 }
@@ -42,6 +43,7 @@ class AppAudioHandler extends BaseAudioHandler {
   final AudioSession session;
   final Future<void> Function() onSkipNext;
   final Future<void> Function() onSkipPrev;
+  bool isRemoteSession = false;
 
   AppAudioHandler({
     required this.player,
@@ -49,13 +51,69 @@ class AppAudioHandler extends BaseAudioHandler {
     required this.onSkipNext,
     required this.onSkipPrev,
   }) {
-    // Pipe just_audio's playback events and state changes to audio_service
     player.playbackEventStream.listen((_) => _updatePlaybackState());
     player.playerStateStream.listen((_) => _updatePlaybackState());
   }
 
   void _updatePlaybackState() {
+    if (isRemoteSession) return;
+    if (mediaItem.value == null) {
+      playbackState.add(
+        PlaybackState(
+          processingState: AudioProcessingState.idle,
+          playing: false,
+          controls: [],
+        ),
+      );
+      return;
+    }
     playbackState.add(_transformEvent(player.playbackEvent));
+  }
+
+  /// Manually updates playback state for external or remote sessions (e.g. Chromecast).
+  void updateRemotePlaybackState({
+    required bool playing,
+    required bool isBuffering,
+  }) {
+    isRemoteSession = true;
+    if (mediaItem.value == null) return;
+    playbackState.add(
+      PlaybackState(
+        controls: [
+          MediaControl.skipToPrevious,
+          playing ? MediaControl.pause : MediaControl.play,
+          MediaControl.stop,
+          MediaControl.skipToNext,
+        ],
+        systemActions: const {
+          MediaAction.seek,
+          MediaAction.seekForward,
+          MediaAction.seekBackward,
+        },
+        androidCompactActionIndices: const [0, 1, 3],
+        processingState: isBuffering
+            ? AudioProcessingState.buffering
+            : (playing
+                  ? AudioProcessingState.ready
+                  : AudioProcessingState.idle),
+        playing: playing,
+        updatePosition: Duration.zero,
+      ),
+    );
+  }
+
+  /// Clears active media item and stops AudioService to dismiss local OS notification card.
+  Future<void> clearNotification() async {
+    isRemoteSession = false;
+    mediaItem.add(null);
+    playbackState.add(
+      PlaybackState(
+        processingState: AudioProcessingState.idle,
+        playing: false,
+        controls: [],
+      ),
+    );
+    await stop();
   }
 
   /// Updates the currently displaying media item on the OS lock screen.
@@ -69,6 +127,7 @@ class AppAudioHandler extends BaseAudioHandler {
   /// Plays a media item by setting the audio source and beginning playback.
   @override
   Future<void> playMediaItem(MediaItem item) async {
+    isRemoteSession = false;
     mediaItem.add(item);
 
     final streamsObj = item.extras?['streams'];
@@ -82,7 +141,7 @@ class AppAudioHandler extends BaseAudioHandler {
       }
     }
 
-    if (streams.isEmpty) throw Exception("No valid stream URL found");
+    if (streams.isEmpty) throw Exception('No valid stream URL found');
 
     final prefs = await SharedPreferences.getInstance();
     final quality = prefs.getString('streamQuality') ?? 'mp3';
@@ -101,7 +160,6 @@ class AppAudioHandler extends BaseAudioHandler {
         continue;
       }
       try {
-        await player.stop();
         if (!_isCurrentStation(item.id)) return;
         await player.setAudioSource(
           AudioSource.uri(Uri.parse(entry.value), tag: item),
@@ -138,7 +196,7 @@ class AppAudioHandler extends BaseAudioHandler {
     updateMediaItem(mediaItem.value!.copyWith(artist: artist));
   }
 
-  /// AudioService Overrides delegating directly to just_audio player
+  /// AudioService Overrides delegating directly to just_audio player.
   @override
   Future<void> play() async {
     final current = mediaItem.value;
@@ -186,36 +244,6 @@ class AppAudioHandler extends BaseAudioHandler {
       return;
     }
     return super.customAction(name, extras);
-  }
-
-  /// Hides the OS notification when casting is taking place.
-  Future<void> hideNotification() async {
-    try {
-      if (player.playing) await player.stop();
-
-      // Tell audio_service we are idle, which clears the OS notification
-      playbackState.add(
-        PlaybackState(
-          controls: [],
-          processingState: AudioProcessingState.idle,
-          playing: false,
-        ),
-      );
-    } catch (e) {
-      if (kDebugMode) print('Error hiding notification: $e');
-    }
-  }
-
-  /// Restores the OS notification when casting has ended.
-  Future<void> showNotification() async {
-    try {
-      final current = mediaItem.value;
-      if (current != null) {
-        playbackState.add(_transformEvent(player.playbackEvent));
-      }
-    } catch (e) {
-      if (kDebugMode) print('Error showing notification: $e');
-    }
   }
 
   /// Transforms just_audio's generic PlaybackEvent into audio_service's PlaybackState

@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
-import '../localization/app_localizations.dart';
-import '../services/theme_data.dart';
+
+import 'package:etherly/localization/app_localizations.dart';
+import 'package:etherly/services/theme_data.dart';
 
 /// A dialog widget for setting a sleep timer.
 class SleepTimer extends StatelessWidget {

@@ -1,19 +1,25 @@
 import 'dart:async';
-import 'package:etherly/models/device.dart';
+
+import 'package:flutter/rendering.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:etherly/localization/app_localizations.dart';
+
+import 'package:etherly/models/device.dart';
 import 'package:etherly/models/station.dart';
+
 import 'package:etherly/services/audio_player_service.dart';
+import 'package:etherly/services/theme_data.dart';
+
 import 'package:etherly/widgets/screen_header.dart';
 import 'package:etherly/widgets/station_card_item.dart';
 import 'package:etherly/widgets/station_grid_item.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter/rendering.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:etherly/services/theme_data.dart';
 
 const String _radioViewTypeKey = 'radio_view_type';
 
+/// Station display layout representation options.
 enum ViewType { list, grid }
 
 class StationsScreen extends StatefulWidget {
@@ -116,7 +122,6 @@ class _StationsScreenState extends State<StationsScreen>
     final theme = Theme.of(context);
     final spacing = theme.extension<Spacing>()!;
     final sizes = theme.extension<Sizes>()!;
-    final shapes = theme.extension<Shapes>()!;
     final loc = AppLocalizations.of(context);
 
     return CustomScrollView(
@@ -186,7 +191,10 @@ class _StationsScreenState extends State<StationsScreen>
               sizes,
             )
           else
-            _buildSliverGrid(stations, audioPlayerService, spacing, shapes),
+            _StationSliverGrid(
+              stations: stations,
+              service: audioPlayerService,
+            ),
           SliverPadding(
             padding: EdgeInsets.only(
               bottom: widget.bottomPadding + spacing.medium,
@@ -253,12 +261,24 @@ class _StationsScreenState extends State<StationsScreen>
     return slivers;
   }
 
-  Widget _buildSliverGrid(
-    List<Station> stations,
-    AudioPlayerService service,
-    Spacing spacing,
-    Shapes shapes,
-  ) {
+}
+
+/// Dedicated sliver grid widget for displaying station tiles.
+class _StationSliverGrid extends StatelessWidget {
+  final List<Station> stations;
+  final AudioPlayerService service;
+
+  const _StationSliverGrid({
+    required this.stations,
+    required this.service,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final shapes = theme.extension<Shapes>()!;
+
     return SliverPadding(
       padding: EdgeInsets.fromLTRB(
         spacing.medium,

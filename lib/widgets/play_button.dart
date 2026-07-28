@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
+
 import 'package:etherly/services/audio_player_service.dart';
 
+/// Button visual size variants.
 enum PlayButtonSize { medium, large }
 
 /// A button widget that toggles radio playback, displaying countdown or buffer state.
@@ -24,8 +26,10 @@ class PlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget content = Builder(
-      builder: (context) => _buildButtonContent(context),
+    final Widget content = _PlayButtonContent(
+      service: service,
+      countdown: countdown,
+      size: size,
     );
 
     switch (size) {
@@ -48,8 +52,37 @@ class PlayButton extends StatelessWidget {
     }
   }
 
-  /// Builds the inner icon, spinner, or countdown label wrapped in explicit semantics.
-  Widget _buildButtonContent(BuildContext context) {
+  /// Toggles playback state or stops buffering/countdown.
+  void _handlePlayPause() {
+    final bool isPlaying = service.isPlaying;
+    if (countdown > 0) {
+      service.pause();
+    } else if (isPlaying) {
+      service.pause();
+    } else {
+      if (service.isLoading) {
+        service.stop();
+      } else {
+        service.play();
+      }
+    }
+  }
+}
+
+/// Inner icon, spinner, or countdown label widget for [PlayButton].
+class _PlayButtonContent extends StatelessWidget {
+  final AudioPlayerService service;
+  final int countdown;
+  final PlayButtonSize size;
+
+  const _PlayButtonContent({
+    required this.service,
+    required this.countdown,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final iconTheme = IconTheme.of(context);
     final baseSize = iconTheme.size!;
@@ -92,21 +125,5 @@ class PlayButton extends StatelessWidget {
       label: semanticLabel,
       child: childWidget,
     );
-  }
-
-  /// Toggles playback state or stops buffering/countdown.
-  void _handlePlayPause() {
-    final bool isPlaying = service.isPlaying;
-    if (countdown > 0) {
-      service.pause();
-    } else if (isPlaying) {
-      service.pause();
-    } else {
-      if (service.isLoading) {
-        service.stop();
-      } else {
-        service.play();
-      }
-    }
   }
 }

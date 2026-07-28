@@ -2,9 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+
 import 'package:etherly/localization/app_localizations.dart';
-import '../services/music_app_service.dart';
-import '../services/theme_data.dart';
+
+import 'package:etherly/services/music_app_service.dart';
+import 'package:etherly/services/theme_data.dart';
 
 /// Easy options menu item builder for dropdown settings.
 extension on ThemeMode {
@@ -119,17 +121,143 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: ListView(
                 padding: EdgeInsets.only(bottom: sizes.largeIncreased),
                 children: <Widget>[
-                  _buildQualityDropdownSetting(loc, spacing, sizes),
-                  _buildThemeDropdownSetting(loc, spacing, sizes),
+                  SettingDropdownTile<String>(
+                    title: loc.settingsDefaultStreamingQuality,
+                    initialSelection: _selectedQuality,
+                    onSelected: (String? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _selectedQuality = newValue;
+                        });
+                        _saveSetting('streamQuality', newValue);
+                      }
+                    },
+                    dropdownMenuEntries: [
+                      DropdownMenuEntry<String>(
+                        value: 'mp3',
+                        label: loc.settingsStreamingQualityHigh,
+                      ),
+                      DropdownMenuEntry<String>(
+                        value: 'aac',
+                        label: loc.settingsStreamingQualityHighest,
+                      ),
+                    ],
+                  ),
+                  SettingDropdownTile<ThemeMode>(
+                    title: loc.settingsAppTheme,
+                    initialSelection: _selectedTheme,
+                    onSelected: (ThemeMode? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _selectedTheme = newValue;
+                        });
+                        widget.themeNotifier.value = newValue;
+                        _saveSetting('theme', newValue.name);
+                      }
+                    },
+                    dropdownMenuEntries: ThemeMode.values.map((ThemeMode mode) {
+                      return DropdownMenuEntry<ThemeMode>(
+                        value: mode,
+                        label: mode.getLocalizedName(loc),
+                      );
+                    }).toList(),
+                  ),
                   if (kIsWeb)
-                    _buildLanguageDropdownSetting(loc, spacing, sizes),
-                  if (!kIsWeb) _buildForceDefaultColorSwitch(loc, spacing),
-                  _buildStartingTabDropdownSetting(loc, spacing, sizes),
-                  if (!kIsWeb) _buildAutoPlaySwitch(loc, spacing),
+                    SettingDropdownTile<String>(
+                      title: loc.language,
+                      initialSelection: _selectedLanguage,
+                      onSelected: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedLanguage = newValue;
+                          });
+                          languageNotifier.value = newValue;
+                          _saveSetting('language', newValue);
+                        }
+                      },
+                      dropdownMenuEntries: [
+                        DropdownMenuEntry<String>(
+                          value: 'system',
+                          label: loc.system,
+                        ),
+                        ...AppLocalizations.supportedLocales.map((locale) {
+                          return DropdownMenuEntry<String>(
+                            value: locale.languageCode,
+                            label: lookupAppLocalizations(locale).languageName,
+                          );
+                        }),
+                      ],
+                    ),
                   if (!kIsWeb)
-                    _buildMusicAppDropdownSetting(loc, spacing, sizes),
+                    SettingSwitchTile(
+                      title: loc.settingsForceDefaultColor,
+                      value: _forceDefaultColor,
+                      onChanged: (bool newValue) {
+                        setState(() {
+                          _forceDefaultColor = newValue;
+                        });
+                        dynamicColorNotifier.value = !newValue;
+                        _saveSetting('forceDefaultColor', newValue);
+                      },
+                    ),
+                  SettingDropdownTile<int>(
+                    title: loc.settingsDefaultStartScreen,
+                    initialSelection: _selectedTab,
+                    onSelected: (int? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _selectedTab = newValue;
+                        });
+                        _saveSetting('startingTab', newValue);
+                      }
+                    },
+                    dropdownMenuEntries: const [0, 1, 2].map((int index) {
+                      return DropdownMenuEntry<int>(
+                        value: index,
+                        label: index.getLocalizedName(loc),
+                      );
+                    }).toList(),
+                  ),
+                  if (!kIsWeb)
+                    SettingSwitchTile(
+                      title: loc.settingsAutoplayOnStartup,
+                      value: _autoPlay,
+                      onChanged: (bool newValue) {
+                        setState(() {
+                          _autoPlay = newValue;
+                        });
+                        _saveSetting('autoPlay', newValue);
+                      },
+                    ),
+                  if (!kIsWeb)
+                    SettingDropdownTile<String>(
+                      title: loc.settingsPreferredMusicApp,
+                      initialSelection: _getSafeMusicAppValue(loc),
+                      onSelected: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedMusicApp = newValue;
+                          });
+                          _saveSetting('favoriteMusicApp', newValue);
+                        }
+                      },
+                      dropdownMenuEntries: _getMusicAppEntries(loc),
+                    ),
                   const Divider(),
-                  _buildAboutSection(loc, spacing),
+                  ListTile(
+                    contentPadding: EdgeInsets.symmetric(horizontal: spacing.medium),
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(loc.settingsAboutTitle, style: theme.textTheme.titleLarge),
+                        Text(loc.settingsAboutDescription1),
+                        SizedBox(height: spacing.small),
+                        Text(loc.settingsAboutDescription2),
+                        SizedBox(height: spacing.medium),
+                        Text(loc.settingsCreatedBy, style: theme.textTheme.bodyLarge),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -158,169 +286,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
-  Widget _buildDropdownSetting<T>({
-    required String title,
-    required T initialSelection,
-    required ValueChanged<T?> onSelected,
-    required List<DropdownMenuEntry<T>> dropdownMenuEntries,
-    required Spacing spacing,
-    required Sizes sizes,
-  }) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: spacing.small),
-      child: ListTile(
-        contentPadding: EdgeInsets.symmetric(horizontal: spacing.medium),
-        title: Text(title),
-        trailing: DropdownMenu<T>(
-          width: sizes.extraLargeIncreased,
-          requestFocusOnTap: false,
-          initialSelection: initialSelection,
-          onSelected: onSelected,
-          dropdownMenuEntries: dropdownMenuEntries,
-        ),
-      ),
-    );
+  String _getSafeMusicAppValue(AppLocalizations loc) {
+    final entries = _getMusicAppEntries(loc);
+    return entries.any((entry) => entry.value == _selectedMusicApp)
+        ? _selectedMusicApp
+        : 'always_ask';
   }
 
-  Widget _buildSwitchSetting({
-    required String title,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-    required Spacing spacing,
-  }) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: spacing.small),
-      child: SwitchListTile(
-        contentPadding: EdgeInsets.symmetric(horizontal: spacing.medium),
-        title: Text(title),
-        value: value,
-        onChanged: onChanged,
-      ),
-    );
-  }
-
-  Widget _buildForceDefaultColorSwitch(AppLocalizations loc, Spacing spacing) {
-    return _buildSwitchSetting(
-      title: loc.settingsForceDefaultColor,
-      value: _forceDefaultColor,
-      spacing: spacing,
-      onChanged: (bool newValue) {
-        setState(() {
-          _forceDefaultColor = newValue;
-        });
-        dynamicColorNotifier.value = !newValue;
-        _saveSetting('forceDefaultColor', newValue);
-      },
-    );
-  }
-
-  Widget _buildAutoPlaySwitch(AppLocalizations loc, Spacing spacing) {
-    return _buildSwitchSetting(
-      title: loc.settingsAutoplayOnStartup,
-      value: _autoPlay,
-      spacing: spacing,
-      onChanged: (bool newValue) {
-        setState(() {
-          _autoPlay = newValue;
-        });
-        _saveSetting('autoPlay', newValue);
-      },
-    );
-  }
-
-  Widget _buildThemeDropdownSetting(
-    AppLocalizations loc,
-    Spacing spacing,
-    Sizes sizes,
-  ) {
-    return _buildDropdownSetting<ThemeMode>(
-      title: loc.settingsAppTheme,
-      initialSelection: _selectedTheme,
-      spacing: spacing,
-      sizes: sizes,
-      onSelected: (ThemeMode? newValue) {
-        if (newValue != null) {
-          setState(() {
-            _selectedTheme = newValue;
-          });
-          widget.themeNotifier.value = newValue;
-          _saveSetting('theme', newValue.name);
-        }
-      },
-      dropdownMenuEntries: ThemeMode.values.map((ThemeMode mode) {
-        return DropdownMenuEntry<ThemeMode>(
-          value: mode,
-          label: mode.getLocalizedName(loc),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildStartingTabDropdownSetting(
-    AppLocalizations loc,
-    Spacing spacing,
-    Sizes sizes,
-  ) {
-    const tabIndices = [0, 1, 2];
-    return _buildDropdownSetting<int>(
-      title: loc.settingsDefaultStartScreen,
-      initialSelection: _selectedTab,
-      spacing: spacing,
-      sizes: sizes,
-      onSelected: (int? newValue) {
-        if (newValue != null) {
-          setState(() {
-            _selectedTab = newValue;
-          });
-          _saveSetting('startingTab', newValue);
-        }
-      },
-      dropdownMenuEntries: tabIndices.map((int index) {
-        return DropdownMenuEntry<int>(
-          value: index,
-          label: index.getLocalizedName(loc),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildQualityDropdownSetting(
-    AppLocalizations loc,
-    Spacing spacing,
-    Sizes sizes,
-  ) {
-    final qualityOptions = [
-      {'key': 'mp3', 'label': loc.settingsStreamingQualityHigh},
-      {'key': 'aac', 'label': loc.settingsStreamingQualityHighest},
-    ];
-    return _buildDropdownSetting<String>(
-      title: loc.settingsDefaultStreamingQuality,
-      initialSelection: _selectedQuality,
-      spacing: spacing,
-      sizes: sizes,
-      onSelected: (String? newValue) {
-        if (newValue != null) {
-          setState(() {
-            _selectedQuality = newValue;
-          });
-          _saveSetting('streamQuality', newValue);
-        }
-      },
-      dropdownMenuEntries: qualityOptions.map((opt) {
-        return DropdownMenuEntry<String>(
-          value: opt['key']!,
-          label: opt['label']!,
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildMusicAppDropdownSetting(
-    AppLocalizations loc,
-    Spacing spacing,
-    Sizes sizes,
-  ) {
+  List<DropdownMenuEntry<String>> _getMusicAppEntries(AppLocalizations loc) {
     String getAppLabel(String id, String defaultName) => switch (id) {
       'youtube' => loc.settingsMusicAppYoutube,
       'ytmusic' => loc.settingsMusicAppYtMusic,
@@ -350,83 +323,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
       {'key': 'internet_search', 'label': loc.playerSearchInternet},
     ];
 
-    final String safeMusicAppValue =
-        musicAppOptions.any((opt) => opt['key'] == _selectedMusicApp)
-        ? _selectedMusicApp
-        : 'always_ask';
+    return musicAppOptions.map((opt) {
+      return DropdownMenuEntry<String>(
+        value: opt['key']!,
+        label: opt['label']!,
+      );
+    }).toList();
+  }
+}
 
-    return _buildDropdownSetting<String>(
-      title: loc.settingsPreferredMusicApp,
-      initialSelection: safeMusicAppValue,
-      spacing: spacing,
-      sizes: sizes,
-      onSelected: (String? newValue) {
-        if (newValue != null) {
-          setState(() {
-            _selectedMusicApp = newValue;
-          });
-          _saveSetting('favoriteMusicApp', newValue);
-        }
-      },
-      dropdownMenuEntries: musicAppOptions.map((opt) {
-        return DropdownMenuEntry<String>(
-          value: opt['key']!,
-          label: opt['label']!,
-        );
-      }).toList(),
+/// Reusable dropdown setting row component.
+class SettingDropdownTile<T> extends StatelessWidget {
+  final String title;
+  final T initialSelection;
+  final ValueChanged<T?> onSelected;
+  final List<DropdownMenuEntry<T>> dropdownMenuEntries;
+
+  const SettingDropdownTile({
+    super.key,
+    required this.title,
+    required this.initialSelection,
+    required this.onSelected,
+    required this.dropdownMenuEntries,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final sizes = theme.extension<Sizes>()!;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: spacing.small),
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: spacing.medium),
+        title: Text(title),
+        trailing: DropdownMenu<T>(
+          width: sizes.extraLargeIncreased,
+          requestFocusOnTap: false,
+          initialSelection: initialSelection,
+          onSelected: onSelected,
+          dropdownMenuEntries: dropdownMenuEntries,
+        ),
+      ),
     );
   }
+}
 
-  Widget _buildLanguageDropdownSetting(
-    AppLocalizations loc,
-    Spacing spacing,
-    Sizes sizes,
-  ) {
-    final languageOptions = [
-      {'key': 'system', 'label': loc.system},
-      ...AppLocalizations.supportedLocales.map((locale) {
-        final code = locale.languageCode;
-        final label = lookupAppLocalizations(locale).languageName;
-        return {'key': code, 'label': label};
-      }),
-    ];
-    return _buildDropdownSetting<String>(
-      title: loc.language,
-      initialSelection: _selectedLanguage,
-      spacing: spacing,
-      sizes: sizes,
-      onSelected: (String? newValue) {
-        if (newValue != null) {
-          setState(() {
-            _selectedLanguage = newValue;
-          });
-          languageNotifier.value = newValue;
-          _saveSetting('language', newValue);
-        }
-      },
-      dropdownMenuEntries: languageOptions.map((opt) {
-        return DropdownMenuEntry<String>(
-          value: opt['key']!,
-          label: opt['label']!,
-        );
-      }).toList(),
-    );
-  }
+/// Reusable switch setting row component.
+class SettingSwitchTile extends StatelessWidget {
+  final String title;
+  final bool value;
+  final ValueChanged<bool> onChanged;
 
-  Widget _buildAboutSection(AppLocalizations loc, Spacing spacing) {
-    final textTheme = Theme.of(context).textTheme;
-    return ListTile(
-      contentPadding: EdgeInsets.symmetric(horizontal: spacing.medium),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(loc.settingsAboutTitle, style: textTheme.titleLarge),
-          Text(loc.settingsAboutDescription1),
-          SizedBox(height: spacing.small),
-          Text(loc.settingsAboutDescription2),
-          SizedBox(height: spacing.medium),
-          Text(loc.settingsCreatedBy, style: textTheme.bodyLarge),
-        ],
+  const SettingSwitchTile({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = Theme.of(context).extension<Spacing>()!;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: spacing.small),
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: spacing.medium),
+        title: Text(title),
+        value: value,
+        onChanged: onChanged,
       ),
     );
   }

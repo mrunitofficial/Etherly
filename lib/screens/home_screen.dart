@@ -1,18 +1,23 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
+import 'package:http/http.dart' as http;
+import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:etherly/localization/app_localizations.dart';
+
 import 'package:etherly/models/country.dart';
 import 'package:etherly/models/station.dart';
+
 import 'package:etherly/services/audio_player_service.dart';
-import 'package:etherly/widgets/screen_header.dart';
-import 'package:etherly/widgets/category_row.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter/rendering.dart';
-import 'package:provider/provider.dart';
-import 'package:etherly/localization/app_localizations.dart';
 import 'package:etherly/services/theme_data.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:etherly/widgets/category_row.dart';
+import 'package:etherly/widgets/screen_header.dart';
 
 const int _minTotalCategories = 8;
 
@@ -41,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen>
   List<Station> _stations = [];
   List<Station> _favoriteStations = [];
   List<Station> _recentStations = [];
+  List<Station> _mostListenedStations = [];
   List<Station> _regionalStations = [];
   List<String> _topRegionalNames = [];
   bool _loadingRegional = false;
@@ -68,16 +74,22 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _onAudioPlayerServiceChanged() {
     if (!mounted) return;
-    
-    final serviceFavorites = _audioPlayerService.favoriteStations;
-    final favoritesChanged = serviceFavorites.length != _favoriteStations.length ||
-        !listEquals(
-          serviceFavorites.map((s) => s.id).toList(),
-          _favoriteStations.map((s) => s.id).toList(),
-        );
 
-    if (favoritesChanged) {
+    if (!widget.isActive) {
       _updateData();
+    } else {
+      final serviceFavorites = _audioPlayerService.favoriteStations;
+      final favoritesChanged = serviceFavorites.length != _favoriteStations.length ||
+          !listEquals(
+            serviceFavorites.map((s) => s.id).toList(),
+            _favoriteStations.map((s) => s.id).toList(),
+          );
+
+      if (favoritesChanged) {
+        setState(() {
+          _favoriteStations = List.from(serviceFavorites);
+        });
+      }
     }
   }
 
@@ -102,7 +114,9 @@ class _HomeScreenState extends State<HomeScreen>
         });
         _updateRegionalStations();
       }
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) print('Error loading cached regional stations: $e');
+    }
   }
 
   void _updateData() {
@@ -112,6 +126,7 @@ class _HomeScreenState extends State<HomeScreen>
       _stations = List.from(audioService.stations);
       _favoriteStations = List.from(audioService.favoriteStations);
       _recentStations = List.from(audioService.recentStations);
+      _mostListenedStations = List.from(audioService.mostListenedStations);
     });
     _updateRegionalStations();
   }
@@ -175,7 +190,9 @@ class _HomeScreenState extends State<HomeScreen>
         try {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setStringList('cached_top_regional_names', names);
-        } catch (_) {}
+        } catch (e) {
+          if (kDebugMode) print('Error caching regional station names: $e');
+        }
 
         if (mounted) {
           setState(() {
@@ -198,8 +215,9 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void didUpdateWidget(HomeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isActive && !oldWidget.isActive) {
+    if (!widget.isActive && oldWidget.isActive) {
       _updateData();
+    } else if (widget.isActive && !oldWidget.isActive) {
       _fetchRegionalStations();
     }
   }
@@ -231,6 +249,7 @@ class _HomeScreenState extends State<HomeScreen>
       _stations,
       _favoriteStations,
       _recentStations,
+      _mostListenedStations,
     );
 
     return CustomScrollView(
@@ -293,6 +312,7 @@ class _HomeScreenState extends State<HomeScreen>
     List<Station> allStations,
     List<Station> favoriteStations,
     List<Station> recentStations,
+    List<Station> mostListenedStations,
   ) {
     final loc = AppLocalizations.of(context);
     final List<({String title, List<Station> stations})> sections = [];
@@ -306,7 +326,15 @@ class _HomeScreenState extends State<HomeScreen>
       ));
     }
 
-    // 2. Recents
+    // 2. Most Listened
+    if (mostListenedStations.isNotEmpty) {
+      sections.add((
+        title: loc?.homeMostListenedTitle ?? 'Most listened by you',
+        stations: mostListenedStations,
+      ));
+    }
+
+    // 3. Recents
     if (recentStations.isNotEmpty) {
       sections.add((
         title: loc?.homeRecentsTitle ?? 'Recents',

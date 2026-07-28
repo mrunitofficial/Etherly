@@ -1,11 +1,13 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+
 import 'package:etherly/models/station.dart';
 import 'package:etherly/services/audio_player_service.dart';
 
-// Service for managing Android home screen pinned station shortcuts.
+/// Service for managing Android home screen pinned station shortcuts.
 class ShortcutService {
   ShortcutService._();
 

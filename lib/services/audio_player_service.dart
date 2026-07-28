@@ -1,60 +1,118 @@
 import 'dart:async';
-import 'package:http/http.dart' as http;
+
+import 'package:audio_service/audio_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
-import 'package:audio_service/audio_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:etherly/models/cast_device.dart';
 import 'package:etherly/models/station.dart';
-import 'package:etherly/services/chrome_cast_service.dart';
-import 'package:etherly/services/history_service.dart';
 import 'package:etherly/services/app_audio_handler.dart';
+import 'package:etherly/services/chrome_cast_service.dart';
+import 'package:etherly/services/listening_stats_service.dart';
 
 /// Service that manages the [AudioPlayer] instance, station list, and playback logic.
 class AudioPlayerService with ChangeNotifier {
-  final AudioPlayer player = AudioPlayer();
-  late final AppAudioHandler _audioHandler;
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
-  _stationsSubscription;
-
-  /// Pre-emptive loading transition lock
-  bool _isTransitioning = false;
-
-  /// The intended play state forced by the user/UI to prevent transition flickering
-  bool _isPlayIntended = false;
-
-  /// The ID of the station currently being connected to
-  String? _connectingStationId;
-
-  /// Current ICY stream metadata song title
-  String? currentSongTitle;
-
-  final ChromeCastService? _castService;
-  late final SharedPreferences _prefs;
-
-  final ValueNotifier<bool> isReady = ValueNotifier(false);
-  final Completer<void> _initializationCompleter = Completer<void>();
-  Future<void> get initializationFuture => _initializationCompleter.future;
-
-  final ValueNotifier<bool> _radioPlayerShouldClose = ValueNotifier(false);
-  ValueNotifier<bool> get radioPlayerShouldClose => _radioPlayerShouldClose;
-
-  /// Keys for SharedPreferences.
   static const String _lastStationIdKey = 'last_station_id';
   static const String _favoriteStationIdsKey = 'favorite_station_ids';
-  static const String _recentStationIdsKey = 'recent_station_ids';
   static const String _volumeKey = 'volume';
   static const String _isMutedKey = 'is_muted';
   static const String _preMuteVolumeKey = 'pre_mute_volume';
-  static const int _maxRecentStations = 10;
   static const int _autoPlayCountdownStart = 3;
 
-  /// List of all available stations and their metadata.
+  /// The underlying [AudioPlayer] instance.
+  final AudioPlayer player = AudioPlayer();
+
+  /// ValueNotifier indicating whether the service is fully initialized.
+  final ValueNotifier<bool> isReady = ValueNotifier(false);
+
+  /// Autoplay countdown ValueNotifier.
+  final ValueNotifier<int> autoplayCountdownNotifier = ValueNotifier(0);
+
+  /// Sleep timer active status ValueNotifier.
+  final ValueNotifier<bool> sleepTimerActive = ValueNotifier(false);
+
+  /// Current ICY stream metadata song title.
+  String? currentSongTitle;
+
+  /// Available stations.
   List<Station> stations = [];
+
+  late final AppAudioHandler _audioHandler;
+  final ChromeCastService? _castService;
+  late final SharedPreferences _prefs;
+
+  bool _isTransitioning = false;
+  bool _isPlayIntended = false;
+  String? _connectingStationId;
+
+  final Completer<void> _initializationCompleter = Completer<void>();
+  final ValueNotifier<bool> _radioPlayerShouldClose = ValueNotifier(false);
+
   Map<String, Station> _stationMap = {};
   List<String> _favoriteStationIds = [];
-  List<String> _recentStationIds = [];
-  List<Station> get recentStations => _recentStationIds
+
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+  _stationsSubscription;
+  Timer? _listeningMinuteTimer;
+  Timer? _autoplayTimer;
+  bool _autoplayCancelled = false;
+  Timer? _sleepTimer;
+  Timer? _bufferingTimeoutTimer;
+  Timer? _castTransitionTimer;
+  MediaItem? _currentMediaItem;
+  bool _isMuted = false;
+  double _preMuteVolume = 1.0;
+
+  /// Creates the service and attaches listeners to optional cast service.
+  AudioPlayerService([this._castService]) {
+    _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
+    _castService?.addListener(_onCastingStateChanged);
+    _castService?.remoteVolume.addListener(notifyListeners);
+    _init();
+  }
+
+  @override
+  void dispose() {
+    _castService?.isRemotePlaying.removeListener(_onCastRemotePlayingChanged);
+    _castService?.removeListener(_onCastingStateChanged);
+    _castService?.remoteVolume.removeListener(notifyListeners);
+
+    _stationsSubscription?.cancel();
+    _audioHandler.customAction('dispose');
+    _autoplayTimer?.cancel();
+    _sleepTimer?.cancel();
+    _bufferingTimeoutTimer?.cancel();
+    _castTransitionTimer?.cancel();
+    _listeningMinuteTimer?.cancel();
+
+    try {
+      _castService?.endCasting();
+    } catch (e) {
+      if (kDebugMode) print('Error ending cast during dispose: $e');
+    }
+    sleepTimerActive.dispose();
+    autoplayCountdownNotifier.dispose();
+    super.dispose();
+  }
+
+  /// Future completed once initialization finishes.
+  Future<void> get initializationFuture => _initializationCompleter.future;
+
+  /// Notifier to signal when player widget should close.
+  ValueNotifier<bool> get radioPlayerShouldClose => _radioPlayerShouldClose;
+
+  /// List of recently played stations.
+  List<Station> get recentStations => ListeningStatsService().recentStationIds
+      .map((id) => _stationMap[id])
+      .whereType<Station>()
+      .toList();
+
+  /// List of most listened stations in the last 500 minutes.
+  List<Station> get mostListenedStations => ListeningStatsService()
+      .getMostListenedStationIds()
       .map((id) => _stationMap[id])
       .whereType<Station>()
       .toList();
@@ -65,205 +123,62 @@ class AudioPlayerService with ChangeNotifier {
       .whereType<Station>()
       .toList();
 
-  /// Autoplay countdown timer.
-  Timer? _autoplayTimer;
-  bool _autoplayCancelled = false;
-  final ValueNotifier<int> autoplayCountdownNotifier = ValueNotifier(0);
-
-  /// Sleep timer.
-  Timer? _sleepTimer;
-  final ValueNotifier<bool> sleepTimerActive = ValueNotifier(false);
+  /// Whether a sleep timer is currently active.
   bool get isSleepTimerSet => _sleepTimer != null;
 
-  /// Timer to track network buffering timeout and trigger live-edge reconnection.
-  Timer? _bufferingTimeoutTimer;
-
-  /// Current media item.
-  MediaItem? _currentMediaItem;
+  /// Currently active [MediaItem].
   MediaItem? get mediaItem => _currentMediaItem;
 
   /// Currently playing station object.
   Station? get currentStation => _stationMap[_currentMediaItem?.id];
 
-  /// Mute state for web.
-  bool _isMuted = false;
-  double _preMuteVolume = 1.0;
+  /// Mute state for web/player.
   bool get isMuted => _isMuted;
 
-  /// Preferences.
+  /// SharedPreferences instance getter.
   SharedPreferences get prefs => _prefs;
 
-  /// Cast loading status.
-  bool get isCastLoading => _castService?.isRemoteLoading.value ?? false;
+  /// Whether a Cast session is currently connected.
   bool get isCasting => _castService?.isConnected ?? false;
 
-  /// Unified play state for UI
-  bool get isPlaying {
-    if (_castService != null && _castService.isConnected) {
-      return _castService.isRemotePlaying.value;
-    }
-    return _isPlayIntended;
-  }
+  /// Unified play state for UI.
+  bool get isPlaying => _isPlayIntended;
 
-  /// Unified loading and buffering state for UI
+  /// Unified loading and buffering state for UI.
   bool get isLoading {
-    if (_castService != null && _castService.isConnected) {
-      return _castService.isRemoteLoading.value;
+    if (isCasting) {
+      if (_isTransitioning) return true;
+      if (_isPlayIntended && !(_castService?.isRemotePlaying.value ?? false)) {
+        return true;
+      }
+      return false;
     }
+
+    if (_isTransitioning) return true;
     final isBuffering =
         player.processingState == ProcessingState.loading ||
         (player.processingState == ProcessingState.buffering && !kIsWeb);
-    return _isTransitioning || isBuffering;
+    return isBuffering;
   }
 
-  /// Volume level of the player.
-  double get volume => player.volume;
+  /// Volume level of the player or active cast session.
+  double get volume => isCasting
+      ? (_castService?.remoteVolume.value ?? player.volume)
+      : player.volume;
 
   /// Stream of player volume changes.
   Stream<double> get volumeStream => player.volumeStream;
 
-  /// Creates the service and attaches listeners to the optional cast service.
-  AudioPlayerService([this._castService]) {
-    _castService?.isRemotePlaying.addListener(notifyListeners);
-    _castService?.isRemoteLoading.addListener(notifyListeners);
-    _castService?.isCastingActive.addListener(_onCastingStateChanged);
-    _init();
-  }
-
-  /// Handles switching notification visibility when casting status changes.
-  void _onCastingStateChanged() {
-    if (_castService?.isCastingActive.value ?? false) {
-      _audioHandler.hideNotification();
-    } else {
-      _audioHandler.showNotification();
-    }
-    notifyListeners();
-  }
-
-  /// Initializes the audio service, listeners, and loads user data.
-  Future<void> _init() async {
-    _prefs = await SharedPreferences.getInstance();
-
-    _audioHandler = await initAudioService(
-      player: player,
-      channelName: 'Etherly Radio',
-      onSkipToNext: skipToNext,
-      onSkipToPrevious: skipToPrevious,
-    );
-
-    // Sync unified just_audio player state to our listeners
-    player.playerStateStream.listen((state) {
-      final processingState = state.processingState;
-
-      // Sync play intent with native player once we are no longer connecting
-      if (!_isTransitioning) {
-        _isPlayIntended = state.playing;
-      }
-
-      // Only clear the connecting spinner once the player is fully ready for the intended station
-      final currentTag = player.sequenceState.currentSource?.tag as MediaItem?;
-      if (processingState == ProcessingState.ready &&
-          currentTag?.id == _connectingStationId) {
-        if (_isTransitioning) {
-          _isTransitioning = false;
-          _syncSecondaryText();
-        }
-      }
-
-      if (processingState == ProcessingState.idle ||
-          processingState == ProcessingState.completed) {
-        if (state.playing && !_isTransitioning) {
-          stop();
-        }
-      }
-
-      // Reconnect if stuck buffering on a live stream for too long
-      if (state.playing &&
-          processingState == ProcessingState.buffering &&
-          !kIsWeb) {
-        _bufferingTimeoutTimer ??= Timer(const Duration(seconds: 10), () {
-          if (kDebugMode) {
-            print('Buffering timeout reached. Reconnecting to live edge...');
-          }
-          _bufferingTimeoutTimer = null;
-          playMediaItem(null);
-        });
-      } else {
-        _bufferingTimeoutTimer?.cancel();
-        _bufferingTimeoutTimer = null;
-      }
-
-      notifyListeners();
-    });
-
-    player.playbackEventStream.listen(
-      (event) {},
-      onError: (Object e, StackTrace st) {
-        if (kDebugMode) print('Playback event error: $e');
-        stop();
-      },
-    );
-
-    // Sync ICY Metadata from just_audio natively
-    player.icyMetadataStream.map((m) => m?.info?.title?.trim()).distinct().listen((
-      title,
-    ) {
-      if (title != null && title.isNotEmpty) {
-        final currentTag =
-            player.sequenceState.currentSource?.tag as MediaItem?;
-
-        // Only update current song UI if it matches the current user selection
-        if (currentTag?.id == _currentMediaItem?.id) {
-          currentSongTitle = title;
-          _isTransitioning = false;
-          _syncSecondaryText();
-          notifyListeners();
-        }
-
-        // Record song history under the actual native source that emitted the metadata
-        if (currentTag != null) {
-          final parts = title.split(' - ');
-          final artistName = parts.length > 1 ? parts[0].trim() : '';
-          final songName = parts.length > 1
-              ? parts.sublist(1).join(' - ').trim()
-              : title;
-
-          HistoryService().addSong(
-            title: songName,
-            artist: artistName,
-            stationId: currentTag.id,
-            stationName: currentTag.title,
-            stationArtUrl: currentTag.safeArt512Url,
-          );
-        }
-      }
-    });
-
-    _preMuteVolume = _prefs.getDouble(_preMuteVolumeKey) ?? 1.0;
-    _isMuted = _prefs.getBool(_isMutedKey) ?? false;
-    final savedVolume = _prefs.getDouble(_volumeKey) ?? 1.0;
-
-    if (_isMuted) {
-      player.setVolume(0.0);
-    } else {
-      player.setVolume(savedVolume);
-    }
-
-    await _loadStations();
-    await _checkAutoplay();
-    isReady.value = true;
-    if (!_initializationCompleter.isCompleted) {
-      _initializationCompleter.complete();
-    }
-  }
-
-  /// Updates the player volume.
+  /// Updates the player or remote cast volume.
   void setVolume(double value) {
     final clamped = value.clamp(0.0, 1.0);
-    player.setVolume(clamped);
+    if (isCasting) {
+      _castService?.setRemoteVolume(clamped);
+    } else {
+      player.setVolume(clamped);
+    }
     _prefs.setDouble(_volumeKey, clamped);
 
-    // If manually setting volume > 0, unmute
     if (clamped > 0 && _isMuted) {
       _isMuted = false;
       _prefs.setBool(_isMutedKey, false);
@@ -285,34 +200,15 @@ class AudioPlayerService with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Disposes of all timers and listeners.
-  @override
-  void dispose() {
-    _castService?.isRemotePlaying.removeListener(notifyListeners);
-    _castService?.isRemoteLoading.removeListener(notifyListeners);
-    _castService?.isCastingActive.removeListener(_onCastingStateChanged);
-    _stationsSubscription?.cancel();
-    _audioHandler.customAction('dispose');
-    _autoplayTimer?.cancel();
-    _sleepTimer?.cancel();
-    _bufferingTimeoutTimer?.cancel();
-
-    try {
-      _castService?.endCasting();
-    } catch (_) {}
-    sleepTimerActive.dispose();
-    autoplayCountdownNotifier.dispose();
-    super.dispose();
-  }
-
-  /// Returns the secondary text:
-  /// - If loading and localized [loadingText] is supplied (for in-app UI), returns [loadingText].
-  /// - If ICY track title is available, returns [currentSongTitle].
-  /// - Otherwise (for notifications/head units or fallback), returns station slogan.
+  /// Returns the secondary text for display in UI or notifications.
   String getSecondaryText({String? loadingText}) {
-    if (isLoading && loadingText != null && loadingText.isNotEmpty) {
+    if (!isCasting &&
+        isLoading &&
+        loadingText != null &&
+        loadingText.isNotEmpty) {
       return loadingText;
     }
+
     if (currentSongTitle != null && currentSongTitle!.trim().isNotEmpty) {
       return currentSongTitle!.trim();
     }
@@ -320,20 +216,8 @@ class AudioPlayerService with ChangeNotifier {
     return station?.slogan.isNotEmpty == true ? station!.slogan : '';
   }
 
-  /// Syncs the current secondary text state to OS media notification & head units
-  void _syncSecondaryText() {
-    final text = getSecondaryText();
-    if (text.isNotEmpty && _currentMediaItem != null) {
-      _currentMediaItem = _currentMediaItem!.copyWith(artist: text);
-      _audioHandler.patchMediaItemMetadata(
-        stationId: _currentMediaItem!.id,
-        artist: text,
-      );
-    }
-  }
-
-  /// Switches to a specific station. If null, re-initializes the current live stream.
-  Future<void> playMediaItem(Station? station) async {
+  /// Switches to a specific station or connects to a Cast device.
+  Future<void> playMediaItem(Station? station, {CastDevice? castDevice}) async {
     cancelAutoplayCountdown();
     final resolved =
         station ??
@@ -344,12 +228,31 @@ class AudioPlayerService with ChangeNotifier {
     final item = resolved.toMediaItem();
     _setMediaItem(item);
 
-    if (_castService != null && _castService.isConnected) {
-      currentSongTitle = null;
-      _isTransitioning = false;
-      await _audioHandler.stop();
-      await _castService.castAudio(mediaItem: item);
-      notifyListeners();
+    if (castDevice != null || isCasting) {
+      try {
+        _connectingStationId = 'cast_${castDevice?.id ?? item.id}';
+        currentSongTitle = null;
+        _isTransitioning = true;
+        _isPlayIntended = true;
+        notifyListeners();
+        _startCastTransitionTimeout();
+
+        await _audioHandler.stop();
+        _audioHandler.updateRemotePlaybackState(
+          playing: _castService?.isRemotePlaying.value ?? false,
+          isBuffering: true,
+        );
+        if (castDevice != null && _castService != null) {
+          await _castService.connectAndWait(castDevice);
+        }
+        await _castService?.castAudio(item);
+      } catch (e) {
+        if (kDebugMode) print('Error casting media item: $e');
+        _isTransitioning = false;
+        _isPlayIntended = false;
+        _connectingStationId = null;
+        notifyListeners();
+      }
       return;
     }
 
@@ -358,6 +261,7 @@ class AudioPlayerService with ChangeNotifier {
     _isPlayIntended = true;
     _connectingStationId = item.id;
     notifyListeners();
+
     try {
       if (_currentMediaItem?.id != item.id) return;
       await _audioHandler.playMediaItem(item);
@@ -373,55 +277,36 @@ class AudioPlayerService with ChangeNotifier {
     }
   }
 
-  /// Updates current metadata and saves history.
-  void _setMediaItem(MediaItem item) {
-    _currentMediaItem = item;
-    _audioHandler.updateMediaItem(item);
-    _saveLastStation(item.id);
-    _addRecentStation(item.id);
-    notifyListeners();
-  }
-
   /// Starts playback. Forces a reset to the live edge.
   Future<void> play() async {
     cancelAutoplayCountdown();
-    if (_castService != null && _castService.isConnected) {
-      if (_currentMediaItem != null) {
-        await _audioHandler.stop();
-        await _castService.castAudio(mediaItem: _currentMediaItem!);
-      } else {
-        await _castService.play();
-      }
-      notifyListeners();
-      return;
-    }
     await playMediaItem(null);
   }
 
   /// Pauses playback.
   Future<void> pause() async {
     cancelAutoplayCountdown();
+    _castTransitionTimer?.cancel();
     _isTransitioning = false;
     _isPlayIntended = false;
     notifyListeners();
-    if (_castService != null && _castService.isConnected) {
-      await _audioHandler.pause();
-      await _castService.pause();
+    if (isCasting) {
+      await _castService?.pause();
       return;
     }
     await _audioHandler.pause();
   }
 
-  /// Stops playback.
+  /// Stops playback or ends active Cast session.
   Future<void> stop() async {
     cancelAutoplayCountdown();
     cancelSleepTimer();
+    _castTransitionTimer?.cancel();
     _isTransitioning = false;
     _isPlayIntended = false;
     notifyListeners();
-    if (_castService != null && _castService.isConnected) {
-      await _audioHandler.stop();
-      await _castService.pause();
+    if (isCasting) {
+      await _castService?.endCasting();
       return;
     }
     await _audioHandler.stop();
@@ -467,7 +352,7 @@ class AudioPlayerService with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Reorders the favorite stations and persists the new order.
+  /// Reorders favorite stations and persists the new order.
   Future<void> reorderFavorites(int oldIndex, int newIndex) async {
     if (oldIndex < 0 || oldIndex >= _favoriteStationIds.length) return;
     if (newIndex < 0 || newIndex >= _favoriteStationIds.length) return;
@@ -499,7 +384,7 @@ class AudioPlayerService with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Cancels the autoplay countdown timer.
+  /// Cancels autoplay countdown timer.
   void cancelAutoplayCountdown() {
     _autoplayTimer?.cancel();
     _autoplayTimer = null;
@@ -507,7 +392,186 @@ class AudioPlayerService with ChangeNotifier {
     autoplayCountdownNotifier.value = 0;
   }
 
-  /// Loads the station list from local cache first for instant startup, then syncs the remote bundle.
+  void _onCastRemotePlayingChanged() {
+    if (isCasting) {
+      final isPlaying = _castService?.isRemotePlaying.value ?? false;
+      if (isPlaying) {
+        _isTransitioning = false;
+        _isPlayIntended = true;
+        _castTransitionTimer?.cancel();
+        _castTransitionTimer = null;
+      }
+      _audioHandler.updateRemotePlaybackState(
+        playing: isPlaying,
+        isBuffering: _isTransitioning,
+      );
+    }
+    notifyListeners();
+  }
+
+  void _startCastTransitionTimeout() {
+    _castTransitionTimer?.cancel();
+    _castTransitionTimer = Timer(const Duration(seconds: 7), () {
+      if (_isTransitioning && isCasting) {
+        _isTransitioning = false;
+        if (!(_castService?.isRemotePlaying.value ?? false)) {
+          _isPlayIntended = false;
+        }
+        notifyListeners();
+      }
+    });
+  }
+
+  void _onCastingStateChanged() {
+    _castTransitionTimer?.cancel();
+    if (isReady.value) {
+      if (isCasting) {
+        player.stop();
+        _audioHandler.updateRemotePlaybackState(
+          playing: _castService?.isRemotePlaying.value ?? false,
+          isBuffering: false,
+        );
+      } else {
+        _isTransitioning = false;
+        _isPlayIntended = false;
+      }
+    }
+    notifyListeners();
+  }
+
+  Future<void> _init() async {
+    _prefs = await SharedPreferences.getInstance();
+
+    _audioHandler = await initAudioService(
+      player: player,
+      channelName: 'Etherly Radio',
+      onSkipToNext: skipToNext,
+      onSkipToPrevious: skipToPrevious,
+    );
+
+    player.playerStateStream.listen((state) {
+      if (isCasting) return;
+      final processingState = state.processingState;
+
+      if (!_isTransitioning) {
+        _isPlayIntended = state.playing;
+      }
+
+      final currentTag = player.sequenceState.currentSource?.tag as MediaItem?;
+      if (processingState == ProcessingState.ready &&
+          currentTag?.id == _connectingStationId) {
+        if (_isTransitioning) {
+          _isTransitioning = false;
+          _syncSecondaryText();
+        }
+      }
+
+      if (processingState == ProcessingState.idle ||
+          processingState == ProcessingState.completed) {
+        if (state.playing && !_isTransitioning) {
+          stop();
+        }
+      }
+
+      if (state.playing &&
+          processingState == ProcessingState.buffering &&
+          !kIsWeb) {
+        _bufferingTimeoutTimer ??= Timer(const Duration(seconds: 10), () {
+          if (kDebugMode) {
+            print('Buffering timeout reached. Reconnecting to live edge...');
+          }
+          _bufferingTimeoutTimer = null;
+          playMediaItem(null);
+        });
+      } else {
+        _bufferingTimeoutTimer?.cancel();
+        _bufferingTimeoutTimer = null;
+      }
+
+      _updateListeningMinuteTimer();
+      notifyListeners();
+    });
+
+    player.playbackEventStream.listen(
+      (event) {},
+      onError: (Object e, StackTrace st) {
+        if (kDebugMode) print('Playback event error: $e');
+        stop();
+      },
+    );
+
+    player.icyMetadataStream
+        .map((m) => m?.info?.title?.trim())
+        .distinct()
+        .listen((title) {
+          if (isCasting) return;
+          if (title != null && title.isNotEmpty) {
+            final currentTag =
+                player.sequenceState.currentSource?.tag as MediaItem?;
+
+            if (currentTag?.id == _currentMediaItem?.id) {
+              currentSongTitle = title;
+              _isTransitioning = false;
+              _syncSecondaryText();
+              notifyListeners();
+            }
+
+            if (currentTag != null) {
+              final parts = title.split(' - ');
+              final artistName = parts.length > 1 ? parts[0].trim() : '';
+              final songName = parts.length > 1
+                  ? parts.sublist(1).join(' - ').trim()
+                  : title;
+
+              ListeningStatsService().addSong(
+                title: songName,
+                artist: artistName,
+                stationId: currentTag.id,
+                stationName: currentTag.title,
+                stationArtUrl: currentTag.safeArt512Url,
+              );
+            }
+          }
+        });
+
+    _preMuteVolume = _prefs.getDouble(_preMuteVolumeKey) ?? 1.0;
+    _isMuted = _prefs.getBool(_isMutedKey) ?? false;
+    final savedVolume = _prefs.getDouble(_volumeKey) ?? 1.0;
+
+    if (_isMuted) {
+      player.setVolume(0.0);
+    } else {
+      player.setVolume(savedVolume);
+    }
+
+    await _loadStations();
+    await _checkAutoplay();
+    isReady.value = true;
+    if (!_initializationCompleter.isCompleted) {
+      _initializationCompleter.complete();
+    }
+  }
+
+  void _syncSecondaryText() {
+    final text = getSecondaryText();
+    if (text.isNotEmpty && _currentMediaItem != null) {
+      _currentMediaItem = _currentMediaItem!.copyWith(artist: text);
+      _audioHandler.patchMediaItemMetadata(
+        stationId: _currentMediaItem!.id,
+        artist: text,
+      );
+    }
+  }
+
+  void _setMediaItem(MediaItem item) {
+    _currentMediaItem = item;
+    _audioHandler.updateMediaItem(item);
+    _saveLastStation(item.id);
+    ListeningStatsService().addRecentStation(item.id);
+    _updateListeningMinuteTimer();
+    notifyListeners();
+  }
+
   Future<void> _loadStations() async {
     await _readStationsFromCache();
 
@@ -516,8 +580,9 @@ class AudioPlayerService with ChangeNotifier {
       await fetchBundleFuture;
       await _readStationsFromCache();
     } else {
-      // Refresh cache in background if already populated
-      fetchBundleFuture.then((_) => _readStationsFromCache()).catchError((_) {});
+      fetchBundleFuture
+          .then((_) => _readStationsFromCache())
+          .catchError((_) {});
     }
   }
 
@@ -555,8 +620,9 @@ class AudioPlayerService with ChangeNotifier {
         return data['active'] == true || data['active'] == null;
       }).toList();
 
-      final loaded =
-          activeDocs.map((doc) => Station.fromFirestore(doc)).toList();
+      final loaded = activeDocs
+          .map((doc) => Station.fromFirestore(doc))
+          .toList();
       if (loaded.isEmpty) return;
 
       loaded.sort((a, b) {
@@ -569,7 +635,6 @@ class AudioPlayerService with ChangeNotifier {
       });
 
       _favoriteStationIds = _prefs.getStringList(_favoriteStationIdsKey) ?? [];
-      _recentStationIds = _prefs.getStringList(_recentStationIdsKey) ?? [];
 
       stations = loaded
           .map(
@@ -591,27 +656,32 @@ class AudioPlayerService with ChangeNotifier {
     } finally {
       try {
         await FirebaseFirestore.instance.disableNetwork();
-      } catch (_) {}
+      } catch (e) {
+        if (kDebugMode) print('Error disabling Firestore network: $e');
+      }
     }
   }
 
-  /// Adds a station to the recently played history.
-  Future<void> _addRecentStation(String stationId) async {
-    _recentStationIds.remove(stationId);
-    _recentStationIds.insert(0, stationId);
-    if (_recentStationIds.length > _maxRecentStations) {
-      _recentStationIds = _recentStationIds.sublist(0, _maxRecentStations);
+  void _updateListeningMinuteTimer() {
+    if (isPlaying && _currentMediaItem != null) {
+      _listeningMinuteTimer ??= Timer.periodic(const Duration(minutes: 1), (_) {
+        if (isPlaying && _currentMediaItem != null) {
+          ListeningStatsService().recordListeningMinute(_currentMediaItem!.id);
+        } else {
+          _listeningMinuteTimer?.cancel();
+          _listeningMinuteTimer = null;
+        }
+      });
+    } else {
+      _listeningMinuteTimer?.cancel();
+      _listeningMinuteTimer = null;
     }
-    await _prefs.setStringList(_recentStationIdsKey, _recentStationIds);
-    notifyListeners();
   }
 
-  /// Persists the ID of the last played station.
   Future<void> _saveLastStation(String id) async {
     await _prefs.setString(_lastStationIdKey, id);
   }
 
-  /// Restores metadata for the last played station.
   Future<void> _loadLastStation() async {
     final lastId = _prefs.getString(_lastStationIdKey);
     if (lastId != null && _stationMap.containsKey(lastId)) {
@@ -619,7 +689,6 @@ class AudioPlayerService with ChangeNotifier {
     }
   }
 
-  /// Manages the autoplay logic on app startup.
   Future<void> _checkAutoplay() async {
     final autoPlay = _prefs.getBool('autoPlay') ?? false;
     if (!autoPlay || (_castService?.isConnected ?? false)) return;
@@ -649,10 +718,10 @@ class AudioPlayerService with ChangeNotifier {
 /// Extension to convert [Station] model to [MediaItem] for audio service.
 extension StationToMediaItem on Station {
   MediaItem toMediaItem({String? artist}) {
-    // Pick first available stream if multiple exist, otherwise use the only one.
     final url = streams.values.isNotEmpty ? streams.values.first : '';
-    final initialArtist =
-        (artist != null && artist.isNotEmpty) ? artist : slogan;
+    final initialArtist = (artist != null && artist.isNotEmpty)
+        ? artist
+        : slogan;
     return MediaItem(
       id: id,
       title: name,
@@ -675,7 +744,6 @@ extension MediaItemArt on MediaItem? {
         artMap[k.toString()] = v.toString();
       });
     } else {
-      // Fallback/Legacy if art is not a map in extras
       final extras = this?.extras;
       if (extras != null) {
         if (extras['art128'] != null) {

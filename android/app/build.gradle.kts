@@ -77,3 +77,7 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_17)
     }
 }
+
+dependencies {
+    implementation("com.google.android.gms:play-services-cast-framework:22.0.0")
+}

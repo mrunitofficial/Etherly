@@ -1,13 +1,17 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:etherly/localization/app_localizations.dart';
-import 'package:etherly/services/chrome_cast_service.dart';
+
+import 'package:etherly/models/cast_device.dart';
+
 import 'package:etherly/services/audio_player_service.dart';
-import 'package:flutter_chrome_cast/flutter_chrome_cast.dart';
-import '../services/theme_data.dart';
+import 'package:etherly/services/chrome_cast_service.dart';
+import 'package:etherly/services/theme_data.dart';
 
 /// Dialog to show available Cast devices and connect/disconnect.
 class CastDevices extends StatefulWidget {
+  /// Creates an instance of [CastDevices].
   const CastDevices({super.key});
 
   @override
@@ -15,30 +19,42 @@ class CastDevices extends StatefulWidget {
 }
 
 class _CastDevicesState extends State<CastDevices> {
+  ChromeCastService? _castService;
+
   @override
   void initState() {
     super.initState();
-    final cast = context.read<ChromeCastService>();
-    if (cast.isCastSupported() && cast.initialized) {
-      GoogleCastDiscoveryManager.instance.stopDiscovery();
-      GoogleCastDiscoveryManager.instance.startDiscovery();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final cast = _castService ?? context.read<ChromeCastService>();
+      if (cast.isCastSupported()) {
+        if (!cast.isInitialized) {
+          cast.init();
+        }
+        cast.startDiscovery();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _castService ??= context.read<ChromeCastService>();
   }
 
   @override
   void dispose() {
-    Future.microtask(() {
-      try {
-        GoogleCastDiscoveryManager.instance.stopDiscovery();
-      } catch (_) {}
-    });
+    if (_castService != null && _castService!.isCastSupported()) {
+      _castService!.stopDiscovery();
+    }
     super.dispose();
   }
 
-  /// Build the Cast devices dialog.
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final speed = Theme.of(context).extension<Speed>()!;
+    final spacing = Theme.of(context).extension<Spacing>()!;
 
     return AlertDialog(
       scrollable: true,
@@ -46,51 +62,72 @@ class _CastDevicesState extends State<CastDevices> {
         loc?.castDialogTitle ?? 'Cast devices',
         textAlign: TextAlign.center,
       ),
-      content: Consumer<ChromeCastService>(
-        builder: (context, cast, _) {
-          final devices = cast.devices;
-          final connected = cast.connectedDevice;
-          final spacing = Theme.of(context).extension<Spacing>()!;
+      content: AnimatedSize(
+        duration: speed.medium2,
+        alignment: Alignment.topCenter,
+        child: Consumer<ChromeCastService>(
+          builder: (context, cast, _) {
+            final devices = cast.devices;
+            final connected = cast.connectedDevice;
 
-          if (!cast.initialized) {
-            cast.init();
-          }
-          if (devices.isEmpty) {
-            return Text(
-              loc?.castNoDevices ?? 'No devices found',
-              textAlign: TextAlign.center,
+            return AnimatedSwitcher(
+              duration: speed.short3,
+              child: devices.isEmpty
+                  ? Text(
+                      key: const ValueKey('no_devices'),
+                      loc?.castNoDevices ?? 'No devices found',
+                      textAlign: TextAlign.center,
+                    )
+                  : Column(
+                      key: const ValueKey('devices_list'),
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ...devices.map((device) {
+                          final isSelected =
+                              (connected?.id == device.id) ||
+                              (connected?.name.isNotEmpty == true &&
+                                  connected?.name == device.name);
+
+                          return TweenAnimationBuilder<double>(
+                            key: ValueKey(device.id),
+                            tween: Tween<double>(begin: 0.0, end: 1.0),
+                            duration: speed.short3,
+                            builder: (context, opacity, child) {
+                              return Opacity(opacity: opacity, child: child);
+                            },
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                vertical: spacing.extraSmall,
+                              ),
+                              child: isSelected
+                                  ? FilledButton.icon(
+                                      onPressed: () =>
+                                          _onDevicePressed(device, cast),
+                                      icon: const Icon(
+                                        Icons.cast_connected_rounded,
+                                      ),
+                                      label: Text(
+                                        device.name,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    )
+                                  : FilledButton.tonal(
+                                      onPressed: () =>
+                                          _onDevicePressed(device, cast),
+                                      child: Text(
+                                        device.name,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
             );
-          }
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ...devices.map((device) {
-                final isSelected = connected?.uniqueID == device.uniqueID;
-
-                return Padding(
-                  key: ValueKey(device.uniqueID),
-                  padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
-                  child: isSelected
-                      ? FilledButton(
-                          onPressed: () => _onDevicePressed(device, cast),
-                          child: Text(
-                            device.friendlyName,
-                            textAlign: TextAlign.center,
-                          ),
-                        )
-                      : FilledButton.tonal(
-                          onPressed: () => _onDevicePressed(device, cast),
-                          child: Text(
-                            device.friendlyName,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                );
-              }),
-            ],
-          );
-        },
+          },
+        ),
       ),
       actions: [
         TextButton(
@@ -114,26 +151,11 @@ class _CastDevicesState extends State<CastDevices> {
     );
   }
 
-  void _onDevicePressed(dynamic device, ChromeCastService cast) async {
+  void _onDevicePressed(CastDevice device, ChromeCastService cast) async {
     if (mounted) {
       Navigator.of(context).pop();
     }
     final audio = context.read<AudioPlayerService>();
-    final mediaItem = audio.mediaItem;
-    if (mediaItem == null) return;
-
-    final selectedId = device.uniqueID;
-    final currentDevice = cast.devices.firstWhere(
-      (d) => d.uniqueID == selectedId,
-      orElse: () => device,
-    );
-
-    try {
-      await audio.stop();
-      await cast.connectAndWait(currentDevice);
-      await cast.castAudio(mediaItem: mediaItem);
-    } catch (_) {
-      // Connection or casting failed
-    }
+    await audio.playMediaItem(null, castDevice: device);
   }
 }

@@ -1,9 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Domain model representing an external music streaming application.
 class MusicApp {
+  /// Unique identifier of the music application.
   final String id;
+
+  /// Display name of the music application.
   final String name;
 
+  /// Creates an immutable [MusicApp] instance.
   const MusicApp({
     required this.id,
     required this.name,
@@ -47,14 +53,18 @@ class MusicApp {
             : LaunchMode.externalNonBrowserApplication,
       );
       if (success) return true;
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) print('Primary deep link launch failed: $e');
+    }
 
     // Attempt fallback web-based URI if primary deep link failed
     final fallbackUri = getFallbackUri(queryText);
     if (fallbackUri != null) {
       try {
         return await launchUrl(fallbackUri, mode: LaunchMode.platformDefault);
-      } catch (_) {}
+      } catch (e) {
+        if (kDebugMode) print('Fallback web URI launch failed: $e');
+      }
     }
 
     return false;
