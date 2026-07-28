@@ -230,6 +230,8 @@ class AudioPlayerService with ChangeNotifier {
         _startCastTransitionTimeout();
 
         await player.stop();
+        await _audioHandler.clearNotification();
+        await _castService?.destroyLocalMediaSession();
         if (castDevice != null && _castService != null) {
           await _castService.connectAndWait(castDevice);
         }
@@ -417,6 +419,7 @@ class AudioPlayerService with ChangeNotifier {
       if (isCasting) {
         player.stop();
         _audioHandler.clearNotification();
+        _castService?.destroyLocalMediaSession();
       } else {
         _isTransitioning = false;
         _isPlayIntended = false;

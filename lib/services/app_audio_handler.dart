@@ -55,14 +55,26 @@ class AppAudioHandler extends BaseAudioHandler {
   }
 
   void _updatePlaybackState() {
-    if (mediaItem.value == null) return;
+    if (mediaItem.value == null) {
+      playbackState.add(PlaybackState(
+        processingState: AudioProcessingState.idle,
+        playing: false,
+        controls: [],
+      ));
+      return;
+    }
     playbackState.add(_transformEvent(player.playbackEvent));
   }
 
-  /// Clears active media item and playback state to dismiss local OS notification card.
-  void clearNotification() {
+  /// Clears active media item and stops AudioService to dismiss local OS notification card.
+  Future<void> clearNotification() async {
     mediaItem.add(null);
-    playbackState.add(PlaybackState());
+    playbackState.add(PlaybackState(
+      processingState: AudioProcessingState.idle,
+      playing: false,
+      controls: [],
+    ));
+    await stop();
   }
 
   /// Updates the currently displaying media item on the OS lock screen.
@@ -108,7 +120,6 @@ class AppAudioHandler extends BaseAudioHandler {
         continue;
       }
       try {
-        await player.stop();
         if (!_isCurrentStation(item.id)) return;
         await player.setAudioSource(
           AudioSource.uri(Uri.parse(entry.value), tag: item),

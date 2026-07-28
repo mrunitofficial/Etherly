@@ -195,6 +195,16 @@ class ChromeCastService with ChangeNotifier {
     }
   }
 
+  /// Natively terminates local AudioService and MediaSession on Android.
+  Future<void> destroyLocalMediaSession() async {
+    if (!isCastSupported()) return;
+    try {
+      await _channel.invokeMethod('destroyLocalMediaSession');
+    } catch (e) {
+      if (kDebugMode) print('Failed to destroy local media session: $e');
+    }
+  }
+
   /// Ends the current casting session.
   Future<void> endCasting() async {
     if (!isCastSupported()) return;

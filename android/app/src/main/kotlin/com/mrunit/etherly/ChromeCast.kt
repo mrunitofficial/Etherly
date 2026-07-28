@@ -1,6 +1,9 @@
 package com.mrunit.etherly
 
+import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
+import android.support.v4.media.session.PlaybackStateCompat
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Handler
@@ -104,7 +107,8 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             "stopDiscovery" -> { stopDiscovery(); result.success(true) }
             "connect" -> handleConnect(call, result)
             "disconnect" -> handleDisconnect(result)
-            "loadMedia" -> handleLoadMedia(call, result)
+            "loadMedia" -> { destroyLocalMediaSession(); handleLoadMedia(call, result) }
+            "destroyLocalMediaSession" -> { destroyLocalMediaSession(); result.success(true) }
             "play" -> handleMediaAction(result) { it.play() }
             "pause" -> handleMediaAction(result) { it.pause() }
             "stop" -> handleMediaAction(result) { it.stop() }
@@ -312,30 +316,39 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         }
     }
 
+    /// Completely stops, deactivates, and destroys the local AudioService media session and notification.
+    private fun destroyLocalMediaSession() {
+        try {
+            val mediaSession = getAudioServiceMediaSession()
+            if (mediaSession != null) {
+                mediaSession.setPlaybackState(
+                    PlaybackStateCompat.Builder()
+                        .setState(PlaybackStateCompat.STATE_NONE, 0, 0f)
+                        .setActions(0)
+                        .build()
+                )
+                mediaSession.setMetadata(null)
+                mediaSession.isActive = false
+                mediaSession.setPlaybackToLocal(AudioManager.STREAM_MUSIC)
+            }
+            volumeProvider = null
+
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            notificationManager?.cancelAll()
+
+            val serviceClazz = Class.forName("com.ryanheise.audioservice.AudioService")
+            val intent = Intent(context, serviceClazz)
+            context.stopService(intent)
+        } catch (e: Exception) {
+            android.util.Log.e("ChromeCast", "Error destroying local media session: ${e.message}")
+        }
+    }
+
     private fun onSessionConnected(session: CastSession) {
         currentSession = session
         session.remoteMediaClient?.registerCallback(remoteMediaClientCallback)
 
-        val mediaSession = getAudioServiceMediaSession()
-        if (mediaSession != null) {
-            val initialVolPercent = (session.volume * 100).toInt().coerceIn(0, 100)
-            val provider = object : VolumeProviderCompat(VOLUME_CONTROL_ABSOLUTE, 100, initialVolPercent) {
-                override fun onSetVolumeTo(volume: Int) {
-                    val target = (volume / 100.0).coerceIn(0.0, 1.0)
-                    session.volume = target
-                    sendVolumeUpdate()
-                }
-
-                override fun onAdjustVolume(direction: Int) {
-                    val delta = if (direction > 0) 0.05 else if (direction < 0) -0.05 else 0.0
-                    if (delta != 0.0) {
-                        adjustVolume(delta)
-                    }
-                }
-            }
-            mediaSession.setPlaybackToRemote(provider)
-            volumeProvider = provider
-        }
+        destroyLocalMediaSession()
 
         sendSessionStateUpdate()
         sendPlaybackStateUpdate()
