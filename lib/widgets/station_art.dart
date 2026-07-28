@@ -80,6 +80,7 @@ class StationArt extends StatelessWidget {
             fit: BoxFit.cover,
             useOldImageOnUrlChange: true,
             fadeInDuration: fadeDuration,
+            fadeOutDuration: fadeDuration,
             placeholderFadeInDuration: fadeDuration,
             placeholder: (context, url) => fallback,
             errorWidget: (context, url, error) => fallback,

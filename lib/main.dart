@@ -253,9 +253,10 @@ class _MyAppState extends State<MyApp> {
               },
             );
 
+            final speed = Theme.of(context).extension<Speed>() ?? Speed();
             return AnimatedOpacity(
               opacity: _showApp ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 450),
+              duration: speed.long1,
               curve: Curves.linear,
               child: appContent,
             );
