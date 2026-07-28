@@ -30,8 +30,16 @@
 
 * **Deviations & Exceptions**: Any intentional divergence from general project conventions or framework defaults must be explicitly annotated with a 1-line comment using `//`.
 
+* **Absolute Imports & Strict Import Ordering**: All imports must use absolute package paths (`package:etherly/...`) instead of relative paths (`../`). Imports must be strictly grouped and ordered as follows:
+  1. External Packages (`dart:` and `package:` third-party dependencies)
+  2. Localization (`package:etherly/localization/...`)
+  3. Models (`package:etherly/models/...`)
+  4. Services & Handlers (`package:etherly/services/...`)
+  5. Screens (`package:etherly/screens/...`)
+  6. Widgets (`package:etherly/widgets/...`)
+
 * **Standard Member Ordering**: All Dart files and classes must adhere to standard ordering:
-  1. Top-Level Directives (`import` order: `dart:` $\rightarrow$ `package:` $\rightarrow$ relative) & Constants
+  1. Top-Level Directives & Constants
   2. Class Static Fields & Constants (`static const`, `static final`)
   3. Class Instance Fields (public properties $\rightarrow$ private `_` properties)
   4. Constructors (`const`, named, factory)
@@ -41,6 +49,8 @@
   8. Private Helper Methods
 
 * **Avoid In-Class Helper Methods**: Inline helper functions (e.g. `_buildHeader()`) inside class bodies are discouraged. Prefer keeping logic clean inline within `build()`, or extract reusable UI into a dedicated widget in `lib/widgets/` if substantial or repeated.
+
+* **Professional Automation Messages**: All automated GitHub Actions PR comments, workflow summaries, and release notes must be written in clean, professional tone without emojis.
 
 
 ## 4. UI Consistency & Interactive Experience
