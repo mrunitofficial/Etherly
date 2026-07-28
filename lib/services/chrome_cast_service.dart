@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'package:etherly/models/cast_device.dart';
+
 
 /// Manages Chromecast device discovery, connection, and media casting via native platform channel.
 class ChromeCastService with ChangeNotifier {
@@ -129,47 +131,29 @@ class ChromeCastService with ChangeNotifier {
     }
   }
 
-  /// Casts audio content to the connected Cast device.
-  Future<void> castAudio({
-    dynamic mediaItem,
-    Uri? contentUrl,
-    String? contentType,
-    String? title,
-    String? subtitle,
-    Uri? imageUrl,
-  }) async {
+  /// Casts audio content of the specified [mediaItem] to the connected Cast device.
+  Future<void> castAudio(MediaItem mediaItem) async {
     if (!isConnected) throw StateError('No Cast device connected');
 
-    await Future.delayed(const Duration(milliseconds: 50));
+    final urlStr = mediaItem.extras?['url'] as String?;
+    if (urlStr == null || urlStr.isEmpty) return;
 
-    if (mediaItem != null) {
-      final urlStr = mediaItem.extras?['url'] as String?;
-      if (urlStr == null || urlStr.isEmpty) return;
-
-      contentUrl = Uri.parse(urlStr);
-      contentType = urlStr.toLowerCase().contains('aac') ? 'audio/aac' : 'audio/mpeg';
-      title = mediaItem.title ?? 'Etherly Radio';
-      subtitle = mediaItem.artist ?? mediaItem.album ?? '';
-      imageUrl = mediaItem.artUri;
-    }
-
-    if (contentUrl == null) {
-      throw ArgumentError('contentUrl is required');
-    }
+    final contentType = urlStr.toLowerCase().contains('aac') ? 'audio/aac' : 'audio/mpeg';
 
     try {
       await _channel.invokeMethod('loadMedia', {
-        'url': contentUrl.toString(),
-        'title': title ?? 'Etherly Radio',
-        'subtitle': subtitle ?? '',
-        'imageUrl': imageUrl?.toString() ?? '',
-        'contentType': contentType ?? 'audio/mpeg',
+        'url': urlStr,
+        'title': mediaItem.title,
+        'subtitle': mediaItem.artist ?? mediaItem.album ?? '',
+        'imageUrl': mediaItem.artUri?.toString() ?? '',
+        'contentType': contentType,
       });
       if (!_disposed) isRemotePlaying.value = true;
     } catch (e) {
       if (kDebugMode) print('Failed to load media on Cast: $e');
     }
   }
+
 
   /// Sends play command to the remote Cast session.
   Future<void> play() async {

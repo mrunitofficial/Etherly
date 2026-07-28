@@ -172,6 +172,7 @@ class AudioPlayerService with ChangeNotifier {
         _castTransitionTimer?.cancel();
         _castTransitionTimer = null;
       }
+      _syncCastStateToAudioHandler();
     }
     notifyListeners();
   }
@@ -194,15 +195,35 @@ class AudioPlayerService with ChangeNotifier {
   void _onCastingStateChanged() {
     _castTransitionTimer?.cancel();
     if (isReady.value) {
-      if (_castService?.isCastingActive.value ?? false) {
-        _audioHandler.hideNotification();
+      if (isCasting) {
+        _syncCastStateToAudioHandler();
       } else {
-        _audioHandler.showNotification();
+        _audioHandler.updateCastState(
+          isCasting: false,
+          isPlaying: false,
+          isLoading: false,
+        );
         _isTransitioning = false;
         _isPlayIntended = false;
       }
     }
     notifyListeners();
+  }
+
+  /// Syncs current Cast session state and media metadata to OS MediaSession.
+  void _syncCastStateToAudioHandler() {
+    if (!isCasting) return;
+    final item = _currentMediaItem;
+    final castDeviceName = _castService?.connectedDevice?.name ?? 'Cast';
+    final updatedItem = item?.copyWith(
+      artist: 'Casting to $castDeviceName',
+    );
+    _audioHandler.updateCastState(
+      isCasting: true,
+      isPlaying: isPlaying,
+      isLoading: isLoading,
+      item: updatedItem,
+    );
   }
 
   /// Initializes the audio service, listeners, and loads user data.
@@ -215,6 +236,10 @@ class AudioPlayerService with ChangeNotifier {
       onSkipToNext: skipToNext,
       onSkipToPrevious: skipToPrevious,
     );
+    _audioHandler.onCastPlay = play;
+    _audioHandler.onCastPause = pause;
+    _audioHandler.onCastStop = stop;
+
 
     // Sync unified just_audio player state to our listeners
     player.playerStateStream.listen((state) {
@@ -415,7 +440,7 @@ class AudioPlayerService with ChangeNotifier {
         await player.stop();
         await _audioHandler.stop();
         await _castService.connectAndWait(castDevice);
-        await _castService.castAudio(mediaItem: item);
+        await _castService.castAudio(item);
       } catch (e) {
         if (kDebugMode) print('Error casting to device: $e');
         _isTransitioning = false;
@@ -436,7 +461,8 @@ class AudioPlayerService with ChangeNotifier {
         _startCastTransitionTimeout();
 
         await _audioHandler.stop();
-        await _castService!.castAudio(mediaItem: item);
+        await _castService?.castAudio(item);
+
       } catch (e) {
         if (kDebugMode) print('Error casting media item: $e');
         _isTransitioning = false;
@@ -481,10 +507,11 @@ class AudioPlayerService with ChangeNotifier {
   /// Starts playback. Forces a reset to the live edge.
   Future<void> play() async {
     cancelAutoplayCountdown();
-    if (_castService != null && _castService.isConnected) {
+    if (isCasting) {
       _isPlayIntended = true;
       notifyListeners();
-      await _castService.play();
+      _syncCastStateToAudioHandler();
+      await _castService?.play();
       return;
     }
     await playMediaItem(null);
@@ -497,15 +524,15 @@ class AudioPlayerService with ChangeNotifier {
     _isTransitioning = false;
     _isPlayIntended = false;
     notifyListeners();
-    if (_castService != null && _castService.isConnected) {
-      await _castService.pause();
+    if (isCasting) {
+      _syncCastStateToAudioHandler();
+      await _castService?.pause();
       return;
     }
     await _audioHandler.pause();
   }
 
-
-  /// Stops playback.
+  /// Stops playback or ends active Cast session.
   Future<void> stop() async {
     cancelAutoplayCountdown();
     cancelSleepTimer();
@@ -513,13 +540,14 @@ class AudioPlayerService with ChangeNotifier {
     _isTransitioning = false;
     _isPlayIntended = false;
     notifyListeners();
-    if (_castService != null && _castService.isConnected) {
-      await _audioHandler.stop();
-      await _castService.stop();
+    if (isCasting) {
+      await _castService?.endCasting();
       return;
     }
     await _audioHandler.stop();
   }
+
+
 
 
   /// Skips to the next station in the list.

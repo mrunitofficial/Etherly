@@ -21,12 +21,6 @@ class _CastDevicesState extends State<CastDevices> {
   ChromeCastService? _castService;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _castService ??= context.read<ChromeCastService>();
-  }
-
-  @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -40,6 +34,13 @@ class _CastDevicesState extends State<CastDevices> {
       }
     });
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _castService ??= context.read<ChromeCastService>();
+  }
+
 
   @override
   void dispose() {
@@ -132,7 +133,9 @@ class _CastDevicesState extends State<CastDevices> {
     );
   }
 
+  /// Handles selection of a Cast device from the dialog list.
   void _onDevicePressed(CastDevice device, ChromeCastService cast) async {
+
     if (mounted) {
       Navigator.of(context).pop();
     }

@@ -7,7 +7,6 @@ import android.os.Looper
 import androidx.mediarouter.media.MediaControlIntent
 import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
-import com.google.android.gms.common.images.WebImage
 import com.google.android.gms.cast.CastDevice
 import com.google.android.gms.cast.CastMediaControlIntent
 import com.google.android.gms.cast.MediaInfo
@@ -16,93 +15,58 @@ import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
+import com.google.android.gms.common.images.WebImage
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
-/// Helper class that manages Android Google Cast framework interactions and platform channels.
+/// Native Android helper handling Google Cast SDK discovery, session management, and platform channels.
 class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
 
     companion object {
-        private const val CONTROL_CHANNEL = "com.mrunit.etherly/cast_control"
-        private const val EVENTS_CHANNEL = "com.mrunit.etherly/cast_events"
+        const val CONTROL_CHANNEL = "com.mrunit.etherly/cast_control"
+        const val EVENTS_CHANNEL = "com.mrunit.etherly/cast_events"
     }
 
     private var methodChannel: MethodChannel? = null
     private var eventChannel: EventChannel? = null
     private var eventSink: EventChannel.EventSink? = null
-    private val mainHandler = Handler(Looper.getMainLooper())
-
+    private var castContext: CastContext? = null
     private var mediaRouter: MediaRouter? = null
     private var mediaRouteSelector: MediaRouteSelector? = null
-    private var castContext: CastContext? = null
     private var currentSession: CastSession? = null
 
     private val discoveredRoutes = mutableListOf<MediaRouter.RouteInfo>()
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     private val mediaRouterCallback = object : MediaRouter.Callback() {
-        override fun onRouteAdded(router: MediaRouter, route: MediaRouter.RouteInfo) {
-            updateDiscoveredDevices()
-        }
-
-        override fun onRouteRemoved(router: MediaRouter, route: MediaRouter.RouteInfo) {
-            updateDiscoveredDevices()
-        }
-
-        override fun onRouteChanged(router: MediaRouter, route: MediaRouter.RouteInfo) {
-            updateDiscoveredDevices()
-        }
+        override fun onRouteAdded(router: MediaRouter, route: MediaRouter.RouteInfo) = updateDiscoveredDevices()
+        override fun onRouteRemoved(router: MediaRouter, route: MediaRouter.RouteInfo) = updateDiscoveredDevices()
+        override fun onRouteChanged(router: MediaRouter, route: MediaRouter.RouteInfo) = updateDiscoveredDevices()
     }
 
     private val sessionManagerListener = object : SessionManagerListener<CastSession> {
-        override fun onSessionStarted(session: CastSession, sessionId: String) {
-            onSessionConnected(session)
-        }
-
-        override fun onSessionResumed(session: CastSession, wasSuspended: Boolean) {
-            onSessionConnected(session)
-        }
-
-        override fun onSessionEnding(session: CastSession) {
-            // Preparing for disconnection
-        }
-
-        override fun onSessionEnded(session: CastSession, error: Int) {
-            onSessionDisconnected()
-        }
-
-        override fun onSessionStartFailed(session: CastSession, error: Int) {
-            onSessionDisconnected()
-        }
-
-        override fun onSessionResumeFailed(session: CastSession, error: Int) {
-            onSessionDisconnected()
-        }
-
+        override fun onSessionStarted(session: CastSession, sessionId: String) = onSessionConnected(session)
+        override fun onSessionResumed(session: CastSession, wasSuspended: Boolean) = onSessionConnected(session)
+        override fun onSessionEnded(session: CastSession, error: Int) = onSessionDisconnected()
+        override fun onSessionStartFailed(session: CastSession, error: Int) = onSessionDisconnected()
+        override fun onSessionResumeFailed(session: CastSession, error: Int) = onSessionDisconnected()
         override fun onSessionStarting(session: CastSession) {}
         override fun onSessionResuming(session: CastSession, sessionId: String) {}
+        override fun onSessionEnding(session: CastSession) {}
         override fun onSessionSuspended(session: CastSession, reason: Int) {}
     }
 
     private val remoteMediaClientCallback = object : RemoteMediaClient.Callback() {
-        override fun onStatusUpdated() {
-            sendPlaybackStateUpdate()
-        }
-
-        override fun onMetadataUpdated() {
-            sendPlaybackStateUpdate()
-        }
+        override fun onStatusUpdated() = sendPlaybackStateUpdate()
+        override fun onMetadataUpdated() = sendPlaybackStateUpdate()
     }
 
-    /// Registers the platform channels with Flutter binary messenger.
+    /// Registers platform channels with Flutter binary messenger.
     fun register(messenger: BinaryMessenger) {
-        methodChannel = MethodChannel(messenger, CONTROL_CHANNEL).apply {
-            setMethodCallHandler(this@ChromeCast)
-        }
-        eventChannel = EventChannel(messenger, EVENTS_CHANNEL).apply {
-            setStreamHandler(this@ChromeCast)
-        }
+        methodChannel = MethodChannel(messenger, CONTROL_CHANNEL).apply { setMethodCallHandler(this@ChromeCast) }
+        eventChannel = EventChannel(messenger, EVENTS_CHANNEL).apply { setStreamHandler(this@ChromeCast) }
     }
 
     /// Unregisters and cleans up channels.
@@ -117,20 +81,14 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "init" -> handleInit(call, result)
-            "startDiscovery" -> {
-                startDiscovery()
-                result.success(true)
-            }
-            "stopDiscovery" -> {
-                stopDiscovery()
-                result.success(true)
-            }
+            "startDiscovery" -> { startDiscovery(); result.success(true) }
+            "stopDiscovery" -> { stopDiscovery(); result.success(true) }
             "connect" -> handleConnect(call, result)
             "disconnect" -> handleDisconnect(result)
             "loadMedia" -> handleLoadMedia(call, result)
-            "play" -> handlePlay(result)
-            "pause" -> handlePause(result)
-            "stop" -> handleStop(result)
+            "play" -> handleMediaAction(result) { it.play() }
+            "pause" -> handleMediaAction(result) { it.pause() }
+            "stop" -> handleMediaAction(result) { it.stop() }
             "setVolume" -> handleSetVolume(call, result)
             "getVolume" -> handleGetVolume(result)
             else -> result.notImplemented()
@@ -143,16 +101,12 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         sendSessionStateUpdate()
     }
 
-    override fun onCancel(arguments: Any?) {
-        eventSink = null
-    }
+    override fun onCancel(arguments: Any?) { eventSink = null }
 
     private fun handleInit(call: MethodCall, result: MethodChannel.Result) {
         try {
             val appId = call.argument<String>("appId")
-            if (!appId.isNullOrEmpty()) {
-                CastOptionsProvider.customReceiverAppId = appId
-            }
+            if (!appId.isNullOrEmpty()) CastOptionsProvider.customReceiverAppId = appId
 
             castContext = CastContext.getSharedInstance(context)
             castContext?.sessionManager?.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
@@ -185,9 +139,7 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
 
     private fun stopDiscovery() {
         val router = mediaRouter ?: return
-        mainHandler.post {
-            router.removeCallback(mediaRouterCallback)
-        }
+        mainHandler.post { router.removeCallback(mediaRouterCallback) }
     }
 
     private fun updateDiscoveredDevices() {
@@ -210,10 +162,7 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             )
         }
 
-        emitEvent(mapOf(
-            "event" to "devicesChanged",
-            "devices" to deviceList
-        ))
+        emitEvent(mapOf("event" to "devicesChanged", "devices" to deviceList))
     }
 
     private fun handleConnect(call: MethodCall, result: MethodChannel.Result) {
@@ -243,14 +192,12 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
     }
 
     private fun handleLoadMedia(call: MethodCall, result: MethodChannel.Result) {
-        val client = currentSession?.remoteMediaClient
-        if (client == null) {
+        val client = currentSession?.remoteMediaClient ?: run {
             result.error("NO_SESSION", "No active Cast session", null)
             return
         }
 
-        val urlStr = call.argument<String>("url")
-        if (urlStr.isNullOrEmpty()) {
+        val urlStr = call.argument<String>("url") ?: run {
             result.error("INVALID_ARGS", "Media URL required", null)
             return
         }
@@ -262,12 +209,8 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
 
         val metadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_MUSIC_TRACK).apply {
             putString(MediaMetadata.KEY_TITLE, title)
-            if (subtitle.isNotEmpty()) {
-                putString(MediaMetadata.KEY_ARTIST, subtitle)
-            }
-            if (!imageUrlStr.isNullOrEmpty()) {
-                addImage(WebImage(Uri.parse(imageUrlStr)))
-            }
+            if (subtitle.isNotEmpty()) putString(MediaMetadata.KEY_ARTIST, subtitle)
+            if (!imageUrlStr.isNullOrEmpty()) addImage(WebImage(Uri.parse(imageUrlStr)))
         }
 
         val mediaInfo = MediaInfo.Builder(urlStr)
@@ -281,30 +224,10 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         result.success(true)
     }
 
-    private fun handlePlay(result: MethodChannel.Result) {
+    private inline fun handleMediaAction(result: MethodChannel.Result, action: (RemoteMediaClient) -> Unit) {
         val client = currentSession?.remoteMediaClient
         if (client != null) {
-            client.play()
-            result.success(true)
-        } else {
-            result.error("NO_SESSION", "No active Cast session", null)
-        }
-    }
-
-    private fun handlePause(result: MethodChannel.Result) {
-        val client = currentSession?.remoteMediaClient
-        if (client != null) {
-            client.pause()
-            result.success(true)
-        } else {
-            result.error("NO_SESSION", "No active Cast session", null)
-        }
-    }
-
-    private fun handleStop(result: MethodChannel.Result) {
-        val client = currentSession?.remoteMediaClient
-        if (client != null) {
-            client.stop()
+            action(client)
             result.success(true)
         } else {
             result.error("NO_SESSION", "No active Cast session", null)
@@ -312,12 +235,10 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
     }
 
     private fun handleSetVolume(call: MethodCall, result: MethodChannel.Result) {
-        val session = currentSession
-        if (session == null) {
+        val session = currentSession ?: run {
             result.error("NO_SESSION", "No active Cast session", null)
             return
         }
-
         val volume = call.argument<Double>("volume") ?: 1.0
         try {
             session.volume = volume
@@ -329,18 +250,13 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
 
     private fun handleGetVolume(result: MethodChannel.Result) {
         val session = currentSession
-        if (session != null) {
-            result.success(session.volume)
-        } else {
-            result.error("NO_SESSION", "No active Cast session", null)
-        }
+        if (session != null) result.success(session.volume)
+        else result.error("NO_SESSION", "No active Cast session", null)
     }
 
     private fun onSessionConnected(session: CastSession) {
         currentSession = session
         session.remoteMediaClient?.registerCallback(remoteMediaClientCallback)
-
-        val castDevice = session.castDevice
         sendSessionStateUpdate()
         sendPlaybackStateUpdate()
         sendVolumeUpdate()
@@ -367,32 +283,23 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         ))
     }
 
-
     private fun sendPlaybackStateUpdate() {
         val client = currentSession?.remoteMediaClient
-        val isPlaying = client?.isPlaying ?: false
-        val isBuffering = client?.isBuffering ?: false
-
         emitEvent(mapOf(
             "event" to "playbackState",
-            "isPlaying" to isPlaying,
-            "isLoading" to isBuffering
+            "isPlaying" to (client?.isPlaying ?: false),
+            "isLoading" to (client?.isBuffering ?: false)
         ))
     }
 
     private fun sendVolumeUpdate() {
-        val session = currentSession
-        val volume = session?.volume ?: 1.0
-
         emitEvent(mapOf(
             "event" to "volumeChanged",
-            "volume" to volume
+            "volume" to (currentSession?.volume ?: 1.0)
         ))
     }
 
     private fun emitEvent(event: Map<String, Any?>) {
-        mainHandler.post {
-            eventSink?.success(event)
-        }
+        mainHandler.post { eventSink?.success(event) }
     }
 }
