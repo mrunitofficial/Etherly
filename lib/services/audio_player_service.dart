@@ -40,6 +40,63 @@ class AudioPlayerService with ChangeNotifier {
   /// Available stations.
   List<Station> stations = [];
 
+  late final AppAudioHandler _audioHandler;
+  final ChromeCastService? _castService;
+  late final SharedPreferences _prefs;
+
+  bool _isTransitioning = false;
+  bool _isPlayIntended = false;
+  String? _connectingStationId;
+
+  final Completer<void> _initializationCompleter = Completer<void>();
+  final ValueNotifier<bool> _radioPlayerShouldClose = ValueNotifier(false);
+
+  Map<String, Station> _stationMap = {};
+  List<String> _favoriteStationIds = [];
+
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+  _stationsSubscription;
+  Timer? _listeningMinuteTimer;
+  Timer? _autoplayTimer;
+  bool _autoplayCancelled = false;
+  Timer? _sleepTimer;
+  Timer? _bufferingTimeoutTimer;
+  Timer? _castTransitionTimer;
+  MediaItem? _currentMediaItem;
+  bool _isMuted = false;
+  double _preMuteVolume = 1.0;
+
+  /// Creates the service and attaches listeners to optional cast service.
+  AudioPlayerService([this._castService]) {
+    _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
+    _castService?.addListener(_onCastingStateChanged);
+    _castService?.remoteVolume.addListener(notifyListeners);
+    _init();
+  }
+
+  @override
+  void dispose() {
+    _castService?.isRemotePlaying.removeListener(_onCastRemotePlayingChanged);
+    _castService?.removeListener(_onCastingStateChanged);
+    _castService?.remoteVolume.removeListener(notifyListeners);
+
+    _stationsSubscription?.cancel();
+    _audioHandler.customAction('dispose');
+    _autoplayTimer?.cancel();
+    _sleepTimer?.cancel();
+    _bufferingTimeoutTimer?.cancel();
+    _castTransitionTimer?.cancel();
+
+    try {
+      _castService?.endCasting();
+    } catch (e) {
+      if (kDebugMode) print('Error ending cast during dispose: $e');
+    }
+    sleepTimerActive.dispose();
+    autoplayCountdownNotifier.dispose();
+    super.dispose();
+  }
+
   /// Future completed once initialization finishes.
   Future<void> get initializationFuture => _initializationCompleter.future;
 
@@ -111,61 +168,6 @@ class AudioPlayerService with ChangeNotifier {
   /// Stream of player volume changes.
   Stream<double> get volumeStream => player.volumeStream;
 
-  late final AppAudioHandler _audioHandler;
-  final ChromeCastService? _castService;
-  late final SharedPreferences _prefs;
-
-  bool _isTransitioning = false;
-  bool _isPlayIntended = false;
-  String? _connectingStationId;
-
-  final Completer<void> _initializationCompleter = Completer<void>();
-  final ValueNotifier<bool> _radioPlayerShouldClose = ValueNotifier(false);
-
-  Map<String, Station> _stationMap = {};
-  List<String> _favoriteStationIds = [];
-
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
-  _stationsSubscription;
-  Timer? _listeningMinuteTimer;
-  Timer? _autoplayTimer;
-  bool _autoplayCancelled = false;
-  Timer? _sleepTimer;
-  Timer? _bufferingTimeoutTimer;
-  Timer? _castTransitionTimer;
-  MediaItem? _currentMediaItem;
-  bool _isMuted = false;
-  double _preMuteVolume = 1.0;
-
-  /// Creates the service and attaches listeners to optional cast service.
-  AudioPlayerService([this._castService]) {
-    _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
-    _castService?.addListener(_onCastingStateChanged);
-    _castService?.remoteVolume.addListener(notifyListeners);
-    _init();
-  }
-
-  @override
-  void dispose() {
-    _castService?.isRemotePlaying.removeListener(_onCastRemotePlayingChanged);
-    _castService?.removeListener(_onCastingStateChanged);
-    _castService?.remoteVolume.removeListener(notifyListeners);
-
-    _stationsSubscription?.cancel();
-    _audioHandler.customAction('dispose');
-    _autoplayTimer?.cancel();
-    _sleepTimer?.cancel();
-    _bufferingTimeoutTimer?.cancel();
-    _castTransitionTimer?.cancel();
-
-    try {
-      _castService?.endCasting();
-    } catch (_) {}
-    sleepTimerActive.dispose();
-    autoplayCountdownNotifier.dispose();
-    super.dispose();
-  }
-
   /// Updates the player or remote cast volume.
   void setVolume(double value) {
     final clamped = value.clamp(0.0, 1.0);
@@ -234,7 +236,7 @@ class AudioPlayerService with ChangeNotifier {
         notifyListeners();
         _startCastTransitionTimeout();
 
-        await player.stop();
+        await _audioHandler.stop();
         _audioHandler.updateRemotePlaybackState(
           playing: _castService?.isRemotePlaying.value ?? false,
           isBuffering: true,
@@ -653,7 +655,9 @@ class AudioPlayerService with ChangeNotifier {
     } finally {
       try {
         await FirebaseFirestore.instance.disableNetwork();
-      } catch (_) {}
+      } catch (e) {
+        if (kDebugMode) print('Error disabling Firestore network: $e');
+      }
     }
   }
 

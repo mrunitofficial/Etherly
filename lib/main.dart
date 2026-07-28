@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -11,14 +12,18 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:etherly/localization/app_localizations.dart';
+
 import 'package:etherly/models/device.dart';
+
 import 'package:etherly/firebase_options.dart';
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/services/chrome_cast_service.dart';
 import 'package:etherly/services/listening_stats_service.dart';
 import 'package:etherly/services/shortcut_service.dart';
 import 'package:etherly/services/theme_data.dart';
+
 import 'package:etherly/screens/app_screen.dart';
 
 /// Entry point of the application.

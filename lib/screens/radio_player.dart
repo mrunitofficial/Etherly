@@ -1,15 +1,18 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import 'package:etherly/localization/app_localizations.dart';
+
 import 'package:etherly/models/device.dart';
 
 import 'package:etherly/services/audio_player_service.dart';
-import 'package:etherly/widgets/full_player.dart';
-import 'package:etherly/widgets/small_player.dart';
-import 'package:etherly/widgets/play_button.dart';
-import 'package:etherly/widgets/sleep_timer.dart';
-import 'package:etherly/widgets/quality_setting.dart';
 import 'package:etherly/services/theme_data.dart';
+
+import 'package:etherly/widgets/full_player.dart';
+import 'package:etherly/widgets/play_button.dart';
+import 'package:etherly/widgets/quality_setting.dart';
+import 'package:etherly/widgets/sleep_timer.dart';
+import 'package:etherly/widgets/small_player.dart';
 
 /// Radio player widget with draggable sheet for small screens.
 class RadioPlayer extends StatefulWidget {
@@ -185,11 +188,13 @@ class _RadioPlayerState extends State<RadioPlayer> {
                           ),
                         ),
                       ),
-                      const Align(
+                      Align(
                         alignment: Alignment.topCenter,
                         child: Padding(
-                          padding: EdgeInsets.only(top: 16),
-                          child: _DragHandle(),
+                          padding: EdgeInsets.only(
+                            top: Theme.of(context).extension<Spacing>()!.medium,
+                          ),
+                          child: const _DragHandle(),
                         ),
                       ),
                     ],
@@ -210,6 +215,7 @@ class _MiniFABs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final spacing = Theme.of(context).extension<Spacing>()!;
     return Consumer<AudioPlayerService>(
       builder:
           (context, service, _) => ValueListenableBuilder<int>(
@@ -219,7 +225,10 @@ class _MiniFABs extends StatelessWidget {
                   child: Align(
                     alignment: Alignment.bottomRight,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 0, 20, 20),
+                      padding: EdgeInsets.only(
+                        right: spacing.large,
+                        bottom: spacing.large,
+                      ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -330,12 +339,15 @@ class _DragHandle extends StatelessWidget {
   const _DragHandle();
 
   @override
-  Widget build(BuildContext context) => Container(
-    height: 4,
-    width: 32,
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.onSurface,
-      borderRadius: BorderRadius.circular(2),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final shapes = Theme.of(context).extension<Shapes>()!;
+    return Container(
+      height: 4,
+      width: 32,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.onSurface,
+        borderRadius: shapes.extraSmall,
+      ),
+    );
+  }
 }

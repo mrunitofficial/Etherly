@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 
+/// Country code resolution and localized formatting utility.
 class Country {
   /// Resolves the current country code using system settings.
   static String get countryCode {
@@ -30,7 +32,9 @@ class Country {
         final fetchedCode = jsonDecode(response.body)['country_code'] as String?;
         if (fetchedCode != null && fetchedCode.isNotEmpty) return fetchedCode.toUpperCase();
       }
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) print('Country code network lookup failed: $e');
+    }
 
     return 'NL';
   }

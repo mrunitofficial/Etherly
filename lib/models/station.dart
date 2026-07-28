@@ -1,22 +1,45 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Domain model representing a radio station.
 class Station {
+  /// Unique station identifier.
   final String id;
+
+  /// Display name of the station.
   final String name;
+
+  /// Station slogan or tagline.
   final String slogan;
+
+  /// Map of stream quality keys to URL locations.
   final Map<String, String> streams;
+
+  /// Map of resolution size keys to artwork URLs.
   final Map<String, String> art;
+
+  /// Primary category or genre of the station.
   final String category;
+
+  /// Country code associated with the station.
   final String country;
+
+  /// Optional ranking integer.
   final int? rank;
+
+  /// Tags list for searching and filtering.
   final List<String> tags;
+
+  /// Whether the station is currently active.
   final bool active;
+
+  /// Whether the station is marked as user favorite.
   bool isFavorite;
 
   // Cached numeric resolutions and sorted sizes to optimize getArtUrl lookups
   final List<int> _sortedSizes;
   final Map<int, String> _numericArt;
 
+  /// Creates a [Station] instance.
   Station({
     required this.id,
     required this.name,
@@ -58,6 +81,7 @@ class Station {
     return sizes..sort();
   }
 
+  /// Deserializes JSON data into a [Station] object.
   factory Station.fromJson(Map<String, dynamic> json, {String? docId}) {
     final Map<String, dynamic> rawStreams =
         json['streams'] as Map<String, dynamic>? ?? {};
@@ -116,10 +140,11 @@ class Station {
     );
   }
 
+  /// Creates a [Station] instance from a Firestore [DocumentSnapshot].
   factory Station.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>?;
     if (data == null) {
-      throw Exception("Document data was null");
+      throw Exception('Document data was null');
     }
     return Station.fromJson(data, docId: doc.id);
   }

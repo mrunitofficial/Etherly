@@ -1,8 +1,10 @@
 import 'package:material_ui/material_ui.dart';
-import '../services/music_app_service.dart';
-import '../localization/app_localizations.dart';
-import '../services/theme_data.dart';
 
+import 'package:etherly/localization/app_localizations.dart';
+import 'package:etherly/services/music_app_service.dart';
+import 'package:etherly/services/theme_data.dart';
+
+/// Interactive dialog for picking an external music app to search active track metadata.
 class MusicAppPicker extends StatefulWidget {
   const MusicAppPicker({super.key});
 

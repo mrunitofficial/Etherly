@@ -1,11 +1,12 @@
 import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:audio_session/audio_session.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Singleton future backing audio service handler initialization.
 Future<AppAudioHandler>? _audioHandlerFuture;
 
 /// Initializes the AudioService for OS-level background audio notifications and controls.
@@ -140,7 +141,7 @@ class AppAudioHandler extends BaseAudioHandler {
       }
     }
 
-    if (streams.isEmpty) throw Exception("No valid stream URL found");
+    if (streams.isEmpty) throw Exception('No valid stream URL found');
 
     final prefs = await SharedPreferences.getInstance();
     final quality = prefs.getString('streamQuality') ?? 'mp3';

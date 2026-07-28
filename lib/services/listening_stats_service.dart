@@ -1,17 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:etherly/models/song.dart';
 
 /// Centralized service for tracking played songs history, recent stations, and station listening metrics.
 class ListeningStatsService extends ChangeNotifier {
   static final ListeningStatsService _instance =
       ListeningStatsService._internal();
-
-  /// Factory constructor returning the singleton instance.
-  factory ListeningStatsService() => _instance;
-  ListeningStatsService._internal();
 
   static const String _historyKey = 'played_songs_history';
   static const String _recentStationIdsKey = 'recent_station_ids';
@@ -24,6 +22,10 @@ class ListeningStatsService extends ChangeNotifier {
   List<Song> _history = [];
   List<String> _recentStationIds = [];
   List<String> _minuteTicks = [];
+
+  /// Factory constructor returning the singleton instance.
+  factory ListeningStatsService() => _instance;
+  ListeningStatsService._internal();
 
   /// Unmodifiable view of played songs history.
   List<Song> get history => List.unmodifiable(_history);

@@ -1,15 +1,20 @@
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import 'package:etherly/localization/app_localizations.dart';
+
 import 'package:etherly/models/country.dart';
 import 'package:etherly/models/device.dart';
 import 'package:etherly/models/music_app.dart';
 import 'package:etherly/models/song.dart';
+
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/services/listening_stats_service.dart';
 import 'package:etherly/services/music_app_service.dart';
 import 'package:etherly/services/theme_data.dart';
+
 import 'package:etherly/widgets/clear_history.dart';
 import 'package:etherly/widgets/delete_song.dart';
 import 'package:etherly/widgets/music_app_picker.dart';
@@ -197,9 +202,12 @@ class HistoryScreen extends StatelessWidget {
                         return confirm ?? false;
                       },
                       onDismissed: (direction) {
-                        ListeningStatsService().removeSong(song).catchError((_) {});
+                        ListeningStatsService().removeSong(song).catchError((e) {
+                          if (kDebugMode) print('Error removing song: $e');
+                        });
                       },
                       child: SongCardItem(
+                        key: ValueKey(song.timestamp.microsecondsSinceEpoch),
                         songName: song.title,
                         artistName: song.artist.isNotEmpty
                             ? song.artist

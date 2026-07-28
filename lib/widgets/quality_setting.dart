@@ -1,9 +1,12 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:etherly/models/station.dart';
-import 'package:etherly/localization/app_localizations.dart';
 import 'package:provider/provider.dart';
-import '../services/audio_player_service.dart';
-import '../services/theme_data.dart';
+
+import 'package:etherly/localization/app_localizations.dart';
+
+import 'package:etherly/models/station.dart';
+
+import 'package:etherly/services/audio_player_service.dart';
+import 'package:etherly/services/theme_data.dart';
 
 /// A dialog widget for selecting the streaming quality of a radio station.
 class QualitySetting extends StatelessWidget {

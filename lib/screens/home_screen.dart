@@ -1,16 +1,21 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:http/http.dart' as http;
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:etherly/localization/app_localizations.dart';
+
 import 'package:etherly/models/country.dart';
 import 'package:etherly/models/station.dart';
+
 import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/services/theme_data.dart';
+
 import 'package:etherly/widgets/category_row.dart';
 import 'package:etherly/widgets/screen_header.dart';
 
@@ -109,7 +114,9 @@ class _HomeScreenState extends State<HomeScreen>
         });
         _updateRegionalStations();
       }
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) print('Error loading cached regional stations: $e');
+    }
   }
 
   void _updateData() {
@@ -183,7 +190,9 @@ class _HomeScreenState extends State<HomeScreen>
         try {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setStringList('cached_top_regional_names', names);
-        } catch (_) {}
+        } catch (e) {
+          if (kDebugMode) print('Error caching regional station names: $e');
+        }
 
         if (mounted) {
           setState(() {

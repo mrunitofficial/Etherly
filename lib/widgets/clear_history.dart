@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
-import '../localization/app_localizations.dart';
+
+import 'package:etherly/localization/app_localizations.dart';
 
 /// A custom confirmation dialog for clearing history.
 class ClearHistoryDialog extends StatelessWidget {

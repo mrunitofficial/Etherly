@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+/// Enumeration of layout screen types based on device form factor.
 enum ScreenType {
   smallScreenHorizontal,
   smallScreenVertical,
@@ -18,8 +19,9 @@ enum ScreenType {
 
   /// Resolves the layout screen type based on viewport dimensions and orientation.
   static ScreenType fromContext(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final orientation = MediaQuery.of(context).orientation;
+    final mediaQuery = MediaQuery.of(context);
+    final size = mediaQuery.size;
+    final orientation = mediaQuery.orientation;
 
     // Tv check, using method channel
     if (isTv) {

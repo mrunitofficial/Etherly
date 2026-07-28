@@ -1,8 +1,11 @@
-import 'package:etherly/models/device.dart';
-import 'package:etherly/services/theme_data.dart';
-import 'package:etherly/widgets/station_art.dart';
-import 'package:etherly/widgets/marquee_text.dart';
 import 'package:material_ui/material_ui.dart';
+
+import 'package:etherly/models/device.dart';
+
+import 'package:etherly/services/theme_data.dart';
+
+import 'package:etherly/widgets/marquee_text.dart';
+import 'package:etherly/widgets/station_art.dart';
 
 /// A card item widget representing a song with artwork and a timestamp label.
 class SongCardItem extends StatefulWidget {

@@ -21,18 +21,6 @@ class ChromeCastService with ChangeNotifier {
   /// Notifier for remote volume level (0.0 to 1.0).
   final ValueNotifier<double> remoteVolume = ValueNotifier(1.0);
 
-  /// List of currently discovered Cast devices.
-  List<CastDevice> get devices => List.unmodifiable(_devices);
-
-  /// Currently connected Cast device, if any.
-  CastDevice? get connectedDevice => _connectedDevice;
-
-  /// Whether a Cast session is currently connected.
-  bool get isConnected => _connectedDevice != null;
-
-  /// Whether Chromecast is initialized.
-  bool get isInitialized => _initialized;
-
   bool _disposed = false;
   bool _initialized = false;
   final List<CastDevice> _devices = [];
@@ -48,6 +36,18 @@ class ChromeCastService with ChangeNotifier {
     remoteVolume.dispose();
     super.dispose();
   }
+
+  /// List of currently discovered Cast devices.
+  List<CastDevice> get devices => List.unmodifiable(_devices);
+
+  /// Currently connected Cast device, if any.
+  CastDevice? get connectedDevice => _connectedDevice;
+
+  /// Whether a Cast session is currently connected.
+  bool get isConnected => _connectedDevice != null;
+
+  /// Whether Chromecast is initialized.
+  bool get isInitialized => _initialized;
 
   /// Checks if Google Cast framework is available on the current platform.
   bool isCastSupported() {

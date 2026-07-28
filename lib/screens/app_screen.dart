@@ -1,18 +1,22 @@
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:etherly/localization/app_localizations.dart';
+
 import 'package:etherly/models/device.dart';
+
+import 'package:etherly/services/audio_player_service.dart';
+import 'package:etherly/services/chrome_cast_service.dart';
+import 'package:etherly/services/theme_data.dart';
+
 import 'package:etherly/screens/favorites_screen.dart';
 import 'package:etherly/screens/home_screen.dart';
 import 'package:etherly/screens/radio_player.dart';
 import 'package:etherly/screens/search_screen.dart';
 import 'package:etherly/screens/settings_screen.dart';
 import 'package:etherly/screens/stations_screen.dart';
-import 'package:etherly/services/audio_player_service.dart';
-import 'package:etherly/services/chrome_cast_service.dart';
-import 'package:etherly/services/theme_data.dart';
+
 import 'package:etherly/widgets/cast_devices.dart';
 import 'package:etherly/widgets/station_art.dart';
 
@@ -294,7 +298,10 @@ class _AppScreenState extends State<AppScreen>
 
           if (screenType == ScreenType.tv) {
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: EdgeInsets.symmetric(
+                horizontal: spacing.large,
+                vertical: spacing.medium,
+              ),
               child: bodyRow,
             );
           }

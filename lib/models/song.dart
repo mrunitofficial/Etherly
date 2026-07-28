@@ -1,12 +1,25 @@
+/// Domain model representing a played song entry.
 class Song {
+  /// Track title.
   final String title;
+
+  /// Artist name.
   final String artist;
+
+  /// Timestamp when the track was played.
   final DateTime timestamp;
+
+  /// Station ID where the song was played.
   final String stationId;
+
+  /// Station display name.
   final String stationName;
+
+  /// Station artwork URL.
   final String stationArtUrl;
 
-  Song({
+  /// Creates an immutable [Song] instance.
+  const Song({
     required this.title,
     required this.artist,
     required this.timestamp,
@@ -15,6 +28,7 @@ class Song {
     required this.stationArtUrl,
   });
 
+  /// Serializes the song object to JSON format.
   Map<String, dynamic> toJson() {
     return {
       'title': title,
@@ -26,6 +40,7 @@ class Song {
     };
   }
 
+  /// Deserializes a JSON map into a [Song] instance.
   factory Song.fromJson(Map<String, dynamic> json) {
     return Song(
       title: json['title'] as String,

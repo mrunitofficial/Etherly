@@ -1,22 +1,28 @@
 import 'dart:async';
-import 'package:etherly/localization/app_localizations.dart';
-import 'package:etherly/models/device.dart';
-import 'package:etherly/models/station.dart';
-import 'package:etherly/services/audio_player_service.dart';
-import 'package:etherly/services/theme_data.dart';
-import 'package:etherly/widgets/screen_header.dart';
-import 'package:etherly/widgets/station_card_item.dart';
-import 'package:etherly/widgets/station_grid_item.dart';
+
 import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:reorderable_grid/reorderable_grid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:etherly/localization/app_localizations.dart';
+
+import 'package:etherly/models/device.dart';
+import 'package:etherly/models/station.dart';
+
+import 'package:etherly/services/audio_player_service.dart';
+import 'package:etherly/services/theme_data.dart';
+
+import 'package:etherly/widgets/screen_header.dart';
+import 'package:etherly/widgets/station_card_item.dart';
+import 'package:etherly/widgets/station_grid_item.dart';
+
 const String _favoritesViewTypeKey = 'favorites_view_type';
 
+/// Favorites display layout representation options.
 enum ViewType { list, grid }
 
 class FavoritesScreen extends StatefulWidget {
@@ -111,7 +117,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     final theme = Theme.of(context);
     final spacing = theme.extension<Spacing>()!;
     final sizes = theme.extension<Sizes>()!;
-    final shapes = theme.extension<Shapes>()!;
     final loc = AppLocalizations.of(context);
 
     return CustomScrollView(
@@ -175,13 +180,17 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           )
         else ...[
           if (_viewType == ViewType.list)
-            _buildListSlivers(favoriteStations, audioPlayerService, spacing, sizes)
+            _FavoritesListSliver(
+              stations: favoriteStations,
+              service: audioPlayerService,
+              screenType: widget.screenType,
+              onReorder: () => setState(() {}),
+            )
           else
-            _buildSliverGrid(
-              favoriteStations,
-              audioPlayerService,
-              spacing,
-              shapes,
+            _FavoritesGridSliver(
+              stations: favoriteStations,
+              service: audioPlayerService,
+              onReorder: () => setState(() {}),
             ),
           SliverPadding(
             padding: EdgeInsets.only(
@@ -192,14 +201,29 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       ],
     );
   }
+}
 
-  Widget _buildListSlivers(
-    List<Station> stations,
-    AudioPlayerService service,
-    Spacing spacing,
-    Sizes sizes,
-  ) {
-    final artSize = widget.screenType.isLargeFormat
+/// Reorderable list sliver for favorite stations.
+class _FavoritesListSliver extends StatelessWidget {
+  final List<Station> stations;
+  final AudioPlayerService service;
+  final ScreenType screenType;
+  final VoidCallback onReorder;
+
+  const _FavoritesListSliver({
+    required this.stations,
+    required this.service,
+    required this.screenType,
+    required this.onReorder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final sizes = theme.extension<Sizes>()!;
+
+    final artSize = screenType.isLargeFormat
         ? sizes.large
         : sizes.normal;
     final cardHeight = artSize + spacing.medium;
@@ -222,7 +246,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         onReorderStart: (index) => HapticFeedback.heavyImpact(),
         onReorder: (oldIndex, newIndex) {
           service.reorderFavorites(oldIndex, newIndex);
-          setState(() {});
+          onReorder();
         },
         itemBuilder: (context, index) {
           final station = stations[index];
@@ -233,11 +257,12 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               defaultTargetPlatform == TargetPlatform.windows;
 
           final item = StationCardItem(
+            key: ValueKey(station.id),
             station: station,
             isFavorite: station.isFavorite,
             onTap: () => service.playMediaItem(station),
             onFavorite: () => service.toggleFavorite(station),
-            screenType: widget.screenType,
+            screenType: screenType,
           );
 
           if (useQuickDrag) {
@@ -257,13 +282,26 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       ),
     );
   }
+}
 
-  Widget _buildSliverGrid(
-    List<Station> stations,
-    AudioPlayerService service,
-    Spacing spacing,
-    Shapes shapes,
-  ) {
+/// Reorderable grid sliver for favorite stations.
+class _FavoritesGridSliver extends StatelessWidget {
+  final List<Station> stations;
+  final AudioPlayerService service;
+  final VoidCallback onReorder;
+
+  const _FavoritesGridSliver({
+    required this.stations,
+    required this.service,
+    required this.onReorder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spacing = theme.extension<Spacing>()!;
+    final shapes = theme.extension<Shapes>()!;
+
     return SliverPadding(
       padding: EdgeInsets.fromLTRB(
         spacing.medium,
@@ -281,7 +319,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         onReorderStart: (index) => HapticFeedback.heavyImpact(),
         onReorder: (oldIndex, newIndex) {
           service.reorderFavorites(oldIndex, newIndex);
-          setState(() {});
+          onReorder();
         },
         itemBuilder: (context, index) {
           final station = stations[index];
@@ -292,6 +330,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               defaultTargetPlatform == TargetPlatform.windows;
 
           final item = StationGridItem(
+            key: ValueKey(station.id),
             station: station,
             onTap: () => service.playMediaItem(station),
             borderRadius: shapes.medium,
