@@ -31,7 +31,7 @@ Future<AppAudioHandler> initAudioService({
       androidNotificationChannelName: channelName,
       androidNotificationIcon: 'mipmap/notification_icon',
       androidNotificationOngoing: false,
-      androidStopForegroundOnPause: false,
+      androidStopForegroundOnPause: true,
     ),
   );
 }
@@ -55,10 +55,15 @@ class AppAudioHandler extends BaseAudioHandler {
   }
 
   void _updatePlaybackState() {
+    if (mediaItem.value == null) return;
     playbackState.add(_transformEvent(player.playbackEvent));
   }
 
-
+  /// Clears active media item and playback state to dismiss local OS notification card.
+  void clearNotification() {
+    mediaItem.add(null);
+    playbackState.add(PlaybackState());
+  }
 
   /// Updates the currently displaying media item on the OS lock screen.
   @override
@@ -157,11 +162,8 @@ class AppAudioHandler extends BaseAudioHandler {
   @override
   Future<void> stop() async {
     await player.stop();
-    mediaItem.add(null);
     await super.stop();
   }
-
-
 
   @override
   Future<void> onTaskRemoved() async {

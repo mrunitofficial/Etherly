@@ -2,19 +2,19 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../models/device.dart';
-import '../services/audio_player_service.dart';
-import '../services/chrome_cast_service.dart';
-import '../services/theme_data.dart';
-import '../widgets/station_art.dart';
-import '../localization/app_localizations.dart';
-import 'home_screen.dart';
-import 'radio_player.dart';
-import 'search_screen.dart';
-import 'settings_screen.dart';
-import 'stations_screen.dart';
-import 'favorites_screen.dart';
-import '../widgets/cast_devices.dart';
+import 'package:etherly/localization/app_localizations.dart';
+import 'package:etherly/models/device.dart';
+import 'package:etherly/screens/favorites_screen.dart';
+import 'package:etherly/screens/home_screen.dart';
+import 'package:etherly/screens/radio_player.dart';
+import 'package:etherly/screens/search_screen.dart';
+import 'package:etherly/screens/settings_screen.dart';
+import 'package:etherly/screens/stations_screen.dart';
+import 'package:etherly/services/audio_player_service.dart';
+import 'package:etherly/services/chrome_cast_service.dart';
+import 'package:etherly/services/theme_data.dart';
+import 'package:etherly/widgets/cast_devices.dart';
+import 'package:etherly/widgets/station_art.dart';
 
 /// A destination for the app's main navigation.
 class _AppDestination {
@@ -403,17 +403,7 @@ class _CastButton extends StatelessWidget {
       onPressed: () {
         showDialog(
           context: context,
-          builder: (dialogContext) => MultiProvider(
-            providers: [
-              ChangeNotifierProvider.value(
-                value: context.read<AudioPlayerService>(),
-              ),
-              ChangeNotifierProvider.value(
-                value: context.read<ChromeCastService>(),
-              ),
-            ],
-            child: const CastDevices(),
-          ),
+          builder: (_) => const CastDevices(),
         );
       },
     );

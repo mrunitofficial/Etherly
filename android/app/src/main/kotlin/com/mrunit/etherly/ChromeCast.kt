@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
-import androidx.mediarouter.media.MediaControlIntent
 import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.CastDevice
@@ -36,6 +35,8 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
     private var mediaRouter: MediaRouter? = null
     private var mediaRouteSelector: MediaRouteSelector? = null
     private var currentSession: CastSession? = null
+    private var isListenerAdded = false
+    private var lastDeviceListString = ""
 
     private val discoveredRoutes = mutableListOf<MediaRouter.RouteInfo>()
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -69,13 +70,22 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         eventChannel = EventChannel(messenger, EVENTS_CHANNEL).apply { setStreamHandler(this@ChromeCast) }
     }
 
-    /// Unregisters and cleans up channels.
+    /// Unregisters channels and cleans up native session listeners to prevent leaks.
     fun unregister() {
         stopDiscovery()
+        currentSession?.remoteMediaClient?.unregisterCallback(remoteMediaClientCallback)
+        if (isListenerAdded) {
+            castContext?.sessionManager?.removeSessionManagerListener(sessionManagerListener, CastSession::class.java)
+            isListenerAdded = false
+        }
         methodChannel?.setMethodCallHandler(null)
         eventChannel?.setStreamHandler(null)
         methodChannel = null
         eventChannel = null
+        castContext = null
+        mediaRouter = null
+        mediaRouteSelector = null
+        currentSession = null
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -109,7 +119,10 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             if (!appId.isNullOrEmpty()) CastOptionsProvider.customReceiverAppId = appId
 
             castContext = CastContext.getSharedInstance(context)
-            castContext?.sessionManager?.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
+            if (!isListenerAdded) {
+                castContext?.sessionManager?.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
+                isListenerAdded = true
+            }
 
             mediaRouter = MediaRouter.getInstance(context)
             val receiverAppId = appId ?: CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID
@@ -162,7 +175,11 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             )
         }
 
-        emitEvent(mapOf("event" to "devicesChanged", "devices" to deviceList))
+        val deviceString = deviceList.toString()
+        if (deviceString != lastDeviceListString) {
+            lastDeviceListString = deviceString
+            emitEvent(mapOf("event" to "devicesChanged", "devices" to deviceList))
+        }
     }
 
     private fun handleConnect(call: MethodCall, result: MethodChannel.Result) {

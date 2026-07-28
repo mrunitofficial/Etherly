@@ -41,7 +41,6 @@ class _CastDevicesState extends State<CastDevices> {
     _castService ??= context.read<ChromeCastService>();
   }
 
-
   @override
   void dispose() {
     if (_castService != null && _castService!.isCastSupported()) {
@@ -50,7 +49,6 @@ class _CastDevicesState extends State<CastDevices> {
     super.dispose();
   }
 
-  /// Build the Cast devices dialog.
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -67,9 +65,6 @@ class _CastDevicesState extends State<CastDevices> {
           final connected = cast.connectedDevice;
           final spacing = Theme.of(context).extension<Spacing>()!;
 
-          if (!cast.isInitialized) {
-            cast.init();
-          }
           if (devices.isEmpty) {
             return Text(
               loc?.castNoDevices ?? 'No devices found',
@@ -106,7 +101,6 @@ class _CastDevicesState extends State<CastDevices> {
                         ),
                 );
               }),
-
             ],
           );
         },
@@ -133,15 +127,11 @@ class _CastDevicesState extends State<CastDevices> {
     );
   }
 
-  /// Handles selection of a Cast device from the dialog list.
   void _onDevicePressed(CastDevice device, ChromeCastService cast) async {
-
     if (mounted) {
       Navigator.of(context).pop();
     }
     final audio = context.read<AudioPlayerService>();
     await audio.playMediaItem(null, castDevice: device);
   }
-
-
 }
