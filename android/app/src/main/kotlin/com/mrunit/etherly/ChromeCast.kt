@@ -87,7 +87,6 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         val mediaSession = getAudioServiceMediaSession()
         mediaSession?.setPlaybackToLocal(AudioManager.STREAM_MUSIC)
         volumeProvider = null
-        setMediaSessionCompat(null)
         methodChannel?.setMethodCallHandler(null)
         eventChannel?.setStreamHandler(null)
         methodChannel = null
@@ -296,17 +295,6 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         }
     }
 
-    /// Safely sets or clears the MediaSessionCompat instance on MediaRouter via reflection.
-    private fun setMediaSessionCompat(session: MediaSessionCompat?) {
-        val router = mediaRouter ?: return
-        try {
-            val method = router.javaClass.getMethod("setMediaSessionCompat", MediaSessionCompat::class.java)
-            method.invoke(router, session)
-        } catch (e: Exception) {
-            android.util.Log.d("ChromeCast", "Could not set MediaSessionCompat on MediaRouter", e)
-        }
-    }
-
     /// Resolves AudioService's active MediaSessionCompat instance.
     private fun getAudioServiceMediaSession(): MediaSessionCompat? {
         return try {
@@ -330,7 +318,6 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
 
         val mediaSession = getAudioServiceMediaSession()
         if (mediaSession != null) {
-            setMediaSessionCompat(mediaSession)
             val initialVolPercent = (session.volume * 100).toInt().coerceIn(0, 100)
             val provider = object : VolumeProviderCompat(VOLUME_CONTROL_ABSOLUTE, 100, initialVolPercent) {
                 override fun onSetVolumeTo(volume: Int) {
@@ -362,7 +349,6 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         val mediaSession = getAudioServiceMediaSession()
         mediaSession?.setPlaybackToLocal(AudioManager.STREAM_MUSIC)
         volumeProvider = null
-        setMediaSessionCompat(null)
 
         sendSessionStateUpdate()
         sendPlaybackStateUpdate()
