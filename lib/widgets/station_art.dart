@@ -1,9 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:etherly/models/station.dart';
-import 'package:etherly/services/theme_data.dart';
+
+import '../models/station.dart';
+import '../services/theme_data.dart';
 
 class StationArt extends StatelessWidget {
+  /// Standard widget constructor.
   const StationArt({
     super.key,
     this.station,
@@ -18,6 +20,42 @@ class StationArt extends StatelessWidget {
   final String? placeholderUrl;
   final double? size;
   final BorderRadius? borderRadius;
+
+  /// Pre-fetches all station art icons in two phases (128px first for immediate UI, then 512px) to improve UI responsiveness.
+  static Future<void> precacheStations(
+    BuildContext context,
+    List<Station> stations,
+  ) async {
+    final lowResFutures = <Future<void>>[];
+    for (final station in stations) {
+      final art128Url = station.getArtUrl(size: 128);
+      if (art128Url.isNotEmpty) {
+        final provider = CachedNetworkImageProvider(art128Url);
+        if (context.mounted) {
+          lowResFutures.add(
+            precacheImage(provider, context).catchError((_) {}),
+          );
+        }
+      }
+    }
+    await Future.wait(lowResFutures);
+
+    if (!context.mounted) return;
+
+    final highResFutures = <Future<void>>[];
+    for (final station in stations) {
+      final art512Url = station.getArtUrl(size: 512);
+      if (art512Url.isNotEmpty) {
+        final provider = CachedNetworkImageProvider(art512Url);
+        if (context.mounted) {
+          highResFutures.add(
+            precacheImage(provider, context).catchError((_) {}),
+          );
+        }
+      }
+    }
+    await Future.wait(highResFutures);
+  }
 
   @override
   Widget build(BuildContext context) {

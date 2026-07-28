@@ -3,10 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../models/device.dart';
-import '../localization/app_localizations.dart';
 import '../services/audio_player_service.dart';
 import '../services/chrome_cast_service.dart';
 import '../services/theme_data.dart';
+import '../widgets/station_art.dart';
+import '../localization/app_localizations.dart';
 import 'home_screen.dart';
 import 'radio_player.dart';
 import 'search_screen.dart';
@@ -101,7 +102,7 @@ class _AppScreenState extends State<AppScreen>
       if (!mounted) return;
 
       void triggerPrecache() {
-        service.precacheAllStationArt(context).then((_) {
+        StationArt.precacheStations(context, service.stations).then((_) {
           if (mounted) {
             widget.onHomeContentLoaded?.call();
           }
