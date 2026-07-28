@@ -52,6 +52,8 @@ class _CastDevicesState extends State<CastDevices> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final speed = Theme.of(context).extension<Speed>()!;
+    final spacing = Theme.of(context).extension<Spacing>()!;
 
     return AlertDialog(
       scrollable: true,
@@ -59,51 +61,72 @@ class _CastDevicesState extends State<CastDevices> {
         loc?.castDialogTitle ?? 'Cast devices',
         textAlign: TextAlign.center,
       ),
-      content: Consumer<ChromeCastService>(
-        builder: (context, cast, _) {
-          final devices = cast.devices;
-          final connected = cast.connectedDevice;
-          final spacing = Theme.of(context).extension<Spacing>()!;
+      content: AnimatedSize(
+        duration: speed.medium2,
+        alignment: Alignment.topCenter,
+        child: Consumer<ChromeCastService>(
+          builder: (context, cast, _) {
+            final devices = cast.devices;
+            final connected = cast.connectedDevice;
 
-          if (devices.isEmpty) {
-            return Text(
-              loc?.castNoDevices ?? 'No devices found',
-              textAlign: TextAlign.center,
+            return AnimatedSwitcher(
+              duration: speed.short3,
+              child: devices.isEmpty
+                  ? Text(
+                      key: const ValueKey('no_devices'),
+                      loc?.castNoDevices ?? 'No devices found',
+                      textAlign: TextAlign.center,
+                    )
+                  : Column(
+                      key: const ValueKey('devices_list'),
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ...devices.map((device) {
+                          final isSelected =
+                              (connected?.id == device.id) ||
+                              (connected?.name.isNotEmpty == true &&
+                                  connected?.name == device.name);
+
+                          return TweenAnimationBuilder<double>(
+                            key: ValueKey(device.id),
+                            tween: Tween<double>(begin: 0.0, end: 1.0),
+                            duration: speed.short3,
+                            builder: (context, opacity, child) {
+                              return Opacity(opacity: opacity, child: child);
+                            },
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                vertical: spacing.extraSmall,
+                              ),
+                              child: isSelected
+                                  ? FilledButton.icon(
+                                      onPressed: () =>
+                                          _onDevicePressed(device, cast),
+                                      icon: const Icon(
+                                        Icons.cast_connected_rounded,
+                                      ),
+                                      label: Text(
+                                        device.name,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    )
+                                  : FilledButton.tonal(
+                                      onPressed: () =>
+                                          _onDevicePressed(device, cast),
+                                      child: Text(
+                                        device.name,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
             );
-          }
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ...devices.map((device) {
-                final isSelected = (connected?.id == device.id) ||
-                    (connected?.name.isNotEmpty == true &&
-                        connected?.name == device.name);
-
-                return Padding(
-                  key: ValueKey(device.id),
-                  padding: EdgeInsets.symmetric(vertical: spacing.extraSmall),
-                  child: isSelected
-                      ? FilledButton.icon(
-                          onPressed: () => _onDevicePressed(device, cast),
-                          icon: const Icon(Icons.cast_connected_rounded),
-                          label: Text(
-                            device.name,
-                            textAlign: TextAlign.center,
-                          ),
-                        )
-                      : FilledButton.tonal(
-                          onPressed: () => _onDevicePressed(device, cast),
-                          child: Text(
-                            device.name,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                );
-              }),
-            ],
-          );
-        },
+          },
+        ),
       ),
       actions: [
         TextButton(

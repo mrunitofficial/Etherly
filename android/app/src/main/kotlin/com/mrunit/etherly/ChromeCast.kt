@@ -122,6 +122,8 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         eventSink = events
         updateDiscoveredDevices()
         sendSessionStateUpdate()
+        sendPlaybackStateUpdate()
+        sendVolumeUpdate()
     }
 
     override fun onCancel(arguments: Any?) { eventSink = null }
@@ -147,6 +149,9 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             currentSession?.remoteMediaClient?.registerCallback(remoteMediaClientCallback)
 
             startDiscovery()
+            sendSessionStateUpdate()
+            sendPlaybackStateUpdate()
+            sendVolumeUpdate()
             result.success(true)
         } catch (e: Exception) {
             result.error("INIT_FAILED", e.localizedMessage, null)

@@ -270,12 +270,6 @@ class AudioPlayerService with ChangeNotifier {
   /// Starts playback. Forces a reset to the live edge.
   Future<void> play() async {
     cancelAutoplayCountdown();
-    if (isCasting) {
-      _isPlayIntended = true;
-      notifyListeners();
-      await _castService?.play();
-      return;
-    }
     await playMediaItem(null);
   }
 
