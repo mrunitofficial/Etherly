@@ -107,7 +107,7 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             "stopDiscovery" -> { stopDiscovery(); result.success(true) }
             "connect" -> handleConnect(call, result)
             "disconnect" -> handleDisconnect(result)
-            "loadMedia" -> { destroyLocalMediaSession(); handleLoadMedia(call, result) }
+            "loadMedia" -> handleLoadMedia(call, result)
             "destroyLocalMediaSession" -> { destroyLocalMediaSession(); result.success(true) }
             "play" -> handleMediaAction(result) { it.play() }
             "pause" -> handleMediaAction(result) { it.pause() }
@@ -352,8 +352,6 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
     private fun onSessionConnected(session: CastSession) {
         currentSession = session
         session.remoteMediaClient?.registerCallback(remoteMediaClientCallback)
-
-        destroyLocalMediaSession()
 
         sendSessionStateUpdate()
         sendPlaybackStateUpdate()

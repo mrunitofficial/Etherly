@@ -42,6 +42,7 @@ class AppAudioHandler extends BaseAudioHandler {
   final AudioSession session;
   final Future<void> Function() onSkipNext;
   final Future<void> Function() onSkipPrev;
+  bool isRemoteSession = false;
 
   AppAudioHandler({
     required this.player,
@@ -49,31 +50,68 @@ class AppAudioHandler extends BaseAudioHandler {
     required this.onSkipNext,
     required this.onSkipPrev,
   }) {
-    // Pipe just_audio's playback events and state changes to audio_service
     player.playbackEventStream.listen((_) => _updatePlaybackState());
     player.playerStateStream.listen((_) => _updatePlaybackState());
   }
 
   void _updatePlaybackState() {
+    if (isRemoteSession) return;
     if (mediaItem.value == null) {
-      playbackState.add(PlaybackState(
-        processingState: AudioProcessingState.idle,
-        playing: false,
-        controls: [],
-      ));
+      playbackState.add(
+        PlaybackState(
+          processingState: AudioProcessingState.idle,
+          playing: false,
+          controls: [],
+        ),
+      );
       return;
     }
     playbackState.add(_transformEvent(player.playbackEvent));
   }
 
+  /// Manually updates playback state for external or remote sessions (e.g. Chromecast).
+  void updateRemotePlaybackState({
+    required bool playing,
+    required bool isBuffering,
+  }) {
+    isRemoteSession = true;
+    if (mediaItem.value == null) return;
+    playbackState.add(
+      PlaybackState(
+        controls: [
+          MediaControl.skipToPrevious,
+          playing ? MediaControl.pause : MediaControl.play,
+          MediaControl.stop,
+          MediaControl.skipToNext,
+        ],
+        systemActions: const {
+          MediaAction.seek,
+          MediaAction.seekForward,
+          MediaAction.seekBackward,
+        },
+        androidCompactActionIndices: const [0, 1, 3],
+        processingState: isBuffering
+            ? AudioProcessingState.buffering
+            : (playing
+                  ? AudioProcessingState.ready
+                  : AudioProcessingState.idle),
+        playing: playing,
+        updatePosition: Duration.zero,
+      ),
+    );
+  }
+
   /// Clears active media item and stops AudioService to dismiss local OS notification card.
   Future<void> clearNotification() async {
+    isRemoteSession = false;
     mediaItem.add(null);
-    playbackState.add(PlaybackState(
-      processingState: AudioProcessingState.idle,
-      playing: false,
-      controls: [],
-    ));
+    playbackState.add(
+      PlaybackState(
+        processingState: AudioProcessingState.idle,
+        playing: false,
+        controls: [],
+      ),
+    );
     await stop();
   }
 
@@ -88,6 +126,7 @@ class AppAudioHandler extends BaseAudioHandler {
   /// Plays a media item by setting the audio source and beginning playback.
   @override
   Future<void> playMediaItem(MediaItem item) async {
+    isRemoteSession = false;
     mediaItem.add(item);
 
     final streamsObj = item.extras?['streams'];

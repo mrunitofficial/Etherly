@@ -47,8 +47,7 @@ class AudioPlayerService with ChangeNotifier {
   ValueNotifier<bool> get radioPlayerShouldClose => _radioPlayerShouldClose;
 
   /// List of recently played stations.
-  List<Station> get recentStations => ListeningStatsService()
-      .recentStationIds
+  List<Station> get recentStations => ListeningStatsService().recentStationIds
       .map((id) => _stationMap[id])
       .whereType<Station>()
       .toList();
@@ -105,7 +104,9 @@ class AudioPlayerService with ChangeNotifier {
   }
 
   /// Volume level of the player or active cast session.
-  double get volume => isCasting ? (_castService?.remoteVolume.value ?? player.volume) : player.volume;
+  double get volume => isCasting
+      ? (_castService?.remoteVolume.value ?? player.volume)
+      : player.volume;
 
   /// Stream of player volume changes.
   Stream<double> get volumeStream => player.volumeStream;
@@ -124,7 +125,8 @@ class AudioPlayerService with ChangeNotifier {
   Map<String, Station> _stationMap = {};
   List<String> _favoriteStationIds = [];
 
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _stationsSubscription;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+  _stationsSubscription;
   Timer? _listeningMinuteTimer;
   Timer? _autoplayTimer;
   bool _autoplayCancelled = false;
@@ -197,7 +199,10 @@ class AudioPlayerService with ChangeNotifier {
 
   /// Returns the secondary text for display in UI or notifications.
   String getSecondaryText({String? loadingText}) {
-    if (!isCasting && isLoading && loadingText != null && loadingText.isNotEmpty) {
+    if (!isCasting &&
+        isLoading &&
+        loadingText != null &&
+        loadingText.isNotEmpty) {
       return loadingText;
     }
 
@@ -230,8 +235,10 @@ class AudioPlayerService with ChangeNotifier {
         _startCastTransitionTimeout();
 
         await player.stop();
-        await _audioHandler.clearNotification();
-        await _castService?.destroyLocalMediaSession();
+        _audioHandler.updateRemotePlaybackState(
+          playing: _castService?.isRemotePlaying.value ?? false,
+          isBuffering: true,
+        );
         if (castDevice != null && _castService != null) {
           await _castService.connectAndWait(castDevice);
         }
@@ -384,12 +391,17 @@ class AudioPlayerService with ChangeNotifier {
 
   void _onCastRemotePlayingChanged() {
     if (isCasting) {
-      if (_castService?.isRemotePlaying.value == true) {
+      final isPlaying = _castService?.isRemotePlaying.value ?? false;
+      if (isPlaying) {
         _isTransitioning = false;
         _isPlayIntended = true;
         _castTransitionTimer?.cancel();
         _castTransitionTimer = null;
       }
+      _audioHandler.updateRemotePlaybackState(
+        playing: isPlaying,
+        isBuffering: _isTransitioning,
+      );
     }
     notifyListeners();
   }
@@ -412,8 +424,10 @@ class AudioPlayerService with ChangeNotifier {
     if (isReady.value) {
       if (isCasting) {
         player.stop();
-        _audioHandler.clearNotification();
-        _castService?.destroyLocalMediaSession();
+        _audioHandler.updateRemotePlaybackState(
+          playing: _castService?.isRemotePlaying.value ?? false,
+          isBuffering: false,
+        );
       } else {
         _isTransitioning = false;
         _isPlayIntended = false;
@@ -483,38 +497,39 @@ class AudioPlayerService with ChangeNotifier {
       },
     );
 
-    player.icyMetadataStream.map((m) => m?.info?.title?.trim()).distinct().listen((
-      title,
-    ) {
-      if (isCasting) return;
-      if (title != null && title.isNotEmpty) {
-        final currentTag =
-            player.sequenceState.currentSource?.tag as MediaItem?;
+    player.icyMetadataStream
+        .map((m) => m?.info?.title?.trim())
+        .distinct()
+        .listen((title) {
+          if (isCasting) return;
+          if (title != null && title.isNotEmpty) {
+            final currentTag =
+                player.sequenceState.currentSource?.tag as MediaItem?;
 
-        if (currentTag?.id == _currentMediaItem?.id) {
-          currentSongTitle = title;
-          _isTransitioning = false;
-          _syncSecondaryText();
-          notifyListeners();
-        }
+            if (currentTag?.id == _currentMediaItem?.id) {
+              currentSongTitle = title;
+              _isTransitioning = false;
+              _syncSecondaryText();
+              notifyListeners();
+            }
 
-        if (currentTag != null) {
-          final parts = title.split(' - ');
-          final artistName = parts.length > 1 ? parts[0].trim() : '';
-          final songName = parts.length > 1
-              ? parts.sublist(1).join(' - ').trim()
-              : title;
+            if (currentTag != null) {
+              final parts = title.split(' - ');
+              final artistName = parts.length > 1 ? parts[0].trim() : '';
+              final songName = parts.length > 1
+                  ? parts.sublist(1).join(' - ').trim()
+                  : title;
 
-          ListeningStatsService().addSong(
-            title: songName,
-            artist: artistName,
-            stationId: currentTag.id,
-            stationName: currentTag.title,
-            stationArtUrl: currentTag.safeArt512Url,
-          );
-        }
-      }
-    });
+              ListeningStatsService().addSong(
+                title: songName,
+                artist: artistName,
+                stationId: currentTag.id,
+                stationName: currentTag.title,
+                stationArtUrl: currentTag.safeArt512Url,
+              );
+            }
+          }
+        });
 
     _preMuteVolume = _prefs.getDouble(_preMuteVolumeKey) ?? 1.0;
     _isMuted = _prefs.getBool(_isMutedKey) ?? false;
@@ -562,7 +577,9 @@ class AudioPlayerService with ChangeNotifier {
       await fetchBundleFuture;
       await _readStationsFromCache();
     } else {
-      fetchBundleFuture.then((_) => _readStationsFromCache()).catchError((_) {});
+      fetchBundleFuture
+          .then((_) => _readStationsFromCache())
+          .catchError((_) {});
     }
   }
 
@@ -600,8 +617,9 @@ class AudioPlayerService with ChangeNotifier {
         return data['active'] == true || data['active'] == null;
       }).toList();
 
-      final loaded =
-          activeDocs.map((doc) => Station.fromFirestore(doc)).toList();
+      final loaded = activeDocs
+          .map((doc) => Station.fromFirestore(doc))
+          .toList();
       if (loaded.isEmpty) return;
 
       loaded.sort((a, b) {
@@ -696,8 +714,9 @@ class AudioPlayerService with ChangeNotifier {
 extension StationToMediaItem on Station {
   MediaItem toMediaItem({String? artist}) {
     final url = streams.values.isNotEmpty ? streams.values.first : '';
-    final initialArtist =
-        (artist != null && artist.isNotEmpty) ? artist : slogan;
+    final initialArtist = (artist != null && artist.isNotEmpty)
+        ? artist
+        : slogan;
     return MediaItem(
       id: id,
       title: name,
