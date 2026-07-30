@@ -65,16 +65,16 @@ class AudioPlayerService with ChangeNotifier {
 
   /// Creates the service and attaches listeners to optional cast service.
   AudioPlayerService([this._castService]) {
+    _castService?.addListener(notifyListeners);
     _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
-    _castService?.addListener(_onCastingStateChanged);
     _castService?.remoteVolume.addListener(notifyListeners);
     _init();
   }
 
   @override
   void dispose() {
+    _castService?.removeListener(notifyListeners);
     _castService?.isRemotePlaying.removeListener(_onCastRemotePlayingChanged);
-    _castService?.removeListener(_onCastingStateChanged);
     _castService?.remoteVolume.removeListener(notifyListeners);
 
     _stationsSubscription?.cancel();
@@ -137,32 +137,23 @@ class AudioPlayerService with ChangeNotifier {
   /// Whether a Cast session is currently connected.
   bool get isCasting => _castService?.isConnected ?? false;
 
-  /// Unified play state for UI.
-  bool get isPlaying {
+  /// Whether the player or cast session is actively producing sound.
+  bool get _isActuallyProducingSound {
     if (isCasting) {
       return _castService?.isRemotePlaying.value ?? false;
     }
-    if (!_isPlayIntended || !player.playing) return false;
     if (kIsWeb) {
-      return player.processingState != ProcessingState.loading;
+      return player.playing &&
+          player.processingState != ProcessingState.loading;
     }
-    return player.processingState == ProcessingState.ready;
+    return player.playing && player.processingState == ProcessingState.ready;
   }
 
+  /// Unified play state for UI.
+  bool get isPlaying => _isPlayIntended && _isActuallyProducingSound;
+
   /// Unified loading and buffering state for UI.
-  bool get isLoading {
-    if (isCasting) {
-      return !(_castService?.isRemotePlaying.value ?? false);
-    }
-    if (!_isPlayIntended) return false;
-    if (kIsWeb) {
-      return !player.playing ||
-          player.processingState == ProcessingState.loading;
-    }
-    return !player.playing ||
-        player.processingState == ProcessingState.loading ||
-        player.processingState == ProcessingState.buffering;
-  }
+  bool get isLoading => _isPlayIntended && !_isActuallyProducingSound;
 
   /// Volume level of the player or active cast session.
   double get volume => isCasting
@@ -237,6 +228,9 @@ class AudioPlayerService with ChangeNotifier {
 
     if (castDevice != null || isCasting) {
       try {
+        _isPlayIntended = true;
+        notifyListeners();
+
         await _audioHandler.stop();
         _audioHandler.updateRemotePlaybackState(
           playing: _castService?.isRemotePlaying.value ?? false,
@@ -385,19 +379,6 @@ class AudioPlayerService with ChangeNotifier {
         playing: isPlaying,
         isBuffering: isLoading,
       );
-    }
-    notifyListeners();
-  }
-
-  void _onCastingStateChanged() {
-    if (isReady.value) {
-      if (isCasting) {
-        player.stop();
-        _audioHandler.updateRemotePlaybackState(
-          playing: _castService?.isRemotePlaying.value ?? false,
-          isBuffering: false,
-        );
-      }
     }
     notifyListeners();
   }
