@@ -68,7 +68,10 @@ void main() {
 
     test('devices getter returns an unmodifiable list', () {
       final devices = service.devices;
-      expect(() => (devices as List).add(const CastDevice(id: '1', name: 'Test')), throwsUnsupportedError);
+      expect(
+        () => (devices as List).add(const CastDevice(id: '1', name: 'Test')),
+        throwsUnsupportedError,
+      );
     });
 
     test('startDiscovery invokes native channel method on Android', () async {

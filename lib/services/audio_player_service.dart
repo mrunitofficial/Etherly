@@ -65,9 +65,6 @@ class AudioPlayerService with ChangeNotifier {
 
   /// Creates the service and attaches listeners to optional cast service.
   AudioPlayerService([this._castService]) {
-    _castService?.addListener(notifyListeners);
-    _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
-    _castService?.remoteVolume.addListener(notifyListeners);
     _init();
   }
 
@@ -392,6 +389,10 @@ class AudioPlayerService with ChangeNotifier {
       onSkipToNext: skipToNext,
       onSkipToPrevious: skipToPrevious,
     );
+
+    _castService?.addListener(notifyListeners);
+    _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
+    _castService?.remoteVolume.addListener(notifyListeners);
 
     player.playerStateStream.listen((state) {
       if (isCasting) return;
