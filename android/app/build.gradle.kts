@@ -44,20 +44,20 @@ extensions.configure<ApplicationExtension> {
 
     signingConfigs {
         create("release") {
-            val keystorePath = keyProperties.getProperty("storeFile") ?: System.getenv("KEYSTORE_PATH")
-            if (keystorePath != null && file(keystorePath).exists()) {
+            val keystorePath = keyProperties.getProperty("storeFile")?.trim() ?: System.getenv("KEYSTORE_PATH")
+            if (!keystorePath.isNullOrEmpty() && file(keystorePath).exists()) {
                 storeFile = file(keystorePath)
-                storePassword = keyProperties.getProperty("storePassword") ?: System.getenv("KEYSTORE_PASSWORD")
-                keyAlias = keyProperties.getProperty("keyAlias") ?: System.getenv("KEY_ALIAS")
-                keyPassword = keyProperties.getProperty("keyPassword") ?: System.getenv("KEY_PASSWORD")
+                storePassword = keyProperties.getProperty("storePassword")?.trim() ?: System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = keyProperties.getProperty("keyAlias")?.trim() ?: System.getenv("KEY_ALIAS")
+                keyPassword = keyProperties.getProperty("keyPassword")?.trim() ?: System.getenv("KEY_PASSWORD")
             }
         }
     }
 
     buildTypes {
         release {
-            val keystorePath = keyProperties.getProperty("storeFile") ?: System.getenv("KEYSTORE_PATH")
-            if (keystorePath != null && file(keystorePath).exists()) {
+            val keystorePath = keyProperties.getProperty("storeFile")?.trim() ?: System.getenv("KEYSTORE_PATH")
+            if (!keystorePath.isNullOrEmpty() && file(keystorePath).exists()) {
                 signingConfig = signingConfigs.getByName("release")
             } else {
                 signingConfig = signingConfigs.getByName("debug")
