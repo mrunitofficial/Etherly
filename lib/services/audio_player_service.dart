@@ -44,8 +44,8 @@ class AudioPlayerService with ChangeNotifier {
   final ChromeCastService? _castService;
   late final SharedPreferences _prefs;
 
-  bool _isPlayIntended = false;
   bool _isCastLoading = false;
+  bool _isLocalLoading = false;
 
   final Completer<void> _initializationCompleter = Completer<void>();
   final ValueNotifier<bool> _radioPlayerShouldClose = ValueNotifier(false);
@@ -131,10 +131,10 @@ class AudioPlayerService with ChangeNotifier {
   /// Whether a Cast session is currently connected.
   bool get isCasting => _castService?.isConnected ?? false;
 
-  /// Whether the player or cast session is actively producing sound.
-  bool get _isActuallyProducingSound {
+  /// Unified play state for UI.
+  bool get isPlaying {
     if (isCasting) {
-      return !_isCastLoading && (_castService?.isRemotePlaying.value ?? false);
+      return _castService?.isRemotePlaying.value ?? false;
     }
     if (kIsWeb) {
       return player.playing &&
@@ -143,12 +143,16 @@ class AudioPlayerService with ChangeNotifier {
     return player.playing && player.processingState == ProcessingState.ready;
   }
 
-  /// Unified play state for UI.
-  bool get isPlaying => _isPlayIntended && _isActuallyProducingSound;
-
   /// Unified loading and buffering state for UI.
-  bool get isLoading =>
-      _isPlayIntended && (_isCastLoading || !_isActuallyProducingSound);
+  bool get isLoading {
+    if (_isCastLoading) return true;
+    if (isCasting) {
+      return _castService?.isRemoteBuffering.value ?? false;
+    }
+    return _isLocalLoading ||
+        player.processingState == ProcessingState.buffering ||
+        player.processingState == ProcessingState.loading;
+  }
 
   /// Volume level of the player or active cast session.
   double get volume => isCasting
@@ -218,12 +222,10 @@ class AudioPlayerService with ChangeNotifier {
     _setMediaItem(item);
 
     currentSongTitle = null;
-    _isPlayIntended = true;
     notifyListeners();
 
     if (castDevice != null || isCasting) {
       try {
-        _isPlayIntended = true;
         _isCastLoading = true;
         notifyListeners();
 
@@ -236,10 +238,10 @@ class AudioPlayerService with ChangeNotifier {
           await _castService.connectAndWait(castDevice);
         }
         await _castService?.castAudio(item);
+        await _castService?.play();
       } catch (e) {
         if (kDebugMode) print('Error casting media item: $e');
         _isCastLoading = false;
-        _isPlayIntended = false;
         notifyListeners();
       }
       return;
@@ -247,12 +249,14 @@ class AudioPlayerService with ChangeNotifier {
 
     try {
       if (_currentMediaItem?.id != item.id) return;
+      _isLocalLoading = true;
+      notifyListeners();
       await _audioHandler.playMediaItem(item);
     } catch (e) {
       if (kDebugMode) print('Error playing media item: $e');
+      _isLocalLoading = false;
       if (_currentMediaItem?.id == item.id) {
         await _audioHandler.stop();
-        _isPlayIntended = false;
         notifyListeners();
       }
     }
@@ -268,7 +272,7 @@ class AudioPlayerService with ChangeNotifier {
   Future<void> pause() async {
     cancelAutoplayCountdown();
     _isCastLoading = false;
-    _isPlayIntended = false;
+    _isLocalLoading = false;
     notifyListeners();
     if (isCasting) {
       await _castService?.pause();
@@ -282,7 +286,7 @@ class AudioPlayerService with ChangeNotifier {
     cancelAutoplayCountdown();
     cancelSleepTimer();
     _isCastLoading = false;
-    _isPlayIntended = false;
+    _isLocalLoading = false;
     notifyListeners();
     if (isCasting) {
       await _castService?.endCasting();
@@ -373,20 +377,16 @@ class AudioPlayerService with ChangeNotifier {
 
   void _onCastRemotePlayingChanged() {
     if (isCasting) {
-      final isPlaying = _castService?.isRemotePlaying.value ?? false;
-      if (isPlaying) {
+      final isPlayingRemote = _castService?.isRemotePlaying.value ?? false;
+      if (isPlayingRemote) {
         _isCastLoading = false;
-        _isPlayIntended = true;
-      } else if (!_isCastLoading) {
-        _isPlayIntended = false;
       }
       _audioHandler.updateRemotePlaybackState(
-        playing: isPlaying,
+        playing: isPlayingRemote,
         isBuffering: isLoading,
       );
     } else {
       _isCastLoading = false;
-      _isPlayIntended = false;
     }
     notifyListeners();
   }
@@ -401,10 +401,7 @@ class AudioPlayerService with ChangeNotifier {
       onSkipToPrevious: skipToPrevious,
     );
 
-    _castService?.addListener(notifyListeners);
     _castService?.addListener(_onCastRemotePlayingChanged);
-    _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
-    _castService?.isRemoteBuffering.addListener(_onCastRemotePlayingChanged);
     _castService?.remoteVolume.addListener(notifyListeners);
 
     if (isCasting) {
@@ -414,6 +411,9 @@ class AudioPlayerService with ChangeNotifier {
     player.playerStateStream.listen((state) {
       if (isCasting) return;
       final processingState = state.processingState;
+      if (processingState != ProcessingState.idle) {
+        _isLocalLoading = false;
+      }
 
       if (processingState == ProcessingState.idle ||
           processingState == ProcessingState.completed) {
