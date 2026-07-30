@@ -140,6 +140,7 @@ class ChromeCastService with ChangeNotifier {
         'subtitle': mediaItem.artist ?? mediaItem.album ?? '',
         'imageUrl': mediaItem.artUri?.toString() ?? '',
         'contentType': contentType,
+        'autoplay': true,
       });
     } catch (e) {
       if (kDebugMode) print('Failed to load media on Cast: $e');
