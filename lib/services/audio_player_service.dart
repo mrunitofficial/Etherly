@@ -72,6 +72,7 @@ class AudioPlayerService with ChangeNotifier {
   void dispose() {
     _castService?.removeListener(notifyListeners);
     _castService?.isRemotePlaying.removeListener(_onCastRemotePlayingChanged);
+    _castService?.isRemoteBuffering.removeListener(_onCastRemotePlayingChanged);
     _castService?.remoteVolume.removeListener(notifyListeners);
 
     _stationsSubscription?.cancel();
@@ -372,6 +373,12 @@ class AudioPlayerService with ChangeNotifier {
   void _onCastRemotePlayingChanged() {
     if (isCasting) {
       final isPlaying = _castService?.isRemotePlaying.value ?? false;
+      final isBuffering = _castService?.isRemoteBuffering.value ?? false;
+      if (isPlaying) {
+        _isPlayIntended = true;
+      } else if (!isBuffering) {
+        _isPlayIntended = false;
+      }
       _audioHandler.updateRemotePlaybackState(
         playing: isPlaying,
         isBuffering: isLoading,
@@ -392,6 +399,7 @@ class AudioPlayerService with ChangeNotifier {
 
     _castService?.addListener(notifyListeners);
     _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
+    _castService?.isRemoteBuffering.addListener(_onCastRemotePlayingChanged);
     _castService?.remoteVolume.addListener(notifyListeners);
 
     player.playerStateStream.listen((state) {
