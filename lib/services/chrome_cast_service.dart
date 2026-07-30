@@ -127,6 +127,12 @@ class ChromeCastService with ChangeNotifier {
         ? 'audio/aac'
         : 'audio/mpeg';
 
+    if (!_disposed) {
+      isRemotePlaying.value = false;
+      isRemoteBuffering.value = true;
+      notifyListeners();
+    }
+
     try {
       await _channel.invokeMethod('loadMedia', {
         'url': urlStr,
@@ -272,6 +278,7 @@ class ChromeCastService with ChangeNotifier {
         final isBuffering = data['isLoading'] == true;
         isRemoteBuffering.value = isBuffering;
         isRemotePlaying.value = isPlaying;
+        notifyListeners();
 
       case 'volumeChanged':
         if (data['volume'] is num) {

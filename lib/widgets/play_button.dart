@@ -26,30 +26,35 @@ class PlayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget content = _PlayButtonContent(
-      service: service,
-      countdown: countdown,
-      size: size,
-    );
+    return ListenableBuilder(
+      listenable: service,
+      builder: (context, _) {
+        final Widget content = _PlayButtonContent(
+          service: service,
+          countdown: countdown,
+          size: size,
+        );
 
-    switch (size) {
-      case PlayButtonSize.large:
-        return FloatingActionButton.large(
-          heroTag: heroTag,
-          elevation: elevation,
-          tooltip: tooltip,
-          onPressed: _handlePlayPause,
-          child: content,
-        );
-      case PlayButtonSize.medium:
-        return FloatingActionButton(
-          heroTag: heroTag,
-          elevation: elevation,
-          tooltip: tooltip,
-          onPressed: _handlePlayPause,
-          child: content,
-        );
-    }
+        switch (size) {
+          case PlayButtonSize.large:
+            return FloatingActionButton.large(
+              heroTag: heroTag,
+              elevation: elevation,
+              tooltip: tooltip,
+              onPressed: _handlePlayPause,
+              child: content,
+            );
+          case PlayButtonSize.medium:
+            return FloatingActionButton(
+              heroTag: heroTag,
+              elevation: elevation,
+              tooltip: tooltip,
+              onPressed: _handlePlayPause,
+              child: content,
+            );
+        }
+      },
+    );
   }
 
   /// Toggles playback state or stops buffering/countdown.

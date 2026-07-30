@@ -255,7 +255,11 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             .build()
 
         client.load(mediaInfo, true, 0)
-        sendPlaybackStateUpdate()
+        emitEvent(mapOf(
+            "event" to "playbackState",
+            "isPlaying" to false,
+            "isLoading" to true
+        ))
         result.success(true)
     }
 

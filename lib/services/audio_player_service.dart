@@ -45,6 +45,7 @@ class AudioPlayerService with ChangeNotifier {
   late final SharedPreferences _prefs;
 
   bool _isPlayIntended = false;
+  bool _isCastLoading = false;
 
   final Completer<void> _initializationCompleter = Completer<void>();
   final ValueNotifier<bool> _radioPlayerShouldClose = ValueNotifier(false);
@@ -71,6 +72,7 @@ class AudioPlayerService with ChangeNotifier {
   @override
   void dispose() {
     _castService?.removeListener(notifyListeners);
+    _castService?.removeListener(_onCastRemotePlayingChanged);
     _castService?.isRemotePlaying.removeListener(_onCastRemotePlayingChanged);
     _castService?.isRemoteBuffering.removeListener(_onCastRemotePlayingChanged);
     _castService?.remoteVolume.removeListener(notifyListeners);
@@ -81,12 +83,6 @@ class AudioPlayerService with ChangeNotifier {
     _sleepTimer?.cancel();
     _bufferingTimeoutTimer?.cancel();
     _listeningMinuteTimer?.cancel();
-
-    try {
-      _castService?.endCasting();
-    } catch (e) {
-      if (kDebugMode) print('Error ending cast during dispose: $e');
-    }
     sleepTimerActive.dispose();
     autoplayCountdownNotifier.dispose();
     super.dispose();
@@ -138,7 +134,7 @@ class AudioPlayerService with ChangeNotifier {
   /// Whether the player or cast session is actively producing sound.
   bool get _isActuallyProducingSound {
     if (isCasting) {
-      return _castService?.isRemotePlaying.value ?? false;
+      return !_isCastLoading && (_castService?.isRemotePlaying.value ?? false);
     }
     if (kIsWeb) {
       return player.playing &&
@@ -151,7 +147,8 @@ class AudioPlayerService with ChangeNotifier {
   bool get isPlaying => _isPlayIntended && _isActuallyProducingSound;
 
   /// Unified loading and buffering state for UI.
-  bool get isLoading => _isPlayIntended && !_isActuallyProducingSound;
+  bool get isLoading =>
+      _isPlayIntended && (_isCastLoading || !_isActuallyProducingSound);
 
   /// Volume level of the player or active cast session.
   double get volume => isCasting
@@ -227,11 +224,12 @@ class AudioPlayerService with ChangeNotifier {
     if (castDevice != null || isCasting) {
       try {
         _isPlayIntended = true;
+        _isCastLoading = true;
         notifyListeners();
 
-        await _audioHandler.stop();
+        await player.stop();
         _audioHandler.updateRemotePlaybackState(
-          playing: _castService?.isRemotePlaying.value ?? false,
+          playing: false,
           isBuffering: true,
         );
         if (castDevice != null && _castService != null) {
@@ -240,6 +238,7 @@ class AudioPlayerService with ChangeNotifier {
         await _castService?.castAudio(item);
       } catch (e) {
         if (kDebugMode) print('Error casting media item: $e');
+        _isCastLoading = false;
         _isPlayIntended = false;
         notifyListeners();
       }
@@ -268,6 +267,7 @@ class AudioPlayerService with ChangeNotifier {
   /// Pauses playback.
   Future<void> pause() async {
     cancelAutoplayCountdown();
+    _isCastLoading = false;
     _isPlayIntended = false;
     notifyListeners();
     if (isCasting) {
@@ -281,6 +281,7 @@ class AudioPlayerService with ChangeNotifier {
   Future<void> stop() async {
     cancelAutoplayCountdown();
     cancelSleepTimer();
+    _isCastLoading = false;
     _isPlayIntended = false;
     notifyListeners();
     if (isCasting) {
@@ -373,16 +374,19 @@ class AudioPlayerService with ChangeNotifier {
   void _onCastRemotePlayingChanged() {
     if (isCasting) {
       final isPlaying = _castService?.isRemotePlaying.value ?? false;
-      final isBuffering = _castService?.isRemoteBuffering.value ?? false;
       if (isPlaying) {
+        _isCastLoading = false;
         _isPlayIntended = true;
-      } else if (!isBuffering) {
+      } else if (!_isCastLoading) {
         _isPlayIntended = false;
       }
       _audioHandler.updateRemotePlaybackState(
         playing: isPlaying,
         isBuffering: isLoading,
       );
+    } else {
+      _isCastLoading = false;
+      _isPlayIntended = false;
     }
     notifyListeners();
   }
@@ -398,9 +402,14 @@ class AudioPlayerService with ChangeNotifier {
     );
 
     _castService?.addListener(notifyListeners);
+    _castService?.addListener(_onCastRemotePlayingChanged);
     _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
     _castService?.isRemoteBuffering.addListener(_onCastRemotePlayingChanged);
     _castService?.remoteVolume.addListener(notifyListeners);
+
+    if (isCasting) {
+      _onCastRemotePlayingChanged();
+    }
 
     player.playerStateStream.listen((state) {
       if (isCasting) return;
