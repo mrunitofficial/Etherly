@@ -132,7 +132,6 @@ class ChromeCastService with ChangeNotifier {
       isRemoteBuffering.value = true;
       notifyListeners();
     }
-  }
 
     try {
       await _channel.invokeMethod('loadMedia', {
