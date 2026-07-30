@@ -32,6 +32,10 @@ android/app/google-services.json
 
 # Local / Sensitive
 android/local.properties
+android/key.properties
+android/app/key.properties
+*.jks
+*.keystore
 
 # CI/CD related
 .agents/
