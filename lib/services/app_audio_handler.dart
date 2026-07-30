@@ -161,6 +161,9 @@ class AppAudioHandler extends BaseAudioHandler {
       }
       try {
         if (!_isCurrentStation(item.id)) return;
+        if (kIsWeb) {
+          await player.stop();
+        }
         await player.setAudioSource(
           AudioSource.uri(Uri.parse(entry.value), tag: item),
         );
@@ -249,13 +252,20 @@ class AppAudioHandler extends BaseAudioHandler {
   /// Transforms just_audio's generic PlaybackEvent into audio_service's PlaybackState
   PlaybackState _transformEvent(PlaybackEvent event) {
     final playing = player.playing;
-    final isIdle = player.processingState == ProcessingState.idle;
+    final processingState = player.processingState;
+    final isIdle = processingState == ProcessingState.idle;
+    final isBufferingOrLoading =
+        processingState == ProcessingState.loading ||
+        processingState == ProcessingState.buffering;
 
     return PlaybackState(
       controls: [
         if (!isIdle) ...[
           if (kIsWeb) MediaControl.skipToPrevious,
-          if (playing) MediaControl.pause else MediaControl.play,
+          if (playing || isBufferingOrLoading)
+            MediaControl.pause
+          else
+            MediaControl.play,
           if (kIsWeb) MediaControl.skipToNext,
           if (kIsWeb) MediaControl.stop,
         ],
@@ -268,8 +278,8 @@ class AppAudioHandler extends BaseAudioHandler {
         },
       },
       androidCompactActionIndices: const [0],
-      processingState: _getProcessingState(player.processingState),
-      playing: playing,
+      processingState: _getProcessingState(processingState),
+      playing: playing || isBufferingOrLoading,
       updatePosition: player.position,
       bufferedPosition: player.bufferedPosition,
       speed: player.speed,
