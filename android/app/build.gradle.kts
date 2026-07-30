@@ -1,3 +1,5 @@
+import java.util.Properties
+import java.io.FileInputStream
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import com.android.build.api.dsl.ApplicationExtension
 
@@ -34,21 +36,27 @@ extensions.configure<ApplicationExtension> {
         versionName = flutter.versionName
     }
 
+    val keyPropertiesFile = rootProject.file("key.properties")
+    val keyProperties = Properties()
+    if (keyPropertiesFile.exists()) {
+        keyProperties.load(FileInputStream(keyPropertiesFile))
+    }
+
     signingConfigs {
         create("release") {
-            val keystorePath = System.getenv("KEYSTORE_PATH")
+            val keystorePath = keyProperties.getProperty("storeFile") ?: System.getenv("KEYSTORE_PATH")
             if (keystorePath != null && file(keystorePath).exists()) {
                 storeFile = file(keystorePath)
-                storePassword = System.getenv("KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("KEY_ALIAS")
-                keyPassword = System.getenv("KEY_PASSWORD")
+                storePassword = keyProperties.getProperty("storePassword") ?: System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = keyProperties.getProperty("keyAlias") ?: System.getenv("KEY_ALIAS")
+                keyPassword = keyProperties.getProperty("keyPassword") ?: System.getenv("KEY_PASSWORD")
             }
         }
     }
 
     buildTypes {
         release {
-            val keystorePath = System.getenv("KEYSTORE_PATH")
+            val keystorePath = keyProperties.getProperty("storeFile") ?: System.getenv("KEYSTORE_PATH")
             if (keystorePath != null && file(keystorePath).exists()) {
                 signingConfig = signingConfigs.getByName("release")
             } else {
