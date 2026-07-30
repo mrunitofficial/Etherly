@@ -5,7 +5,7 @@ import 'package:etherly/services/audio_player_service.dart';
 import 'package:etherly/widgets/play_button.dart';
 
 /// Minimal mock that only implements fields used by PlayButton.
-class MockAudioPlayerService extends Fake implements AudioPlayerService {
+class MockAudioPlayerService extends Fake with ChangeNotifier implements AudioPlayerService {
   bool mockIsPlaying = false;
   bool mockIsLoading = false;
   bool playCalled = false;
