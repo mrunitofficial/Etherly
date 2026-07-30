@@ -63,12 +63,16 @@ void main() {
       expect(service.devices, isEmpty);
       expect(service.isInitialized, isFalse);
       expect(service.isRemotePlaying.value, isFalse);
+      expect(service.isRemoteBuffering.value, isFalse);
       expect(service.remoteVolume.value, equals(1.0));
     });
 
     test('devices getter returns an unmodifiable list', () {
       final devices = service.devices;
-      expect(() => (devices as List).add(const CastDevice(id: '1', name: 'Test')), throwsUnsupportedError);
+      expect(
+        () => (devices as List).add(const CastDevice(id: '1', name: 'Test')),
+        throwsUnsupportedError,
+      );
     });
 
     test('startDiscovery invokes native channel method on Android', () async {

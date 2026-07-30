@@ -188,7 +188,7 @@ class _AppScreenState extends State<AppScreen>
           title: const StationSearchBar(),
           actions: [
             if (context.read<ChromeCastService>().isCastSupported())
-              _CastButton(spacing: spacing),
+              const _CastButton(),
             IconButton(
               icon: Icon(
                 Icons.settings,
@@ -367,45 +367,14 @@ class _LogoButton extends StatelessWidget {
 }
 
 class _CastButton extends StatelessWidget {
-  final Spacing spacing;
-
-  const _CastButton({required this.spacing});
+  const _CastButton();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final loc = AppLocalizations.of(context);
-    final shapes = theme.extension<Shapes>()!;
 
     return IconButton(
-      icon: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          const Icon(Icons.cast_rounded),
-          Positioned(
-            right: -spacing.extraExtraSmall,
-            top: -spacing.extraExtraSmall,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: spacing.extraExtraSmall * 1.5,
-                vertical: spacing.extraExtraSmall / 2,
-              ),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: shapes.extraSmall,
-              ),
-              child: Text(
-                'BETA',
-                style: TextStyle(
-                  fontSize: 7,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      icon: const Icon(Icons.cast_rounded),
       tooltip: loc?.mainTooltipCast ?? 'Cast to device',
       onPressed: () {
         showDialog(

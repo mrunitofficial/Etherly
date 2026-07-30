@@ -44,9 +44,8 @@ class AudioPlayerService with ChangeNotifier {
   final ChromeCastService? _castService;
   late final SharedPreferences _prefs;
 
-  bool _isTransitioning = false;
   bool _isPlayIntended = false;
-  String? _connectingStationId;
+  bool _isCastLoading = false;
 
   final Completer<void> _initializationCompleter = Completer<void>();
   final ValueNotifier<bool> _radioPlayerShouldClose = ValueNotifier(false);
@@ -61,23 +60,21 @@ class AudioPlayerService with ChangeNotifier {
   bool _autoplayCancelled = false;
   Timer? _sleepTimer;
   Timer? _bufferingTimeoutTimer;
-  Timer? _castTransitionTimer;
   MediaItem? _currentMediaItem;
   bool _isMuted = false;
   double _preMuteVolume = 1.0;
 
   /// Creates the service and attaches listeners to optional cast service.
   AudioPlayerService([this._castService]) {
-    _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
-    _castService?.addListener(_onCastingStateChanged);
-    _castService?.remoteVolume.addListener(notifyListeners);
     _init();
   }
 
   @override
   void dispose() {
+    _castService?.removeListener(notifyListeners);
+    _castService?.removeListener(_onCastRemotePlayingChanged);
     _castService?.isRemotePlaying.removeListener(_onCastRemotePlayingChanged);
-    _castService?.removeListener(_onCastingStateChanged);
+    _castService?.isRemoteBuffering.removeListener(_onCastRemotePlayingChanged);
     _castService?.remoteVolume.removeListener(notifyListeners);
 
     _stationsSubscription?.cancel();
@@ -85,14 +82,7 @@ class AudioPlayerService with ChangeNotifier {
     _autoplayTimer?.cancel();
     _sleepTimer?.cancel();
     _bufferingTimeoutTimer?.cancel();
-    _castTransitionTimer?.cancel();
     _listeningMinuteTimer?.cancel();
-
-    try {
-      _castService?.endCasting();
-    } catch (e) {
-      if (kDebugMode) print('Error ending cast during dispose: $e');
-    }
     sleepTimerActive.dispose();
     autoplayCountdownNotifier.dispose();
     super.dispose();
@@ -141,25 +131,24 @@ class AudioPlayerService with ChangeNotifier {
   /// Whether a Cast session is currently connected.
   bool get isCasting => _castService?.isConnected ?? false;
 
+  /// Whether the player or cast session is actively producing sound.
+  bool get _isActuallyProducingSound {
+    if (isCasting) {
+      return !_isCastLoading && (_castService?.isRemotePlaying.value ?? false);
+    }
+    if (kIsWeb) {
+      return player.playing &&
+          player.processingState != ProcessingState.loading;
+    }
+    return player.playing && player.processingState == ProcessingState.ready;
+  }
+
   /// Unified play state for UI.
-  bool get isPlaying => _isPlayIntended;
+  bool get isPlaying => _isPlayIntended && _isActuallyProducingSound;
 
   /// Unified loading and buffering state for UI.
-  bool get isLoading {
-    if (isCasting) {
-      if (_isTransitioning) return true;
-      if (_isPlayIntended && !(_castService?.isRemotePlaying.value ?? false)) {
-        return true;
-      }
-      return false;
-    }
-
-    if (_isTransitioning) return true;
-    final isBuffering =
-        player.processingState == ProcessingState.loading ||
-        (player.processingState == ProcessingState.buffering && !kIsWeb);
-    return isBuffering;
-  }
+  bool get isLoading =>
+      _isPlayIntended && (_isCastLoading || !_isActuallyProducingSound);
 
   /// Volume level of the player or active cast session.
   double get volume => isCasting
@@ -228,18 +217,19 @@ class AudioPlayerService with ChangeNotifier {
     final item = resolved.toMediaItem();
     _setMediaItem(item);
 
+    currentSongTitle = null;
+    _isPlayIntended = true;
+    notifyListeners();
+
     if (castDevice != null || isCasting) {
       try {
-        _connectingStationId = 'cast_${castDevice?.id ?? item.id}';
-        currentSongTitle = null;
-        _isTransitioning = true;
         _isPlayIntended = true;
+        _isCastLoading = true;
         notifyListeners();
-        _startCastTransitionTimeout();
 
-        await _audioHandler.stop();
+        await player.stop();
         _audioHandler.updateRemotePlaybackState(
-          playing: _castService?.isRemotePlaying.value ?? false,
+          playing: false,
           isBuffering: true,
         );
         if (castDevice != null && _castService != null) {
@@ -248,19 +238,12 @@ class AudioPlayerService with ChangeNotifier {
         await _castService?.castAudio(item);
       } catch (e) {
         if (kDebugMode) print('Error casting media item: $e');
-        _isTransitioning = false;
+        _isCastLoading = false;
         _isPlayIntended = false;
-        _connectingStationId = null;
         notifyListeners();
       }
       return;
     }
-
-    currentSongTitle = null;
-    _isTransitioning = true;
-    _isPlayIntended = true;
-    _connectingStationId = item.id;
-    notifyListeners();
 
     try {
       if (_currentMediaItem?.id != item.id) return;
@@ -269,9 +252,7 @@ class AudioPlayerService with ChangeNotifier {
       if (kDebugMode) print('Error playing media item: $e');
       if (_currentMediaItem?.id == item.id) {
         await _audioHandler.stop();
-        _isTransitioning = false;
         _isPlayIntended = false;
-        _connectingStationId = null;
         notifyListeners();
       }
     }
@@ -286,8 +267,7 @@ class AudioPlayerService with ChangeNotifier {
   /// Pauses playback.
   Future<void> pause() async {
     cancelAutoplayCountdown();
-    _castTransitionTimer?.cancel();
-    _isTransitioning = false;
+    _isCastLoading = false;
     _isPlayIntended = false;
     notifyListeners();
     if (isCasting) {
@@ -301,8 +281,7 @@ class AudioPlayerService with ChangeNotifier {
   Future<void> stop() async {
     cancelAutoplayCountdown();
     cancelSleepTimer();
-    _castTransitionTimer?.cancel();
-    _isTransitioning = false;
+    _isCastLoading = false;
     _isPlayIntended = false;
     notifyListeners();
     if (isCasting) {
@@ -396,45 +375,18 @@ class AudioPlayerService with ChangeNotifier {
     if (isCasting) {
       final isPlaying = _castService?.isRemotePlaying.value ?? false;
       if (isPlaying) {
-        _isTransitioning = false;
+        _isCastLoading = false;
         _isPlayIntended = true;
-        _castTransitionTimer?.cancel();
-        _castTransitionTimer = null;
+      } else if (!_isCastLoading) {
+        _isPlayIntended = false;
       }
       _audioHandler.updateRemotePlaybackState(
         playing: isPlaying,
-        isBuffering: _isTransitioning,
+        isBuffering: isLoading,
       );
-    }
-    notifyListeners();
-  }
-
-  void _startCastTransitionTimeout() {
-    _castTransitionTimer?.cancel();
-    _castTransitionTimer = Timer(const Duration(seconds: 7), () {
-      if (_isTransitioning && isCasting) {
-        _isTransitioning = false;
-        if (!(_castService?.isRemotePlaying.value ?? false)) {
-          _isPlayIntended = false;
-        }
-        notifyListeners();
-      }
-    });
-  }
-
-  void _onCastingStateChanged() {
-    _castTransitionTimer?.cancel();
-    if (isReady.value) {
-      if (isCasting) {
-        player.stop();
-        _audioHandler.updateRemotePlaybackState(
-          playing: _castService?.isRemotePlaying.value ?? false,
-          isBuffering: false,
-        );
-      } else {
-        _isTransitioning = false;
-        _isPlayIntended = false;
-      }
+    } else {
+      _isCastLoading = false;
+      _isPlayIntended = false;
     }
     notifyListeners();
   }
@@ -449,26 +401,23 @@ class AudioPlayerService with ChangeNotifier {
       onSkipToPrevious: skipToPrevious,
     );
 
+    _castService?.addListener(notifyListeners);
+    _castService?.addListener(_onCastRemotePlayingChanged);
+    _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
+    _castService?.isRemoteBuffering.addListener(_onCastRemotePlayingChanged);
+    _castService?.remoteVolume.addListener(notifyListeners);
+
+    if (isCasting) {
+      _onCastRemotePlayingChanged();
+    }
+
     player.playerStateStream.listen((state) {
       if (isCasting) return;
       final processingState = state.processingState;
 
-      if (!_isTransitioning) {
-        _isPlayIntended = state.playing;
-      }
-
-      final currentTag = player.sequenceState.currentSource?.tag as MediaItem?;
-      if (processingState == ProcessingState.ready &&
-          currentTag?.id == _connectingStationId) {
-        if (_isTransitioning) {
-          _isTransitioning = false;
-          _syncSecondaryText();
-        }
-      }
-
       if (processingState == ProcessingState.idle ||
           processingState == ProcessingState.completed) {
-        if (state.playing && !_isTransitioning) {
+        if (state.playing) {
           stop();
         }
       }
@@ -509,14 +458,19 @@ class AudioPlayerService with ChangeNotifier {
             final currentTag =
                 player.sequenceState.currentSource?.tag as MediaItem?;
 
-            if (currentTag?.id == _currentMediaItem?.id) {
+            if (currentTag?.id == _currentMediaItem?.id || kIsWeb) {
               currentSongTitle = title;
-              _isTransitioning = false;
               _syncSecondaryText();
               notifyListeners();
             }
 
-            if (currentTag != null) {
+            final stationId = currentTag?.id ?? _currentMediaItem?.id;
+            final stationName = currentTag?.title ?? _currentMediaItem?.title;
+            final stationArt = currentTag.safeArt512Url.isNotEmpty
+                ? currentTag.safeArt512Url
+                : _currentMediaItem.safeArt512Url;
+
+            if (stationId != null && stationName != null) {
               final parts = title.split(' - ');
               final artistName = parts.length > 1 ? parts[0].trim() : '';
               final songName = parts.length > 1
@@ -526,9 +480,9 @@ class AudioPlayerService with ChangeNotifier {
               ListeningStatsService().addSong(
                 title: songName,
                 artist: artistName,
-                stationId: currentTag.id,
-                stationName: currentTag.title,
-                stationArtUrl: currentTag.safeArt512Url,
+                stationId: stationId,
+                stationName: stationName,
+                stationArtUrl: stationArt,
               );
             }
           }

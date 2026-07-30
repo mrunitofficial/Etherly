@@ -18,6 +18,9 @@ class ChromeCastService with ChangeNotifier {
   /// Notifier for remote playback state.
   final ValueNotifier<bool> isRemotePlaying = ValueNotifier(false);
 
+  /// Notifier for remote buffering state.
+  final ValueNotifier<bool> isRemoteBuffering = ValueNotifier(false);
+
   /// Notifier for remote volume level (0.0 to 1.0).
   final ValueNotifier<double> remoteVolume = ValueNotifier(1.0);
 
@@ -33,6 +36,7 @@ class ChromeCastService with ChangeNotifier {
     _disposed = true;
     _eventsSub?.cancel();
     isRemotePlaying.dispose();
+    isRemoteBuffering.dispose();
     remoteVolume.dispose();
     super.dispose();
   }
@@ -51,7 +55,7 @@ class ChromeCastService with ChangeNotifier {
 
   /// Checks if Google Cast framework is available on the current platform.
   bool isCastSupported() {
-    return defaultTargetPlatform == TargetPlatform.android;
+    return !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
   }
 
   /// Initializes device discovery and attaches event listeners.
@@ -122,6 +126,12 @@ class ChromeCastService with ChangeNotifier {
     final contentType = urlStr.toLowerCase().contains('aac')
         ? 'audio/aac'
         : 'audio/mpeg';
+
+    if (!_disposed) {
+      isRemotePlaying.value = false;
+      isRemoteBuffering.value = true;
+      notifyListeners();
+    }
 
     try {
       await _channel.invokeMethod('loadMedia', {
@@ -216,6 +226,7 @@ class ChromeCastService with ChangeNotifier {
 
     _connectedDevice = null;
     if (!_disposed) {
+      isRemoteBuffering.value = false;
       isRemotePlaying.value = false;
       notifyListeners();
     }
@@ -252,6 +263,7 @@ class ChromeCastService with ChangeNotifier {
           }
         } else {
           _connectedDevice = null;
+          isRemoteBuffering.value = false;
           isRemotePlaying.value = false;
           if (_connectionCompleter?.isCompleted == false) {
             _connectionCompleter?.completeError(
@@ -263,7 +275,10 @@ class ChromeCastService with ChangeNotifier {
 
       case 'playbackState':
         final isPlaying = data['isPlaying'] == true;
+        final isBuffering = data['isLoading'] == true;
+        isRemoteBuffering.value = isBuffering;
         isRemotePlaying.value = isPlaying;
+        notifyListeners();
 
       case 'volumeChanged':
         if (data['volume'] is num) {
