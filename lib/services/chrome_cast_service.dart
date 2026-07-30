@@ -51,7 +51,7 @@ class ChromeCastService with ChangeNotifier {
 
   /// Checks if Google Cast framework is available on the current platform.
   bool isCastSupported() {
-    return defaultTargetPlatform == TargetPlatform.android;
+    return !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
   }
 
   /// Initializes device discovery and attaches event listeners.
