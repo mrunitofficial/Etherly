@@ -135,6 +135,7 @@ class FullPlayerHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final spacing = theme.extension<Spacing>()!;
+    final sizes = theme.extension<Sizes>()!;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -155,12 +156,20 @@ class FullPlayerHeader extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: spacing.small),
               child: slogan.isEmpty
                   ? const SizedBox.shrink()
-                  : MarqueeText(
-                      text: slogan,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                  : Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth:
+                              sizes.extraLargeIncreased + sizes.largeIncreased,
+                        ),
+                        child: MarqueeText(
+                          text: slogan,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          centerWhenFits: true,
+                        ),
                       ),
-                      centerWhenFits: true,
                     ),
             ),
           ),
