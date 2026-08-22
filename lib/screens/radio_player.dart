@@ -19,7 +19,12 @@ class RadioPlayer extends StatefulWidget {
   final ScreenType screenType;
   const RadioPlayer({super.key, required this.screenType});
 
-  static const double minPlayerHeight = 120.0;
+  /// Resolves the collapsed mini player height accounting for text scaling.
+  static double minPlayerHeight(BuildContext context) {
+    final scale = MediaQuery.textScalerOf(context).scale(1.0);
+    return (120.0 * scale.clamp(1.0, 1.35)).ceilToDouble();
+  }
+
   static const double maxPlayerHeight = 600.0;
 
   @override
@@ -89,22 +94,23 @@ class _RadioPlayerState extends State<RadioPlayer> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final spacing = theme.extension<Spacing>()!;
+        final minHeight = RadioPlayer.minPlayerHeight(context);
         final screenHeight = constraints.maxHeight;
         final targetMaxHeight = (screenHeight - spacing.medium).clamp(
-          RadioPlayer.minPlayerHeight,
+          minHeight,
           RadioPlayer.maxPlayerHeight,
         );
 
         final useFAB =
             widget.screenType == ScreenType.smallScreenHorizontal ||
-            screenHeight < RadioPlayer.minPlayerHeight * 2;
+            screenHeight < minHeight * 2;
 
         if (useFAB) {
           return const _MiniFABs();
         }
 
         // 3. Small Vertical Screen: draggable sheet.
-        final minPlayerSize = RadioPlayer.minPlayerHeight / screenHeight;
+        final minPlayerSize = minHeight / screenHeight;
         final maxPlayerSize = (targetMaxHeight / screenHeight).clamp(
           minPlayerSize,
           1.0,
@@ -138,9 +144,8 @@ class _RadioPlayerState extends State<RadioPlayer> {
             builder: (context, scrollController) => LayoutBuilder(
               builder: (context, sheetConstraints) {
                 final progress =
-                    ((sheetConstraints.maxHeight -
-                                RadioPlayer.minPlayerHeight) /
-                            (targetMaxHeight - RadioPlayer.minPlayerHeight))
+                    ((sheetConstraints.maxHeight - minHeight) /
+                            (targetMaxHeight - minHeight))
                         .clamp(0.0, 1.0);
                 final miniPlayerOpacity = (1.0 - (progress / 0.3)).clamp(
                   0.0,
