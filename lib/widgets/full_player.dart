@@ -428,7 +428,13 @@ class PlayerMenuButton extends StatelessWidget {
         children: [
           Icon(icon, size: 20),
           SizedBox(width: spacing.medium),
-          Text(label),
+          Expanded(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
         ],
       ),
     );
