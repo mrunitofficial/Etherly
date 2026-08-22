@@ -81,6 +81,8 @@ class IcyTextDisplay extends StatelessWidget {
         final padding = EdgeInsets.only(
           left: centerWhenFits ? spacing.small : 0,
           right: spacing.small,
+          top: spacing.extraExtraSmall,
+          bottom: spacing.extraExtraSmall,
         );
 
         Widget content = Material(

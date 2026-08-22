@@ -11,6 +11,7 @@ import 'package:etherly/services/shortcut_service.dart';
 import 'package:etherly/services/theme_data.dart';
 
 import 'package:etherly/screens/history_screen.dart';
+import 'package:etherly/screens/radio_player.dart';
 import 'package:etherly/screens/settings_screen.dart';
 
 import 'package:etherly/widgets/icy_text_display.dart';
@@ -33,9 +34,19 @@ class FullPlayerContent extends StatelessWidget {
     final spacing = theme.extension<Spacing>()!;
     final shapes = theme.extension<Shapes>()!;
     final sizes = theme.extension<Sizes>()!;
+    final screenType = ScreenType.fromContext(context);
 
-    Widget content = Padding(
-      padding: EdgeInsets.only(bottom: spacing.extraLarge),
+    final maxArtDimension = sizes.extraLargeIncreased + sizes.largeIncreased;
+    final nonArtHeight =
+        sizes.largeIncreased * 2 + sizes.normal + spacing.extraLarge;
+    final targetHeight = screenType.isLargeFormat
+        ? MediaQuery.sizeOf(context).height
+        : RadioPlayer.maxPlayerHeight;
+    final artDimension =
+        (targetHeight - nonArtHeight).clamp(sizes.largeIncreased, maxArtDimension);
+
+    final Widget content = Padding(
+      padding: EdgeInsets.only(bottom: spacing.medium),
       child: Consumer<AudioPlayerService>(
         builder: (context, service, _) {
           final mediaItem = service.mediaItem;
@@ -52,8 +63,7 @@ class FullPlayerContent extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: shapes.medium,
                   child: SizedBox.square(
-                    dimension:
-                        sizes.extraLargeIncreased + sizes.largeIncreased, // 280
+                    dimension: artDimension,
                     child: StationArt(
                       artUrl: mediaItem.safeArt1024Url,
                       placeholderUrl: mediaItem.safeArt512Url,
@@ -61,9 +71,10 @@ class FullPlayerContent extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: spacing.large),
+              SizedBox(height: spacing.medium),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: spacing.extraLarge),
+                padding:
+                    EdgeInsets.symmetric(horizontal: spacing.extraLarge),
                 child: Column(
                   children: [
                     MarqueeText(
@@ -76,15 +87,18 @@ class FullPlayerContent extends StatelessWidget {
                       ),
                       centerWhenFits: true,
                     ),
-                    if (!kIsWeb)
-                      SizedBox(
-                        height: spacing.extraLarge,
-                        child: const IcyTextDisplay(),
+                    if (!kIsWeb) ...[
+                      SizedBox(height: spacing.extraSmall),
+                      IcyTextDisplay(
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
+                    ],
                   ],
                 ),
               ),
-              SizedBox(height: spacing.large),
+              SizedBox(height: spacing.medium),
               const FullPlayerControls(),
               if (kIsWeb) ...[
                 SizedBox(height: spacing.medium),
@@ -118,7 +132,7 @@ class FullPlayerHeader extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         spacing.medium,
-        spacing.extraLarge,
+        spacing.large,
         spacing.medium,
         spacing.medium,
       ),
@@ -134,14 +148,12 @@ class FullPlayerHeader extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: spacing.small),
               child: slogan.isEmpty
                   ? const SizedBox.shrink()
-                  : Text(
-                      slogan,
-                      textAlign: TextAlign.center,
+                  : MarqueeText(
+                      text: slogan,
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
+                      centerWhenFits: true,
                     ),
             ),
           ),
