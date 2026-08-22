@@ -42,9 +42,11 @@ class FullPlayerContent extends StatelessWidget {
     final sizes = theme.extension<Sizes>()!;
     final screenType = ScreenType.fromContext(context);
 
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
     final maxArtDimension = sizes.extraLargeIncreased + sizes.largeIncreased;
+    final extraTextHeight = sizes.normal * (textScale - 1.0).clamp(0.0, 1.0);
     final nonArtHeight =
-        sizes.largeIncreased * 2 + sizes.normal + spacing.extraLarge;
+        sizes.largeIncreased * 2 + sizes.normal + extraTextHeight;
     final targetHeight = maxHeight ??
         (screenType.isLargeFormat
             ? MediaQuery.sizeOf(context).height
