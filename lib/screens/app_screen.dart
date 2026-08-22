@@ -155,7 +155,7 @@ class _AppScreenState extends State<AppScreen>
       builder: (context, constraints) {
         final isTooShort =
             !screenType.isLargeFormat &&
-            constraints.maxHeight < RadioPlayer.maxPlayerHeight;
+            constraints.maxHeight < RadioPlayer.minPlayerHeight * 2;
 
         final playerBottomPadding =
             (screenType == ScreenType.smallScreenVertical && !isTooShort)

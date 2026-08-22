@@ -20,7 +20,7 @@ class RadioPlayer extends StatefulWidget {
   const RadioPlayer({super.key, required this.screenType});
 
   static const double minPlayerHeight = 120.0;
-  static const double maxPlayerHeight = 520.0;
+  static const double maxPlayerHeight = 600.0;
 
   @override
   State<RadioPlayer> createState() => _RadioPlayerState();
@@ -88,19 +88,27 @@ class _RadioPlayerState extends State<RadioPlayer> {
     // 2. Mobile/Web: Mini floating buttons (FAB mode) when too short or landscape.
     return LayoutBuilder(
       builder: (context, constraints) {
+        final spacing = theme.extension<Spacing>()!;
+        final screenHeight = constraints.maxHeight;
+        final targetMaxHeight = (screenHeight - spacing.medium).clamp(
+          RadioPlayer.minPlayerHeight,
+          RadioPlayer.maxPlayerHeight,
+        );
+
         final useFAB =
             widget.screenType == ScreenType.smallScreenHorizontal ||
-            constraints.maxHeight < RadioPlayer.maxPlayerHeight;
+            screenHeight < RadioPlayer.minPlayerHeight * 2;
 
         if (useFAB) {
           return const _MiniFABs();
         }
 
         // 3. Small Vertical Screen: draggable sheet.
-        final screenHeight = constraints.maxHeight;
         final minPlayerSize = RadioPlayer.minPlayerHeight / screenHeight;
-        final maxPlayerSize = (RadioPlayer.maxPlayerHeight / screenHeight)
-            .clamp(minPlayerSize, 1.0);
+        final maxPlayerSize = (targetMaxHeight / screenHeight).clamp(
+          minPlayerSize,
+          1.0,
+        );
         _latestMinPlayerSize = minPlayerSize;
 
         final bool isExpanded =
@@ -128,11 +136,11 @@ class _RadioPlayerState extends State<RadioPlayer> {
             snap: true,
             snapSizes: [minPlayerSize, maxPlayerSize],
             builder: (context, scrollController) => LayoutBuilder(
-              builder: (context, constraints) {
+              builder: (context, sheetConstraints) {
                 final progress =
-                    ((constraints.maxHeight - RadioPlayer.minPlayerHeight) /
-                            (RadioPlayer.maxPlayerHeight -
-                                RadioPlayer.minPlayerHeight))
+                    ((sheetConstraints.maxHeight -
+                                RadioPlayer.minPlayerHeight) /
+                            (targetMaxHeight - RadioPlayer.minPlayerHeight))
                         .clamp(0.0, 1.0);
                 final miniPlayerOpacity = (1.0 - (progress / 0.3)).clamp(
                   0.0,
@@ -157,6 +165,7 @@ class _RadioPlayerState extends State<RadioPlayer> {
                         opacity: fullPlayerOpacity,
                         child: FullPlayerContent(
                           scrollController: scrollController,
+                          maxHeight: targetMaxHeight,
                           onClose: () => _controller.isAttached
                               ? _controller
                                     .animateTo(

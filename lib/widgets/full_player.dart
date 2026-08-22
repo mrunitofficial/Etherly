@@ -23,10 +23,16 @@ import 'package:etherly/widgets/station_art.dart';
 
 /// Full player content shown in the expanded state of the radio player.
 class FullPlayerContent extends StatelessWidget {
-  const FullPlayerContent({super.key, this.scrollController, this.onClose});
+  const FullPlayerContent({
+    super.key,
+    this.scrollController,
+    this.onClose,
+    this.maxHeight,
+  });
 
   final ScrollController? scrollController;
   final VoidCallback? onClose;
+  final double? maxHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -39,9 +45,10 @@ class FullPlayerContent extends StatelessWidget {
     final maxArtDimension = sizes.extraLargeIncreased + sizes.largeIncreased;
     final nonArtHeight =
         sizes.largeIncreased * 2 + sizes.normal + spacing.extraLarge;
-    final targetHeight = screenType.isLargeFormat
-        ? MediaQuery.sizeOf(context).height
-        : RadioPlayer.maxPlayerHeight;
+    final targetHeight = maxHeight ??
+        (screenType.isLargeFormat
+            ? MediaQuery.sizeOf(context).height
+            : RadioPlayer.maxPlayerHeight);
     final artDimension =
         (targetHeight - nonArtHeight).clamp(sizes.largeIncreased, maxArtDimension);
 
