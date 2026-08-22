@@ -108,181 +108,213 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final shapes = theme.extension<Shapes>()!;
     final sizes = theme.extension<Sizes>()!;
 
+    Future<void> sendFeedback() async {
+      const email = 'info@etherly.nl';
+      final subject = loc.settingsFeedbackEmailSubject;
+      final mailtoLink =
+          'mailto:$email?subject=${Uri.encodeComponent(subject)}';
+      if (await canLaunchUrlString(mailtoLink)) {
+        await launchUrlString(mailtoLink);
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surfaceContainer,
         title: Text(loc.settingsTitle),
       ),
-      body: Stack(
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: ListView(
-                padding: EdgeInsets.only(bottom: sizes.largeIncreased),
-                children: <Widget>[
-                  SettingDropdownTile<String>(
-                    title: loc.settingsDefaultStreamingQuality,
-                    initialSelection: _selectedQuality,
-                    onSelected: (String? newValue) {
-                      if (newValue != null) {
-                        setState(() {
-                          _selectedQuality = newValue;
-                        });
-                        _saveSetting('streamQuality', newValue);
-                      }
-                    },
-                    dropdownMenuEntries: [
-                      DropdownMenuEntry<String>(
-                        value: 'mp3',
-                        label: loc.settingsStreamingQualityHigh,
-                      ),
-                      DropdownMenuEntry<String>(
-                        value: 'aac',
-                        label: loc.settingsStreamingQualityHighest,
-                      ),
-                    ],
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: ListView(
+            padding: EdgeInsets.only(bottom: sizes.largeIncreased),
+            children: <Widget>[
+              SettingDropdownTile<String>(
+                title: loc.settingsDefaultStreamingQuality,
+                initialSelection: _selectedQuality,
+                onSelected: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedQuality = newValue;
+                    });
+                    _saveSetting('streamQuality', newValue);
+                  }
+                },
+                dropdownMenuEntries: [
+                  DropdownMenuEntry<String>(
+                    value: 'mp3',
+                    label: loc.settingsStreamingQualityHigh,
                   ),
-                  SettingDropdownTile<ThemeMode>(
-                    title: loc.settingsAppTheme,
-                    initialSelection: _selectedTheme,
-                    onSelected: (ThemeMode? newValue) {
-                      if (newValue != null) {
-                        setState(() {
-                          _selectedTheme = newValue;
-                        });
-                        widget.themeNotifier.value = newValue;
-                        _saveSetting('theme', newValue.name);
-                      }
-                    },
-                    dropdownMenuEntries: ThemeMode.values.map((ThemeMode mode) {
-                      return DropdownMenuEntry<ThemeMode>(
-                        value: mode,
-                        label: mode.getLocalizedName(loc),
-                      );
-                    }).toList(),
-                  ),
-                  if (kIsWeb)
-                    SettingDropdownTile<String>(
-                      title: loc.language,
-                      initialSelection: _selectedLanguage,
-                      onSelected: (String? newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _selectedLanguage = newValue;
-                          });
-                          languageNotifier.value = newValue;
-                          _saveSetting('language', newValue);
-                        }
-                      },
-                      dropdownMenuEntries: [
-                        DropdownMenuEntry<String>(
-                          value: 'system',
-                          label: loc.system,
-                        ),
-                        ...AppLocalizations.supportedLocales.map((locale) {
-                          return DropdownMenuEntry<String>(
-                            value: locale.languageCode,
-                            label: lookupAppLocalizations(locale).languageName,
-                          );
-                        }),
-                      ],
-                    ),
-                  if (!kIsWeb)
-                    SettingSwitchTile(
-                      title: loc.settingsForceDefaultColor,
-                      value: _forceDefaultColor,
-                      onChanged: (bool newValue) {
-                        setState(() {
-                          _forceDefaultColor = newValue;
-                        });
-                        dynamicColorNotifier.value = !newValue;
-                        _saveSetting('forceDefaultColor', newValue);
-                      },
-                    ),
-                  SettingDropdownTile<int>(
-                    title: loc.settingsDefaultStartScreen,
-                    initialSelection: _selectedTab,
-                    onSelected: (int? newValue) {
-                      if (newValue != null) {
-                        setState(() {
-                          _selectedTab = newValue;
-                        });
-                        _saveSetting('startingTab', newValue);
-                      }
-                    },
-                    dropdownMenuEntries: const [0, 1, 2].map((int index) {
-                      return DropdownMenuEntry<int>(
-                        value: index,
-                        label: index.getLocalizedName(loc),
-                      );
-                    }).toList(),
-                  ),
-                  if (!kIsWeb)
-                    SettingSwitchTile(
-                      title: loc.settingsAutoplayOnStartup,
-                      value: _autoPlay,
-                      onChanged: (bool newValue) {
-                        setState(() {
-                          _autoPlay = newValue;
-                        });
-                        _saveSetting('autoPlay', newValue);
-                      },
-                    ),
-                  if (!kIsWeb)
-                    SettingDropdownTile<String>(
-                      title: loc.settingsPreferredMusicApp,
-                      initialSelection: _getSafeMusicAppValue(loc),
-                      onSelected: (String? newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _selectedMusicApp = newValue;
-                          });
-                          _saveSetting('favoriteMusicApp', newValue);
-                        }
-                      },
-                      dropdownMenuEntries: _getMusicAppEntries(loc),
-                    ),
-                  const Divider(),
-                  ListTile(
-                    contentPadding: EdgeInsets.symmetric(horizontal: spacing.medium),
-                    title: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(loc.settingsAboutTitle, style: theme.textTheme.titleLarge),
-                        Text(loc.settingsAboutDescription1),
-                        SizedBox(height: spacing.small),
-                        Text(loc.settingsAboutDescription2),
-                        SizedBox(height: spacing.medium),
-                        Text(loc.settingsCreatedBy, style: theme.textTheme.bodyLarge),
-                      ],
-                    ),
+                  DropdownMenuEntry<String>(
+                    value: 'aac',
+                    label: loc.settingsStreamingQualityHighest,
                   ),
                 ],
               ),
-            ),
+              SettingDropdownTile<ThemeMode>(
+                title: loc.settingsAppTheme,
+                initialSelection: _selectedTheme,
+                onSelected: (ThemeMode? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedTheme = newValue;
+                    });
+                    widget.themeNotifier.value = newValue;
+                    _saveSetting('theme', newValue.name);
+                  }
+                },
+                dropdownMenuEntries: ThemeMode.values.map((ThemeMode mode) {
+                  return DropdownMenuEntry<ThemeMode>(
+                    value: mode,
+                    label: mode.getLocalizedName(loc),
+                  );
+                }).toList(),
+              ),
+              if (kIsWeb)
+                SettingDropdownTile<String>(
+                  title: loc.language,
+                  initialSelection: _selectedLanguage,
+                  onSelected: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedLanguage = newValue;
+                      });
+                      languageNotifier.value = newValue;
+                      _saveSetting('language', newValue);
+                    }
+                  },
+                  dropdownMenuEntries: [
+                    DropdownMenuEntry<String>(
+                      value: 'system',
+                      label: loc.system,
+                    ),
+                    ...AppLocalizations.supportedLocales.map((locale) {
+                      return DropdownMenuEntry<String>(
+                        value: locale.languageCode,
+                        label: lookupAppLocalizations(locale).languageName,
+                      );
+                    }),
+                  ],
+                ),
+              if (!kIsWeb)
+                SettingSwitchTile(
+                  title: loc.settingsForceDefaultColor,
+                  value: _forceDefaultColor,
+                  onChanged: (bool newValue) {
+                    setState(() {
+                      _forceDefaultColor = newValue;
+                    });
+                    dynamicColorNotifier.value = !newValue;
+                    _saveSetting('forceDefaultColor', newValue);
+                  },
+                ),
+              SettingDropdownTile<int>(
+                title: loc.settingsDefaultStartScreen,
+                initialSelection: _selectedTab,
+                onSelected: (int? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedTab = newValue;
+                    });
+                    _saveSetting('startingTab', newValue);
+                  }
+                },
+                dropdownMenuEntries: const [0, 1, 2].map((int index) {
+                  return DropdownMenuEntry<int>(
+                    value: index,
+                    label: index.getLocalizedName(loc),
+                  );
+                }).toList(),
+              ),
+              if (!kIsWeb)
+                SettingSwitchTile(
+                  title: loc.settingsAutoplayOnStartup,
+                  value: _autoPlay,
+                  onChanged: (bool newValue) {
+                    setState(() {
+                      _autoPlay = newValue;
+                    });
+                    _saveSetting('autoPlay', newValue);
+                  },
+                ),
+              if (!kIsWeb)
+                SettingDropdownTile<String>(
+                  title: loc.settingsPreferredMusicApp,
+                  initialSelection: _getSafeMusicAppValue(loc),
+                  onSelected: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedMusicApp = newValue;
+                      });
+                      _saveSetting('favoriteMusicApp', newValue);
+                    }
+                  },
+                  dropdownMenuEntries: _getMusicAppEntries(loc),
+                ),
+              const Divider(),
+              ListTile(
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: spacing.medium),
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      loc.settingsAboutTitle,
+                      style: theme.textTheme.titleLarge,
+                    ),
+                    Text(loc.settingsAboutDescription1),
+                    SizedBox(height: spacing.small),
+                    Text(loc.settingsAboutDescription2),
+                    SizedBox(height: spacing.medium),
+                    Text(
+                      loc.settingsCreatedBy,
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          Positioned(
-            right: spacing.large,
-            bottom: spacing.extraLarge,
-            child: FloatingActionButton.extended(
-              icon: const Icon(Icons.feedback_outlined),
-              label: Text(loc.settingsSendFeedback),
-              backgroundColor: theme.colorScheme.primaryContainer,
-              foregroundColor: theme.colorScheme.onPrimaryContainer,
-              shape: RoundedRectangleBorder(borderRadius: shapes.medium),
-              onPressed: () async {
-                const email = 'info@etherly.nl';
-                final subject = loc.settingsFeedbackEmailSubject;
-                final mailtoLink =
-                    'mailto:$email?subject=${Uri.encodeComponent(subject)}';
-                if (await canLaunchUrlString(mailtoLink)) {
-                  await launchUrlString(mailtoLink);
-                }
-              },
+        ),
+      ),
+      floatingActionButton: LayoutBuilder(
+        builder: (context, _) {
+          final screenWidth = MediaQuery.sizeOf(context).width;
+          final textPainter = TextPainter(
+            text: TextSpan(
+              text: loc.settingsSendFeedback,
+              style: theme.textTheme.labelLarge,
             ),
-          ),
-        ],
+            textDirection: TextDirection.ltr,
+            textScaler: MediaQuery.textScalerOf(context),
+          )..layout();
+
+          final requiredWidth =
+              textPainter.width + sizes.large + spacing.large * 2;
+          final showText = screenWidth >= requiredWidth;
+
+          return showText
+              ? FloatingActionButton.extended(
+                  icon: const Icon(Icons.feedback_outlined),
+                  label: Text(loc.settingsSendFeedback),
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  foregroundColor: theme.colorScheme.onPrimaryContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: shapes.medium,
+                  ),
+                  onPressed: sendFeedback,
+                )
+              : FloatingActionButton(
+                  tooltip: loc.settingsSendFeedback,
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  foregroundColor: theme.colorScheme.onPrimaryContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: shapes.medium,
+                  ),
+                  onPressed: sendFeedback,
+                  child: const Icon(Icons.feedback_outlined),
+                );
+        },
       ),
     );
   }
