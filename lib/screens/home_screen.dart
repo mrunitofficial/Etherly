@@ -262,7 +262,12 @@ class _HomeScreenState extends State<HomeScreen>
           SliverFillRemaining(
             hasScrollBody: false,
             child: Padding(
-              padding: EdgeInsets.only(bottom: widget.bottomPadding),
+              padding: EdgeInsets.fromLTRB(
+                spacing.large,
+                0,
+                spacing.large,
+                widget.bottomPadding,
+              ),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -276,11 +281,13 @@ class _HomeScreenState extends State<HomeScreen>
                     Text(
                       loc?.homeEmptyTitle ?? 'No stations',
                       style: theme.textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
                     ),
                     SizedBox(height: spacing.small),
                     Text(
                       loc?.homeEmptySubtitle ?? 'No radio stations available',
                       style: theme.textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
                     ),
                     SizedBox(height: spacing.large),
                   ],

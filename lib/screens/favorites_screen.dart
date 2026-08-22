@@ -151,7 +151,12 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           SliverFillRemaining(
             hasScrollBody: false,
             child: Padding(
-              padding: EdgeInsets.only(bottom: widget.bottomPadding),
+              padding: EdgeInsets.fromLTRB(
+                spacing.large,
+                0,
+                spacing.large,
+                widget.bottomPadding,
+              ),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -165,12 +170,14 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                     Text(
                       loc?.favoritesEmptyTitle ?? 'No favorite stations yet',
                       style: theme.textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
                     ),
                     SizedBox(height: spacing.small),
                     Text(
                       loc?.favoritesEmptySubtitle ??
                           'Favorite a radio station first',
                       style: theme.textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
                     ),
                     SizedBox(height: spacing.large),
                   ],
