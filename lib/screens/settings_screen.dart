@@ -253,8 +253,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               const Divider(),
               ListTile(
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: spacing.medium),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: spacing.medium,
+                ),
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -299,18 +300,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   label: Text(loc.settingsSendFeedback),
                   backgroundColor: theme.colorScheme.primaryContainer,
                   foregroundColor: theme.colorScheme.onPrimaryContainer,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: shapes.medium,
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: shapes.medium),
                   onPressed: sendFeedback,
                 )
               : FloatingActionButton(
                   tooltip: loc.settingsSendFeedback,
                   backgroundColor: theme.colorScheme.primaryContainer,
                   foregroundColor: theme.colorScheme.onPrimaryContainer,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: shapes.medium,
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: shapes.medium),
                   onPressed: sendFeedback,
                   child: const Icon(Icons.feedback_outlined),
                 );
@@ -318,6 +315,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
   String _getSafeMusicAppValue(AppLocalizations loc) {
     final entries = _getMusicAppEntries(loc);
     return entries.any((entry) => entry.value == _selectedMusicApp)
