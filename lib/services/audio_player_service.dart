@@ -60,6 +60,7 @@ class AudioPlayerService with ChangeNotifier {
   bool _autoplayCancelled = false;
   Timer? _sleepTimer;
   Timer? _bufferingTimeoutTimer;
+  Timer? _castLoadingTimeoutTimer;
   MediaItem? _currentMediaItem;
   bool _isMuted = false;
   double _preMuteVolume = 1.0;
@@ -71,6 +72,7 @@ class AudioPlayerService with ChangeNotifier {
 
   @override
   void dispose() {
+    _castLoadingTimeoutTimer?.cancel();
     _castService?.removeListener(notifyListeners);
     _castService?.removeListener(_onCastRemotePlayingChanged);
     _castService?.isRemotePlaying.removeListener(_onCastRemotePlayingChanged);
@@ -134,6 +136,7 @@ class AudioPlayerService with ChangeNotifier {
   /// Unified play state for UI.
   bool get isPlaying {
     if (isCasting) {
+      if (_isCastLoading) return false;
       return _castService?.isRemotePlaying.value ?? false;
     }
     if (_isConnecting) {
@@ -151,6 +154,7 @@ class AudioPlayerService with ChangeNotifier {
   bool get isLoading {
     if (_isCastLoading) return true;
     if (isCasting) {
+      if (!isPlaying) return false;
       return _castService?.isRemoteBuffering.value ?? false;
     }
     if (_isConnecting) return true;
@@ -234,6 +238,13 @@ class AudioPlayerService with ChangeNotifier {
       _setMediaItem(item);
       try {
         _isCastLoading = true;
+        _castLoadingTimeoutTimer?.cancel();
+        _castLoadingTimeoutTimer = Timer(const Duration(seconds: 15), () {
+          if (_isCastLoading) {
+            _isCastLoading = false;
+            notifyListeners();
+          }
+        });
         notifyListeners();
 
         await player.stop();
@@ -248,8 +259,8 @@ class AudioPlayerService with ChangeNotifier {
         await _castService?.play();
       } catch (e) {
         if (kDebugMode) print('Error casting media item: $e');
-      } finally {
         _isCastLoading = false;
+        _castLoadingTimeoutTimer?.cancel();
         notifyListeners();
       }
       return;
@@ -283,6 +294,7 @@ class AudioPlayerService with ChangeNotifier {
   Future<void> pause() async {
     cancelAutoplayCountdown();
     _isCastLoading = false;
+    _castLoadingTimeoutTimer?.cancel();
     _isConnecting = false;
     notifyListeners();
     if (isCasting) {
@@ -297,6 +309,7 @@ class AudioPlayerService with ChangeNotifier {
     cancelAutoplayCountdown();
     cancelSleepTimer();
     _isCastLoading = false;
+    _castLoadingTimeoutTimer?.cancel();
     _isConnecting = false;
     notifyListeners();
     if (isCasting) {
@@ -391,6 +404,7 @@ class AudioPlayerService with ChangeNotifier {
       final isPlayingRemote = _castService?.isRemotePlaying.value ?? false;
       if (isPlayingRemote) {
         _isCastLoading = false;
+        _castLoadingTimeoutTimer?.cancel();
       }
       _audioHandler.updateRemotePlaybackState(
         playing: isPlayingRemote,
@@ -398,6 +412,8 @@ class AudioPlayerService with ChangeNotifier {
       );
     } else {
       _isCastLoading = false;
+      _castLoadingTimeoutTimer?.cancel();
+      _audioHandler.resetRemoteSession();
     }
     notifyListeners();
   }
@@ -416,6 +432,8 @@ class AudioPlayerService with ChangeNotifier {
     );
 
     _castService?.addListener(_onCastRemotePlayingChanged);
+    _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
+    _castService?.isRemoteBuffering.addListener(_onCastRemotePlayingChanged);
     _castService?.remoteVolume.addListener(notifyListeners);
 
     if (isCasting) {

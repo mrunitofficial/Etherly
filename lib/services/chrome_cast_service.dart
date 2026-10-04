@@ -162,7 +162,11 @@ class ChromeCastService with ChangeNotifier {
     if (!isConnected) return;
     try {
       await _channel.invokeMethod('pause');
-      if (!_disposed) isRemotePlaying.value = false;
+      if (!_disposed) {
+        isRemotePlaying.value = false;
+        isRemoteBuffering.value = false;
+        notifyListeners();
+      }
     } catch (e) {
       if (kDebugMode) print('Failed to send pause command: $e');
     }
@@ -173,7 +177,11 @@ class ChromeCastService with ChangeNotifier {
     if (!isConnected) return;
     try {
       await _channel.invokeMethod('stop');
-      if (!_disposed) isRemotePlaying.value = false;
+      if (!_disposed) {
+        isRemotePlaying.value = false;
+        isRemoteBuffering.value = false;
+        notifyListeners();
+      }
     } catch (e) {
       if (kDebugMode) print('Failed to send stop command: $e');
     }

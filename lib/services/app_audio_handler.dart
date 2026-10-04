@@ -125,6 +125,12 @@ class AppAudioHandler extends BaseAudioHandler {
     );
   }
 
+  /// Resets remote session flag and synchronizes playback state back to local player.
+  void resetRemoteSession() {
+    isRemoteSession = false;
+    _updatePlaybackState();
+  }
+
   /// Clears active media item and stops AudioService to dismiss local OS notification card.
   Future<void> clearNotification() async {
     isRemoteSession = false;
