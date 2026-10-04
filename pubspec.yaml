@@ -20,6 +20,7 @@ dependencies:
   http: ^1.5.0
   shared_preferences: ^2.5.3
   cached_network_image: ^4.0.4
+  cached_network_image_platform_interface: ^5.0.3
   url_launcher: ^6.3.2
   speech_to_text: ^7.3.0
   flutter_svg: ^2.0.10
