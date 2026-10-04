@@ -19,14 +19,14 @@ dependencies:
   audio_session: ^0.2.2
   http: ^1.5.0
   shared_preferences: ^2.5.3
-  cached_network_image: ^3.4.1
+  cached_network_image: ^4.0.4
   url_launcher: ^6.3.2
   speech_to_text: ^7.3.0
   flutter_svg: ^2.0.10
   cloud_firestore: ^6.3.0
   firebase_core: ^4.7.0
   reorderable_grid: ^1.0.13
-  material_ui: 0.0.1
+  material_ui: ^1.5.0
   
 dev_dependencies:
   flutter_test:

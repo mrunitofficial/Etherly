@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' as legacy show ColorScheme;
 import 'package:material_ui/material_ui.dart';
 
 /// Global ValueNotifier for ThemeMode, allowing deep widgets to change the theme
@@ -13,6 +14,59 @@ final ValueNotifier<String> languageNotifier = ValueNotifier('system');
 /// Primary brand color for seed fallback color scheme generation.
 const brandColor = Colors.blue;
 
+/// Converts a legacy [legacy.ColorScheme] into a modern [ColorScheme].
+ColorScheme toModernColorScheme(legacy.ColorScheme legacyScheme) {
+  return ColorScheme(
+    brightness: legacyScheme.brightness,
+    primary: legacyScheme.primary,
+    onPrimary: legacyScheme.onPrimary,
+    primaryContainer: legacyScheme.primaryContainer,
+    onPrimaryContainer: legacyScheme.onPrimaryContainer,
+    primaryFixed: legacyScheme.primaryFixed,
+    primaryFixedDim: legacyScheme.primaryFixedDim,
+    onPrimaryFixed: legacyScheme.onPrimaryFixed,
+    onPrimaryFixedVariant: legacyScheme.onPrimaryFixedVariant,
+    secondary: legacyScheme.secondary,
+    onSecondary: legacyScheme.onSecondary,
+    secondaryContainer: legacyScheme.secondaryContainer,
+    onSecondaryContainer: legacyScheme.onSecondaryContainer,
+    secondaryFixed: legacyScheme.secondaryFixed,
+    secondaryFixedDim: legacyScheme.secondaryFixedDim,
+    onSecondaryFixed: legacyScheme.onSecondaryFixed,
+    onSecondaryFixedVariant: legacyScheme.onSecondaryFixedVariant,
+    tertiary: legacyScheme.tertiary,
+    onTertiary: legacyScheme.onTertiary,
+    tertiaryContainer: legacyScheme.tertiaryContainer,
+    onTertiaryContainer: legacyScheme.onTertiaryContainer,
+    tertiaryFixed: legacyScheme.tertiaryFixed,
+    tertiaryFixedDim: legacyScheme.tertiaryFixedDim,
+    onTertiaryFixed: legacyScheme.onTertiaryFixed,
+    onTertiaryFixedVariant: legacyScheme.onTertiaryFixedVariant,
+    error: legacyScheme.error,
+    onError: legacyScheme.onError,
+    errorContainer: legacyScheme.errorContainer,
+    onErrorContainer: legacyScheme.onErrorContainer,
+    surface: legacyScheme.surface,
+    onSurface: legacyScheme.onSurface,
+    surfaceDim: legacyScheme.surfaceDim,
+    surfaceBright: legacyScheme.surfaceBright,
+    surfaceContainerLowest: legacyScheme.surfaceContainerLowest,
+    surfaceContainerLow: legacyScheme.surfaceContainerLow,
+    surfaceContainer: legacyScheme.surfaceContainer,
+    surfaceContainerHigh: legacyScheme.surfaceContainerHigh,
+    surfaceContainerHighest: legacyScheme.surfaceContainerHighest,
+    onSurfaceVariant: legacyScheme.onSurfaceVariant,
+    outline: legacyScheme.outline,
+    outlineVariant: legacyScheme.outlineVariant,
+    shadow: legacyScheme.shadow,
+    scrim: legacyScheme.scrim,
+    inverseSurface: legacyScheme.inverseSurface,
+    onInverseSurface: legacyScheme.onInverseSurface,
+    inversePrimary: legacyScheme.inversePrimary,
+    surfaceTint: legacyScheme.surfaceTint,
+  );
+}
+
 /// Theme Data configuration for Etherly application.
 class AppTheme {
   static final _shapes = Shapes();
@@ -26,7 +80,7 @@ class AppTheme {
       colorScheme: colorScheme,
       extensions: [_shapes, _spacing, _speed, _sizes],
       scaffoldBackgroundColor: colorScheme.surfaceContainer,
-      appBarTheme: const AppBarTheme(toolbarHeight: 80, titleSpacing: 0.0),
+      appBarTheme: const AppBarThemeData(toolbarHeight: 80, titleSpacing: 0.0),
       tooltipTheme: TooltipThemeData(waitDuration: _speed.long1),
       dialogTheme: const DialogThemeData(
         constraints: BoxConstraints(minWidth: 280, maxWidth: 560),
@@ -47,7 +101,7 @@ class AppTheme {
       colorScheme: colorScheme,
       extensions: [_shapes, _spacing, _speed, _sizes],
       scaffoldBackgroundColor: colorScheme.surfaceContainer,
-      appBarTheme: const AppBarTheme(toolbarHeight: 80, titleSpacing: 0.0),
+      appBarTheme: const AppBarThemeData(toolbarHeight: 80, titleSpacing: 0.0),
       tooltipTheme: TooltipThemeData(waitDuration: _speed.long1),
       dialogTheme: const DialogThemeData(
         constraints: BoxConstraints(minWidth: 280, maxWidth: 560),
@@ -123,55 +177,55 @@ class Shapes extends ThemeExtension<Shapes> {
   Shapes lerp(ThemeExtension<Shapes>? other, double t) => this;
 }
 
-/// Material 3 Speed tokens (until added officially to Flutter SDK)
+/// Material 3 Speed tokens mapped to official Durations from material_ui.
 class Speed extends ThemeExtension<Speed> {
   /// Short 1 duration (50ms).
-  final Duration short1 = const Duration(milliseconds: 50);
+  final Duration short1 = Durations.short1;
 
   /// Short 2 duration (100ms).
-  final Duration short2 = const Duration(milliseconds: 100);
+  final Duration short2 = Durations.short2;
 
   /// Short 3 duration (150ms).
-  final Duration short3 = const Duration(milliseconds: 150);
+  final Duration short3 = Durations.short3;
 
   /// Short 4 duration (200ms).
-  final Duration short4 = const Duration(milliseconds: 200);
+  final Duration short4 = Durations.short4;
 
   /// Medium 1 duration (250ms).
-  final Duration medium1 = const Duration(milliseconds: 250);
+  final Duration medium1 = Durations.medium1;
 
   /// Medium 2 duration (300ms).
-  final Duration medium2 = const Duration(milliseconds: 300);
+  final Duration medium2 = Durations.medium2;
 
   /// Medium 3 duration (350ms).
-  final Duration medium3 = const Duration(milliseconds: 350);
+  final Duration medium3 = Durations.medium3;
 
   /// Medium 4 duration (400ms).
-  final Duration medium4 = const Duration(milliseconds: 400);
+  final Duration medium4 = Durations.medium4;
 
   /// Long 1 duration (450ms).
-  final Duration long1 = const Duration(milliseconds: 450);
+  final Duration long1 = Durations.long1;
 
   /// Long 2 duration (500ms).
-  final Duration long2 = const Duration(milliseconds: 500);
+  final Duration long2 = Durations.long2;
 
   /// Long 3 duration (550ms).
-  final Duration long3 = const Duration(milliseconds: 550);
+  final Duration long3 = Durations.long3;
 
   /// Long 4 duration (600ms).
-  final Duration long4 = const Duration(milliseconds: 600);
+  final Duration long4 = Durations.long4;
 
   /// Extra long 1 duration (700ms).
-  final Duration extraLong1 = const Duration(milliseconds: 700);
+  final Duration extraLong1 = Durations.extralong1;
 
   /// Extra long 2 duration (800ms).
-  final Duration extraLong2 = const Duration(milliseconds: 800);
+  final Duration extraLong2 = Durations.extralong2;
 
   /// Extra long 3 duration (900ms).
-  final Duration extraLong3 = const Duration(milliseconds: 900);
+  final Duration extraLong3 = Durations.extralong3;
 
   /// Extra long 4 duration (1000ms).
-  final Duration extraLong4 = const Duration(milliseconds: 1000);
+  final Duration extraLong4 = Durations.extralong4;
 
   @override
   Speed copyWith() => this;
