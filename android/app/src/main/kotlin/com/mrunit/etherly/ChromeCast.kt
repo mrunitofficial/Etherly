@@ -4,12 +4,10 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.support.v4.media.session.PlaybackStateCompat
-import android.media.AudioManager
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.support.v4.media.session.MediaSessionCompat
-import androidx.media.VolumeProviderCompat
 import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.CastDevice
@@ -35,7 +33,6 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
     }
 
     val isCasting: Boolean get() = currentSession != null && currentSession?.isConnected == true
-    private var volumeProvider: VolumeProviderCompat? = null
 
     private var methodChannel: MethodChannel? = null
     private var eventChannel: EventChannel? = null
@@ -87,9 +84,6 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             castContext?.sessionManager?.removeSessionManagerListener(sessionManagerListener, CastSession::class.java)
             isListenerAdded = false
         }
-        val mediaSession = getAudioServiceMediaSession()
-        mediaSession?.setPlaybackToLocal(AudioManager.STREAM_MUSIC)
-        volumeProvider = null
         methodChannel?.setMethodCallHandler(null)
         eventChannel?.setStreamHandler(null)
         methodChannel = null
@@ -254,7 +248,16 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             .setMetadata(metadata)
             .build()
 
-        client.load(mediaInfo, true, 0)
+        val requestData = com.google.android.gms.cast.MediaLoadRequestData.Builder()
+            .setMediaInfo(mediaInfo)
+            .setAutoplay(true)
+            .build()
+
+        client.load(requestData).setResultCallback { loadResult ->
+            if (!loadResult.status.isSuccess) {
+                android.util.Log.e("ChromeCast", "RemoteMediaClient load failed: ${loadResult.status.statusCode} ${loadResult.status.statusMessage}")
+            }
+        }
         emitEvent(mapOf(
             "event" to "playbackState",
             "isPlaying" to false,
@@ -281,7 +284,6 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
         val volume = call.argument<Double>("volume") ?: 1.0
         try {
             session.volume = volume
-            volumeProvider?.currentVolume = (volume * 100).toInt()
             result.success(true)
         } catch (e: Exception) {
             result.error("SET_VOLUME_FAILED", e.localizedMessage, null)
@@ -301,7 +303,6 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             val current = session.volume
             val newVol = (current + delta).coerceIn(0.0, 1.0)
             session.volume = newVol
-            volumeProvider?.currentVolume = (newVol * 100).toInt()
             sendVolumeUpdate()
         } catch (e: Exception) {
             android.util.Log.d("ChromeCast", "Failed to adjust volume", e)
@@ -336,11 +337,9 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
                         .setActions(0)
                         .build()
                 )
-                mediaSession.setMetadata(null)
+                mediaSession.metadata = null
                 mediaSession.isActive = false
-                mediaSession.setPlaybackToLocal(AudioManager.STREAM_MUSIC)
             }
-            volumeProvider = null
 
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
             notificationManager?.cancelAll()
@@ -363,12 +362,9 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
     }
 
     private fun onSessionDisconnected() {
+        if (currentSession == null) return
         currentSession?.remoteMediaClient?.unregisterCallback(remoteMediaClientCallback)
         currentSession = null
-
-        val mediaSession = getAudioServiceMediaSession()
-        mediaSession?.setPlaybackToLocal(AudioManager.STREAM_MUSIC)
-        volumeProvider = null
 
         sendSessionStateUpdate()
         sendPlaybackStateUpdate()

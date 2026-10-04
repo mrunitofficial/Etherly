@@ -153,13 +153,14 @@ class _AppScreenState extends State<AppScreen>
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final minPlayerHeight = RadioPlayer.minPlayerHeight(context);
         final isTooShort =
             !screenType.isLargeFormat &&
-            constraints.maxHeight < RadioPlayer.maxPlayerHeight;
+            constraints.maxHeight < minPlayerHeight * 2;
 
         final playerBottomPadding =
             (screenType == ScreenType.smallScreenVertical && !isTooShort)
-            ? RadioPlayer.minPlayerHeight + spacing.small
+            ? minPlayerHeight + spacing.small
             : spacing.small;
 
         // Common AppBar widget logic

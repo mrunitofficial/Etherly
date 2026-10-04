@@ -45,7 +45,7 @@ class AudioPlayerService with ChangeNotifier {
   late final SharedPreferences _prefs;
 
   bool _isCastLoading = false;
-  bool _isLocalLoading = false;
+  bool _isConnecting = false;
 
   final Completer<void> _initializationCompleter = Completer<void>();
   final ValueNotifier<bool> _radioPlayerShouldClose = ValueNotifier(false);
@@ -60,6 +60,7 @@ class AudioPlayerService with ChangeNotifier {
   bool _autoplayCancelled = false;
   Timer? _sleepTimer;
   Timer? _bufferingTimeoutTimer;
+  Timer? _castLoadingTimeoutTimer;
   MediaItem? _currentMediaItem;
   bool _isMuted = false;
   double _preMuteVolume = 1.0;
@@ -71,6 +72,7 @@ class AudioPlayerService with ChangeNotifier {
 
   @override
   void dispose() {
+    _castLoadingTimeoutTimer?.cancel();
     _castService?.removeListener(notifyListeners);
     _castService?.removeListener(_onCastRemotePlayingChanged);
     _castService?.isRemotePlaying.removeListener(_onCastRemotePlayingChanged);
@@ -134,11 +136,16 @@ class AudioPlayerService with ChangeNotifier {
   /// Unified play state for UI.
   bool get isPlaying {
     if (isCasting) {
+      if (_isCastLoading) return false;
       return _castService?.isRemotePlaying.value ?? false;
+    }
+    if (_isConnecting) {
+      return false;
     }
     if (kIsWeb) {
       return player.playing &&
-          player.processingState != ProcessingState.loading;
+          player.processingState != ProcessingState.loading &&
+          player.processingState != ProcessingState.idle;
     }
     return player.playing && player.processingState == ProcessingState.ready;
   }
@@ -147,10 +154,16 @@ class AudioPlayerService with ChangeNotifier {
   bool get isLoading {
     if (_isCastLoading) return true;
     if (isCasting) {
+      if (!isPlaying) return false;
       return _castService?.isRemoteBuffering.value ?? false;
     }
-    return _isLocalLoading ||
-        player.processingState == ProcessingState.buffering ||
+    if (_isConnecting) return true;
+    if (!player.playing) return false;
+    if (kIsWeb) {
+      // Chunked live radio streams on web report buffering while actively playing
+      return false;
+    }
+    return player.processingState == ProcessingState.buffering ||
         player.processingState == ProcessingState.loading;
   }
 
@@ -219,14 +232,19 @@ class AudioPlayerService with ChangeNotifier {
     if (resolved == null) return;
 
     final item = resolved.toMediaItem();
-    _setMediaItem(item);
-
     currentSongTitle = null;
-    notifyListeners();
 
     if (castDevice != null || isCasting) {
+      _setMediaItem(item);
       try {
         _isCastLoading = true;
+        _castLoadingTimeoutTimer?.cancel();
+        _castLoadingTimeoutTimer = Timer(const Duration(seconds: 15), () {
+          if (_isCastLoading) {
+            _isCastLoading = false;
+            notifyListeners();
+          }
+        });
         notifyListeners();
 
         await player.stop();
@@ -238,25 +256,28 @@ class AudioPlayerService with ChangeNotifier {
           await _castService.connectAndWait(castDevice);
         }
         await _castService?.castAudio(item);
-        await _castService?.play();
       } catch (e) {
         if (kDebugMode) print('Error casting media item: $e');
         _isCastLoading = false;
+        _castLoadingTimeoutTimer?.cancel();
         notifyListeners();
       }
       return;
     }
 
     try {
-      if (_currentMediaItem?.id != item.id) return;
-      _isLocalLoading = true;
-      notifyListeners();
+      _isConnecting = true;
+      _setMediaItem(item);
       await _audioHandler.playMediaItem(item);
     } catch (e) {
       if (kDebugMode) print('Error playing media item: $e');
-      _isLocalLoading = false;
       if (_currentMediaItem?.id == item.id) {
         await _audioHandler.stop();
+        notifyListeners();
+      }
+    } finally {
+      if (_currentMediaItem?.id == item.id) {
+        _isConnecting = false;
         notifyListeners();
       }
     }
@@ -272,7 +293,8 @@ class AudioPlayerService with ChangeNotifier {
   Future<void> pause() async {
     cancelAutoplayCountdown();
     _isCastLoading = false;
-    _isLocalLoading = false;
+    _castLoadingTimeoutTimer?.cancel();
+    _isConnecting = false;
     notifyListeners();
     if (isCasting) {
       await _castService?.pause();
@@ -286,7 +308,8 @@ class AudioPlayerService with ChangeNotifier {
     cancelAutoplayCountdown();
     cancelSleepTimer();
     _isCastLoading = false;
-    _isLocalLoading = false;
+    _castLoadingTimeoutTimer?.cancel();
+    _isConnecting = false;
     notifyListeners();
     if (isCasting) {
       await _castService?.endCasting();
@@ -380,13 +403,18 @@ class AudioPlayerService with ChangeNotifier {
       final isPlayingRemote = _castService?.isRemotePlaying.value ?? false;
       if (isPlayingRemote) {
         _isCastLoading = false;
+        _castLoadingTimeoutTimer?.cancel();
       }
       _audioHandler.updateRemotePlaybackState(
         playing: isPlayingRemote,
         isBuffering: isLoading,
       );
     } else {
-      _isCastLoading = false;
+      if (_castService?.isConnecting != true) {
+        _isCastLoading = false;
+        _castLoadingTimeoutTimer?.cancel();
+      }
+      _audioHandler.resetRemoteSession();
     }
     notifyListeners();
   }
@@ -399,9 +427,14 @@ class AudioPlayerService with ChangeNotifier {
       channelName: 'Etherly Radio',
       onSkipToNext: skipToNext,
       onSkipToPrevious: skipToPrevious,
+      onPlay: play,
+      onPause: pause,
+      onStop: stop,
     );
 
     _castService?.addListener(_onCastRemotePlayingChanged);
+    _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
+    _castService?.isRemoteBuffering.addListener(_onCastRemotePlayingChanged);
     _castService?.remoteVolume.addListener(notifyListeners);
 
     if (isCasting) {
@@ -411,9 +444,6 @@ class AudioPlayerService with ChangeNotifier {
     player.playerStateStream.listen((state) {
       if (isCasting) return;
       final processingState = state.processingState;
-      if (processingState != ProcessingState.idle) {
-        _isLocalLoading = false;
-      }
 
       if (processingState == ProcessingState.idle ||
           processingState == ProcessingState.completed) {

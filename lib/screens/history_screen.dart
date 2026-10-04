@@ -125,28 +125,33 @@ class HistoryScreen extends StatelessWidget {
           final history = statsService.history;
 
           if (history.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.history_rounded,
-                    size: sizes.large,
-                    color: theme.colorScheme.primary,
-                  ),
-                  SizedBox(height: spacing.medium),
-                  Text(
-                    loc?.historyEmptyTitle ?? 'No history yet',
-                    style: theme.textTheme.headlineMedium,
-                  ),
-                  SizedBox(height: spacing.small),
-                  Text(
-                    loc?.historyEmptySubtitle ??
-                        'Songs you listen to will appear here',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  SizedBox(height: spacing.large),
-                ],
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: spacing.large),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.history_rounded,
+                      size: sizes.large,
+                      color: theme.colorScheme.primary,
+                    ),
+                    SizedBox(height: spacing.medium),
+                    Text(
+                      loc?.historyEmptyTitle ?? 'No history yet',
+                      style: theme.textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: spacing.small),
+                    Text(
+                      loc?.historyEmptySubtitle ??
+                          'Songs you listen to will appear here',
+                      style: theme.textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: spacing.large),
+                  ],
+                ),
               ),
             );
           }

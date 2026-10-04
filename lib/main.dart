@@ -5,9 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dynamic_system_colors/dynamic_system_colors.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
@@ -163,15 +161,15 @@ class _MyAppState extends State<MyApp> {
       valueListenable: dynamicColorNotifier,
       builder: (context, useDynamicColor, _) {
         return DynamicColorBuilder(
-          builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+          builder: (lightDynamic, darkDynamic) {
             ColorScheme lightColorScheme;
             ColorScheme darkColorScheme;
 
             if (lightDynamic != null &&
                 darkDynamic != null &&
                 useDynamicColor) {
-              lightColorScheme = lightDynamic;
-              darkColorScheme = darkDynamic;
+              lightColorScheme = toModernColorScheme(lightDynamic);
+              darkColorScheme = toModernColorScheme(darkDynamic);
             } else {
               lightColorScheme = ColorScheme.fromSeed(
                 seedColor: brandColor,
@@ -214,21 +212,20 @@ class _MyAppState extends State<MyApp> {
                     locale: appLocale,
                     localizationsDelegates: const [
                       AppLocalizations.delegate,
-                      GlobalMaterialLocalizations.delegate,
-                      GlobalWidgetsLocalizations.delegate,
-                      GlobalCupertinoLocalizations.delegate,
+                      ...GlobalMaterialLocalizations.delegates,
                     ],
                     supportedLocales: const [Locale('en'), Locale('nl')],
                     theme: AppTheme.getLight(lightColorScheme),
                     darkTheme: AppTheme.getDark(darkColorScheme),
                     themeMode: themeNotifier.value,
-                    scrollBehavior: AppScrollBehavior(),
+                    scrollBehavior: const AppScrollBehavior(),
                     builder: (context, child) {
+                      Widget content = child!;
                       if (ScreenType.isTv) {
                         const targetScale = 0.7;
                         final mediaQuery = MediaQuery.of(context);
                         final newSize = mediaQuery.size / targetScale;
-                        return MediaQuery(
+                        content = MediaQuery(
                           data: mediaQuery.copyWith(
                             size: newSize,
                           ),
@@ -237,12 +234,13 @@ class _MyAppState extends State<MyApp> {
                             heightFactor: 1 / targetScale,
                             child: Transform.scale(
                               scale: targetScale,
-                              child: child,
+                              child: content,
                             ),
                           ),
                         );
                       }
-                      return child!;
+                      // ignore: deprecated_member_use
+                      return MaterialUiCompatibilityBridge(child: content);
                     },
                     home: AppScreen(
                       startingTab: widget.startingTab,
@@ -269,6 +267,9 @@ class _MyAppState extends State<MyApp> {
 
 /// Custom scroll behavior to enable mouse drag scrolling on web and desktop.
 class AppScrollBehavior extends MaterialScrollBehavior {
+  /// Creates an instance of [AppScrollBehavior].
+  const AppScrollBehavior();
+
   @override
   Set<PointerDeviceKind> get dragDevices => {
     PointerDeviceKind.touch,

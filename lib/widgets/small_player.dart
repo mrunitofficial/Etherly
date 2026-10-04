@@ -39,8 +39,17 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
         final stationName =
             mediaItem?.title ??
             (loc?.playerLoadingStation ?? 'Loading station...');
+        final spacing = theme.extension<Spacing>()!;
+        final sizes = theme.extension<Sizes>()!;
+        final shapes = theme.extension<Shapes>()!;
+
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 32, 20, 16),
+          padding: EdgeInsets.fromLTRB(
+            spacing.medium,
+            spacing.extraLarge,
+            spacing.medium,
+            spacing.small,
+          ),
           child: Row(
             children: [
               IgnorePointer(
@@ -48,11 +57,11 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                 child: StationArt(
                   artUrl: artUrl,
                   placeholderUrl: placeholderUrl,
-                  size: theme.extension<Sizes>()!.normal,
-                  borderRadius: theme.extension<Shapes>()!.small,
+                  size: sizes.normal,
+                  borderRadius: shapes.small,
                 ),
               ),
-              SizedBox(width: theme.extension<Spacing>()!.medium),
+              SizedBox(width: spacing.medium),
               Expanded(
                 child: IgnorePointer(
                   ignoring: true,
@@ -63,8 +72,8 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                       MarqueeText(
                         text: stationName,
                         style: theme.textTheme.titleLarge?.copyWith(
-                           fontWeight: FontWeight.bold,
-                           color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       IcyTextDisplay(
@@ -77,7 +86,7 @@ class _MiniPlayerContentState extends State<MiniPlayerContent> {
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: spacing.medium),
               ValueListenableBuilder<int>(
                 valueListenable: service.autoplayCountdownNotifier,
                 builder: (context, countdown, _) {

@@ -5,7 +5,10 @@ import 'package:just_audio/just_audio.dart';
 
 import 'package:etherly/services/app_audio_handler.dart';
 
-class MockAudioSession extends Fake implements AudioSession {}
+class MockAudioSession extends Fake implements AudioSession {
+  @override
+  Stream<void> get becomingNoisyEventStream => const Stream.empty();
+}
 
 class FakeAudioPlayer extends Fake implements AudioPlayer {
   @override

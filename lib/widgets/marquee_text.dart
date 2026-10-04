@@ -103,6 +103,7 @@ class _MarqueeTextState extends State<MarqueeText> {
       text: TextSpan(text: widget.text, style: effectiveStyle),
       maxLines: 1,
       textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
     )..layout(maxWidth: double.infinity);
 
     final box = context.findRenderObject();
@@ -117,9 +118,7 @@ class _MarqueeTextState extends State<MarqueeText> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final effectiveStyle = widget.style ?? DefaultTextStyle.of(context).style;
-    final height =
-        widget.height ??
-        (effectiveStyle.fontSize != null ? effectiveStyle.fontSize! * 1.4 : 28);
+    final textScaler = MediaQuery.textScalerOf(context);
 
     return Semantics(
       label: widget.text,
@@ -130,8 +129,10 @@ class _MarqueeTextState extends State<MarqueeText> {
               text: TextSpan(text: widget.text, style: effectiveStyle),
               maxLines: 1,
               textDirection: TextDirection.ltr,
+              textScaler: textScaler,
             )..layout(maxWidth: double.infinity);
             final textWidth = painter.width;
+            final textHeight = widget.height ?? painter.preferredLineHeight;
             final containerWidth = constraints.maxWidth.isFinite
                 ? constraints.maxWidth
                 : MediaQuery.of(context).size.width;
@@ -139,7 +140,7 @@ class _MarqueeTextState extends State<MarqueeText> {
             // Center text when it fits
             if (widget.centerWhenFits && textWidth <= containerWidth) {
               return SizedBox(
-                height: height,
+                height: textHeight,
                 child: Text(
                   widget.text,
                   style: widget.style,
@@ -152,7 +153,7 @@ class _MarqueeTextState extends State<MarqueeText> {
 
             // Scrollable marquee
             return SizedBox(
-              height: height,
+              height: textHeight,
               width: textWidth > containerWidth ? double.infinity : null,
               child: AnimatedOpacity(
                 opacity: _opacity,

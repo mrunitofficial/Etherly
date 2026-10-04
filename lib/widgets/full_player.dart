@@ -11,6 +11,7 @@ import 'package:etherly/services/shortcut_service.dart';
 import 'package:etherly/services/theme_data.dart';
 
 import 'package:etherly/screens/history_screen.dart';
+import 'package:etherly/screens/radio_player.dart';
 import 'package:etherly/screens/settings_screen.dart';
 
 import 'package:etherly/widgets/icy_text_display.dart';
@@ -22,10 +23,16 @@ import 'package:etherly/widgets/station_art.dart';
 
 /// Full player content shown in the expanded state of the radio player.
 class FullPlayerContent extends StatelessWidget {
-  const FullPlayerContent({super.key, this.scrollController, this.onClose});
+  const FullPlayerContent({
+    super.key,
+    this.scrollController,
+    this.onClose,
+    this.maxHeight,
+  });
 
   final ScrollController? scrollController;
   final VoidCallback? onClose;
+  final double? maxHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +40,22 @@ class FullPlayerContent extends StatelessWidget {
     final spacing = theme.extension<Spacing>()!;
     final shapes = theme.extension<Shapes>()!;
     final sizes = theme.extension<Sizes>()!;
+    final screenType = ScreenType.fromContext(context);
 
-    Widget content = Padding(
-      padding: EdgeInsets.only(bottom: spacing.extraLarge),
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    final maxArtDimension = sizes.extraLargeIncreased + sizes.largeIncreased;
+    final extraTextHeight = sizes.normal * (textScale - 1.0).clamp(0.0, 1.0);
+    final nonArtHeight =
+        sizes.largeIncreased * 2 + sizes.normal + extraTextHeight;
+    final targetHeight = maxHeight ??
+        (screenType.isLargeFormat
+            ? MediaQuery.sizeOf(context).height
+            : RadioPlayer.maxPlayerHeight);
+    final artDimension =
+        (targetHeight - nonArtHeight).clamp(sizes.largeIncreased, maxArtDimension);
+
+    final Widget content = Padding(
+      padding: EdgeInsets.only(bottom: spacing.medium),
       child: Consumer<AudioPlayerService>(
         builder: (context, service, _) {
           final mediaItem = service.mediaItem;
@@ -52,8 +72,7 @@ class FullPlayerContent extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: shapes.medium,
                   child: SizedBox.square(
-                    dimension:
-                        sizes.extraLargeIncreased + sizes.largeIncreased, // 280
+                    dimension: artDimension,
                     child: StationArt(
                       artUrl: mediaItem.safeArt1024Url,
                       placeholderUrl: mediaItem.safeArt512Url,
@@ -61,9 +80,10 @@ class FullPlayerContent extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: spacing.large),
+              SizedBox(height: spacing.medium),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: spacing.extraLarge),
+                padding:
+                    EdgeInsets.symmetric(horizontal: spacing.extraLarge),
                 child: Column(
                   children: [
                     MarqueeText(
@@ -76,15 +96,18 @@ class FullPlayerContent extends StatelessWidget {
                       ),
                       centerWhenFits: true,
                     ),
-                    if (!kIsWeb)
-                      SizedBox(
-                        height: spacing.extraLarge,
-                        child: const IcyTextDisplay(),
+                    if (!kIsWeb) ...[
+                      SizedBox(height: spacing.extraSmall),
+                      IcyTextDisplay(
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
+                    ],
                   ],
                 ),
               ),
-              SizedBox(height: spacing.large),
+              SizedBox(height: spacing.medium),
               const FullPlayerControls(),
               if (kIsWeb) ...[
                 SizedBox(height: spacing.medium),
@@ -114,11 +137,12 @@ class FullPlayerHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final spacing = theme.extension<Spacing>()!;
+    final sizes = theme.extension<Sizes>()!;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
         spacing.medium,
-        spacing.extraLarge,
+        spacing.large,
         spacing.medium,
         spacing.medium,
       ),
@@ -134,14 +158,20 @@ class FullPlayerHeader extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: spacing.small),
               child: slogan.isEmpty
                   ? const SizedBox.shrink()
-                  : Text(
-                      slogan,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                  : Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth:
+                              sizes.extraLargeIncreased + sizes.largeIncreased,
+                        ),
+                        child: MarqueeText(
+                          text: slogan,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          centerWhenFits: true,
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
                     ),
             ),
           ),
@@ -168,80 +198,86 @@ class FullPlayerControls extends StatelessWidget {
         final isFavorite = station?.isFavorite ?? false;
 
         return Padding(
-          padding: EdgeInsets.symmetric(horizontal: spacing.extraLarge),
-          child: FocusTraversalGroup(
-            policy: OrderedTraversalPolicy(),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FocusTraversalOrder(
-                  order: const NumericFocusOrder(1),
-                  child: ValueListenableBuilder<bool>(
-                    valueListenable: service.sleepTimerActive,
-                    builder: (context, isSleepTimerSet, _) =>
-                        IconButton.filledTonal(
-                          onPressed: isSleepTimerSet
-                              ? () => service.cancelSleepTimer()
-                              : () async {
-                                  final selected = await showDialog<Duration>(
-                                    context: context,
-                                    builder: (context) => SleepTimer(
-                                      onTimerSelected: (duration) =>
-                                          Navigator.of(context).pop(duration),
-                                    ),
-                                  );
-                                  if (selected != null) {
-                                    service.setSleepTimer(selected);
-                                  }
-                                },
-                          icon: Icon(
-                            isSleepTimerSet ? Icons.timer : Icons.timer_outlined,
-                            color: isSleepTimerSet ? colorScheme.primary : null,
-                          ),
-                          tooltip: isSleepTimerSet
-                              ? (loc?.playerCancelSleepTimer ??
-                                    'Cancel sleep timer')
-                              : (loc?.playerSleepTimer ??
-                                    'Sleep timer'),
-                          padding: EdgeInsets.all(spacing.medium),
+          padding: EdgeInsets.symmetric(horizontal: spacing.medium),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: FocusTraversalGroup(
+                policy: OrderedTraversalPolicy(),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FocusTraversalOrder(
+                      order: const NumericFocusOrder(1),
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: service.sleepTimerActive,
+                        builder: (context, isSleepTimerSet, _) =>
+                            IconButton.filledTonal(
+                              onPressed: isSleepTimerSet
+                                  ? () => service.cancelSleepTimer()
+                                  : () async {
+                                      final selected = await showDialog<Duration>(
+                                        context: context,
+                                        builder: (context) => SleepTimer(
+                                          onTimerSelected: (duration) =>
+                                              Navigator.of(context).pop(duration),
+                                        ),
+                                      );
+                                      if (selected != null) {
+                                        service.setSleepTimer(selected);
+                                      }
+                                    },
+                              icon: Icon(
+                                isSleepTimerSet ? Icons.timer : Icons.timer_outlined,
+                                color: isSleepTimerSet ? colorScheme.primary : null,
+                              ),
+                              tooltip: isSleepTimerSet
+                                  ? (loc?.playerCancelSleepTimer ??
+                                        'Cancel sleep timer')
+                                  : (loc?.playerSleepTimer ??
+                                        'Sleep timer'),
+                              padding: EdgeInsets.all(spacing.medium),
+                            ),
+                      ),
+                    ),
+                    SizedBox(width: spacing.large),
+                    FocusTraversalOrder(
+                      order: const NumericFocusOrder(2),
+                      child: ValueListenableBuilder<int>(
+                        valueListenable: service.autoplayCountdownNotifier,
+                        builder: (context, countdown, _) => PlayButton(
+                          service: service,
+                          countdown: countdown,
+                          heroTag: "full_player_fab",
+                          elevation: 0,
+                          tooltip: service.isPlaying
+                              ? (loc?.playerPause ?? 'Pause')
+                              : (loc?.playerPlay ?? 'Play'),
+                          size: PlayButtonSize.large,
                         ),
-                  ),
-                ),
-                SizedBox(width: spacing.extraLarge),
-                FocusTraversalOrder(
-                  order: const NumericFocusOrder(2),
-                  child: ValueListenableBuilder<int>(
-                    valueListenable: service.autoplayCountdownNotifier,
-                    builder: (context, countdown, _) => PlayButton(
-                      service: service,
-                      countdown: countdown,
-                      heroTag: "full_player_fab",
-                      elevation: 0,
-                      tooltip: service.isPlaying
-                          ? (loc?.playerPause ?? 'Pause')
-                          : (loc?.playerPlay ?? 'Play'),
-                      size: PlayButtonSize.large,
+                      ),
                     ),
-                  ),
-                ),
-                SizedBox(width: spacing.extraLarge),
-                FocusTraversalOrder(
-                  order: const NumericFocusOrder(3),
-                  child: IconButton.filledTonal(
-                    onPressed: station == null
-                        ? null
-                        : () => service.toggleFavorite(station),
-                    icon: Icon(
-                      isFavorite
-                          ? Icons.favorite_rounded
-                          : Icons.favorite_border_rounded,
-                      color: isFavorite ? colorScheme.primary : null,
+                    SizedBox(width: spacing.large),
+                    FocusTraversalOrder(
+                      order: const NumericFocusOrder(3),
+                      child: IconButton.filledTonal(
+                        onPressed: station == null
+                            ? null
+                            : () => service.toggleFavorite(station),
+                        icon: Icon(
+                          isFavorite
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          color: isFavorite ? colorScheme.primary : null,
+                        ),
+                        tooltip: loc?.playerFavorite ?? 'Favorite',
+                        padding: EdgeInsets.all(spacing.medium),
+                      ),
                     ),
-                    tooltip: loc?.playerFavorite ?? 'Favorite',
-                    padding: EdgeInsets.all(spacing.medium),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         );
@@ -392,7 +428,13 @@ class PlayerMenuButton extends StatelessWidget {
         children: [
           Icon(icon, size: 20),
           SizedBox(width: spacing.medium),
-          Text(label),
+          Expanded(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
         ],
       ),
     );

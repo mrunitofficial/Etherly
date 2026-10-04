@@ -50,6 +50,9 @@ class ChromeCastService with ChangeNotifier {
   /// Whether a Cast session is currently connected.
   bool get isConnected => _connectedDevice != null;
 
+  /// Whether Chromecast is currently connecting to a target device.
+  bool get isConnecting => _pendingConnectingDeviceId != null;
+
   /// Whether Chromecast is initialized.
   bool get isInitialized => _initialized;
 
@@ -97,6 +100,8 @@ class ChromeCastService with ChangeNotifier {
     }
   }
 
+  String? _pendingConnectingDeviceId;
+
   /// Connects to the specified Cast device and waits until session is established.
   Future<void> connectAndWait(
     CastDevice device, {
@@ -105,6 +110,7 @@ class ChromeCastService with ChangeNotifier {
     if (!isCastSupported()) return;
     if (_connectedDevice?.id == device.id && isConnected) return;
 
+    _pendingConnectingDeviceId = device.id;
     _connectionCompleter = Completer<void>();
     try {
       await _channel.invokeMethod('connect', {'id': device.id});
@@ -112,6 +118,7 @@ class ChromeCastService with ChangeNotifier {
     } on TimeoutException {
       throw TimeoutException('Cast session connection timed out');
     } finally {
+      _pendingConnectingDeviceId = null;
       _connectionCompleter = null;
     }
   }
@@ -123,9 +130,10 @@ class ChromeCastService with ChangeNotifier {
     final urlStr = mediaItem.extras?['url'] as String?;
     if (urlStr == null || urlStr.isEmpty) return;
 
-    final contentType = urlStr.toLowerCase().contains('aac')
-        ? 'audio/aac'
-        : 'audio/mpeg';
+    final lower = urlStr.toLowerCase();
+    final contentType = lower.contains('.m3u8')
+        ? 'application/x-mpegurl'
+        : (lower.contains('aac') ? 'audio/aac' : 'audio/mpeg');
 
     if (!_disposed) {
       isRemotePlaying.value = false;
@@ -162,7 +170,11 @@ class ChromeCastService with ChangeNotifier {
     if (!isConnected) return;
     try {
       await _channel.invokeMethod('pause');
-      if (!_disposed) isRemotePlaying.value = false;
+      if (!_disposed) {
+        isRemotePlaying.value = false;
+        isRemoteBuffering.value = false;
+        notifyListeners();
+      }
     } catch (e) {
       if (kDebugMode) print('Failed to send pause command: $e');
     }
@@ -173,7 +185,11 @@ class ChromeCastService with ChangeNotifier {
     if (!isConnected) return;
     try {
       await _channel.invokeMethod('stop');
-      if (!_disposed) isRemotePlaying.value = false;
+      if (!_disposed) {
+        isRemotePlaying.value = false;
+        isRemoteBuffering.value = false;
+        notifyListeners();
+      }
     } catch (e) {
       if (kDebugMode) print('Failed to send stop command: $e');
     }
@@ -259,14 +275,17 @@ class ChromeCastService with ChangeNotifier {
           final id = data['deviceId'] as String? ?? '';
           final name = data['deviceName'] as String? ?? 'Cast Device';
           _connectedDevice = CastDevice(id: id, name: name);
-          if (_connectionCompleter?.isCompleted == false) {
-            _connectionCompleter?.complete();
+          if (_pendingConnectingDeviceId == null || _pendingConnectingDeviceId == id) {
+            if (_connectionCompleter?.isCompleted == false) {
+              _connectionCompleter?.complete();
+            }
           }
         } else {
           _connectedDevice = null;
           isRemoteBuffering.value = false;
           isRemotePlaying.value = false;
-          if (_connectionCompleter?.isCompleted == false) {
+          if (_pendingConnectingDeviceId == null &&
+              _connectionCompleter?.isCompleted == false) {
             _connectionCompleter?.completeError(
               StateError('Cast session disconnected'),
             );

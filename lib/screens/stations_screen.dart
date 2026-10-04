@@ -156,7 +156,12 @@ class _StationsScreenState extends State<StationsScreen>
           SliverFillRemaining(
             hasScrollBody: false,
             child: Padding(
-              padding: EdgeInsets.only(bottom: widget.bottomPadding),
+              padding: EdgeInsets.fromLTRB(
+                spacing.large,
+                0,
+                spacing.large,
+                widget.bottomPadding,
+              ),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -170,11 +175,13 @@ class _StationsScreenState extends State<StationsScreen>
                     Text(
                       loc?.stationsEmptyTitle ?? 'No stations',
                       style: theme.textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
                     ),
                     SizedBox(height: spacing.small),
                     Text(
                       loc?.stationsEmptySubtitle ?? 'No radio stations found',
                       style: theme.textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
                     ),
                     SizedBox(height: spacing.large),
                   ],
