@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'package:etherly/models/station.dart';
@@ -28,11 +30,17 @@ class StationArt extends StatelessWidget {
     BuildContext context,
     List<Station> stations,
   ) async {
+    // Browsers natively handle lazy loading and HTTP caching; skip batch WebGL texture pre-caching on web
+    if (kIsWeb) return;
+
     final lowResFutures = <Future<void>>[];
     for (final station in stations) {
       final art128Url = station.getArtUrl(size: 128);
       if (art128Url.isNotEmpty) {
-        final provider = CachedNetworkImageProvider(art128Url);
+        final provider = CachedNetworkImageProvider(
+          art128Url,
+          imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
+        );
         if (context.mounted) {
           lowResFutures.add(
             precacheImage(provider, context).catchError((_) {}),
@@ -48,7 +56,10 @@ class StationArt extends StatelessWidget {
     for (final station in stations) {
       final art512Url = station.getArtUrl(size: 512);
       if (art512Url.isNotEmpty) {
-        final provider = CachedNetworkImageProvider(art512Url);
+        final provider = CachedNetworkImageProvider(
+          art512Url,
+          imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
+        );
         if (context.mounted) {
           highResFutures.add(
             precacheImage(provider, context).catchError((_) {}),
@@ -77,6 +88,7 @@ class StationArt extends StatelessWidget {
         ? fallback
         : CachedNetworkImage(
             imageUrl: resolvedArtUrl,
+            imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
             fit: BoxFit.cover,
             useOldImageOnUrlChange: true,
             fadeInDuration: fadeDuration,
