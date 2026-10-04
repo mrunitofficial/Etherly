@@ -256,6 +256,7 @@ class AudioPlayerService with ChangeNotifier {
           await _castService.connectAndWait(castDevice);
         }
         await _castService?.castAudio(item);
+        await _castService?.play();
       } catch (e) {
         if (kDebugMode) print('Error casting media item: $e');
         _isCastLoading = false;
@@ -271,6 +272,7 @@ class AudioPlayerService with ChangeNotifier {
       await _audioHandler.playMediaItem(item);
     } catch (e) {
       if (kDebugMode) print('Error playing media item: $e');
+      _isLocalLoading = false;
       if (_currentMediaItem?.id == item.id) {
         await _audioHandler.stop();
         notifyListeners();
@@ -433,8 +435,6 @@ class AudioPlayerService with ChangeNotifier {
     );
 
     _castService?.addListener(_onCastRemotePlayingChanged);
-    _castService?.isRemotePlaying.addListener(_onCastRemotePlayingChanged);
-    _castService?.isRemoteBuffering.addListener(_onCastRemotePlayingChanged);
     _castService?.remoteVolume.addListener(notifyListeners);
 
     if (isCasting) {
@@ -444,6 +444,9 @@ class AudioPlayerService with ChangeNotifier {
     player.playerStateStream.listen((state) {
       if (isCasting) return;
       final processingState = state.processingState;
+      if (processingState != ProcessingState.idle) {
+        _isLocalLoading = false;
+      }
 
       if (processingState == ProcessingState.idle ||
           processingState == ProcessingState.completed) {
