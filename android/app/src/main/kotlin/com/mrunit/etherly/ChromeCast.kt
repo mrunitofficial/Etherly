@@ -337,7 +337,7 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
                         .setActions(0)
                         .build()
                 )
-                mediaSession.metadata = null
+                mediaSession.setMetadata(null)
                 mediaSession.isActive = false
             }
 
