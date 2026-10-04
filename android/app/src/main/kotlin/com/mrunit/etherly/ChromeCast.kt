@@ -248,7 +248,16 @@ class ChromeCast(private val context: Context) : MethodChannel.MethodCallHandler
             .setMetadata(metadata)
             .build()
 
-        client.load(mediaInfo, true, 0)
+        val requestData = com.google.android.gms.cast.MediaLoadRequestData.Builder()
+            .setMediaInfo(mediaInfo)
+            .setAutoplay(true)
+            .build()
+
+        client.load(requestData).setResultCallback { loadResult ->
+            if (!loadResult.status.isSuccess) {
+                android.util.Log.e("ChromeCast", "RemoteMediaClient load failed: ${loadResult.status.statusCode} ${loadResult.status.statusMessage}")
+            }
+        }
         emitEvent(mapOf(
             "event" to "playbackState",
             "isPlaying" to false,

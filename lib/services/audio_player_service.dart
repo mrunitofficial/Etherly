@@ -256,7 +256,6 @@ class AudioPlayerService with ChangeNotifier {
           await _castService.connectAndWait(castDevice);
         }
         await _castService?.castAudio(item);
-        await _castService?.play();
       } catch (e) {
         if (kDebugMode) print('Error casting media item: $e');
         _isCastLoading = false;
@@ -411,8 +410,10 @@ class AudioPlayerService with ChangeNotifier {
         isBuffering: isLoading,
       );
     } else {
-      _isCastLoading = false;
-      _castLoadingTimeoutTimer?.cancel();
+      if (_castService?.isConnecting != true) {
+        _isCastLoading = false;
+        _castLoadingTimeoutTimer?.cancel();
+      }
       _audioHandler.resetRemoteSession();
     }
     notifyListeners();
