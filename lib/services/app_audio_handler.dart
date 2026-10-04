@@ -15,17 +15,31 @@ Future<AppAudioHandler> initAudioService({
   required String channelName,
   required Future<void> Function() onSkipToNext,
   required Future<void> Function() onSkipToPrevious,
+  Future<void> Function()? onPlay,
+  Future<void> Function()? onPause,
+  Future<void> Function()? onStop,
 }) async {
   // Pre-configure the singleton audio session BEFORE initializing the handler to avoid race conditions
   final session = await AudioSession.instance;
   await session.configure(const AudioSessionConfiguration.music());
 
-  return _audioHandlerFuture ??= AudioService.init<AppAudioHandler>(
+  if (_audioHandlerFuture != null) {
+    final handler = await _audioHandlerFuture!;
+    handler.onPlayHandler = onPlay;
+    handler.onPauseHandler = onPause;
+    handler.onStopHandler = onStop;
+    return handler;
+  }
+
+  return _audioHandlerFuture = AudioService.init<AppAudioHandler>(
     builder: () => AppAudioHandler(
       player: player,
       session: session,
       onSkipNext: onSkipToNext,
       onSkipPrev: onSkipToPrevious,
+      onPlayHandler: onPlay,
+      onPauseHandler: onPause,
+      onStopHandler: onStop,
     ),
     config: AudioServiceConfig(
       androidNotificationChannelId: 'com.etherly.radio.channel.audio',
@@ -43,6 +57,9 @@ class AppAudioHandler extends BaseAudioHandler {
   final AudioSession session;
   final Future<void> Function() onSkipNext;
   final Future<void> Function() onSkipPrev;
+  Future<void> Function()? onPlayHandler;
+  Future<void> Function()? onPauseHandler;
+  Future<void> Function()? onStopHandler;
   bool isRemoteSession = false;
 
   AppAudioHandler({
@@ -50,7 +67,13 @@ class AppAudioHandler extends BaseAudioHandler {
     required this.session,
     required this.onSkipNext,
     required this.onSkipPrev,
+    this.onPlayHandler,
+    this.onPauseHandler,
+    this.onStopHandler,
   }) {
+    if (!kIsWeb) {
+      session.becomingNoisyEventStream.listen((_) => pause());
+    }
     player.playbackEventStream.listen((_) => _updatePlaybackState());
     player.playerStateStream.listen((_) => _updatePlaybackState());
   }
@@ -168,7 +191,7 @@ class AppAudioHandler extends BaseAudioHandler {
           AudioSource.uri(Uri.parse(entry.value), tag: item),
         );
         if (!_isCurrentStation(item.id)) return;
-        await player.play();
+        unawaited(player.play());
 
         if (_isCurrentStation(item.id)) {
           final extras = Map<String, dynamic>.from(item.extras ?? {});
@@ -178,8 +201,9 @@ class AppAudioHandler extends BaseAudioHandler {
         }
         return;
       } on PlayerInterruptedException {
-        rethrow;
+        return;
       } catch (e) {
+        if (!_isCurrentStation(item.id)) return;
         failedQualities.add(entry.key);
         if (i == entriesPriority.length - 1) {
           if (_isCurrentStation(item.id)) {
@@ -199,9 +223,13 @@ class AppAudioHandler extends BaseAudioHandler {
     updateMediaItem(mediaItem.value!.copyWith(artist: artist));
   }
 
-  /// AudioService Overrides delegating directly to just_audio player.
+  /// AudioService Overrides delegating directly to just_audio player or active session handler.
   @override
   Future<void> play() async {
+    if (onPlayHandler != null) {
+      await onPlayHandler!();
+      return;
+    }
     final current = mediaItem.value;
     if (current != null) {
       await playMediaItem(current);
@@ -211,10 +239,20 @@ class AppAudioHandler extends BaseAudioHandler {
   }
 
   @override
-  Future<void> pause() async => player.pause();
+  Future<void> pause() async {
+    if (isRemoteSession && onPauseHandler != null) {
+      await onPauseHandler!();
+      return;
+    }
+    await player.pause();
+  }
 
   @override
   Future<void> stop() async {
+    if (isRemoteSession && onStopHandler != null) {
+      await onStopHandler!();
+      return;
+    }
     await player.stop();
     await super.stop();
   }
@@ -254,15 +292,12 @@ class AppAudioHandler extends BaseAudioHandler {
     final playing = player.playing;
     final processingState = player.processingState;
     final isIdle = processingState == ProcessingState.idle;
-    final isBufferingOrLoading =
-        processingState == ProcessingState.loading ||
-        processingState == ProcessingState.buffering;
 
     return PlaybackState(
       controls: [
         if (!isIdle) ...[
           if (kIsWeb) MediaControl.skipToPrevious,
-          if (playing || isBufferingOrLoading)
+          if (playing)
             MediaControl.pause
           else
             MediaControl.play,
@@ -279,7 +314,7 @@ class AppAudioHandler extends BaseAudioHandler {
       },
       androidCompactActionIndices: const [0],
       processingState: _getProcessingState(processingState),
-      playing: playing || isBufferingOrLoading,
+      playing: playing,
       updatePosition: player.position,
       bufferedPosition: player.bufferedPosition,
       speed: player.speed,

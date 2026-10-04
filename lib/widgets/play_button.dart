@@ -64,12 +64,10 @@ class PlayButton extends StatelessWidget {
       service.pause();
     } else if (isPlaying) {
       service.pause();
+    } else if (service.isLoading) {
+      service.pause();
     } else {
-      if (service.isLoading) {
-        service.stop();
-      } else {
-        service.play();
-      }
+      service.play();
     }
   }
 }
