@@ -112,7 +112,7 @@ class _StationSearchBarState extends State<StationSearchBar> {
           controller: controller,
           elevation: const WidgetStatePropertyAll<double>(0.0),
           backgroundColor: WidgetStatePropertyAll<Color>(
-            theme.colorScheme.surfaceContainerHigh,
+            theme.colorScheme.surfaceContainerHighest,
           ),
           padding: WidgetStatePropertyAll<EdgeInsets>(
             EdgeInsets.symmetric(horizontal: spacing.extraSmall),

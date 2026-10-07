@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart' as legacy show ColorScheme;
 import 'package:material_ui/material_ui.dart';
 
 /// Global ValueNotifier for ThemeMode, allowing deep widgets to change the theme
@@ -13,59 +12,6 @@ final ValueNotifier<String> languageNotifier = ValueNotifier('system');
 
 /// Primary brand color for seed fallback color scheme generation.
 const brandColor = Colors.blue;
-
-/// Converts a legacy [legacy.ColorScheme] into a modern [ColorScheme].
-ColorScheme toModernColorScheme(legacy.ColorScheme legacyScheme) {
-  return ColorScheme(
-    brightness: legacyScheme.brightness,
-    primary: legacyScheme.primary,
-    onPrimary: legacyScheme.onPrimary,
-    primaryContainer: legacyScheme.primaryContainer,
-    onPrimaryContainer: legacyScheme.onPrimaryContainer,
-    primaryFixed: legacyScheme.primaryFixed,
-    primaryFixedDim: legacyScheme.primaryFixedDim,
-    onPrimaryFixed: legacyScheme.onPrimaryFixed,
-    onPrimaryFixedVariant: legacyScheme.onPrimaryFixedVariant,
-    secondary: legacyScheme.secondary,
-    onSecondary: legacyScheme.onSecondary,
-    secondaryContainer: legacyScheme.secondaryContainer,
-    onSecondaryContainer: legacyScheme.onSecondaryContainer,
-    secondaryFixed: legacyScheme.secondaryFixed,
-    secondaryFixedDim: legacyScheme.secondaryFixedDim,
-    onSecondaryFixed: legacyScheme.onSecondaryFixed,
-    onSecondaryFixedVariant: legacyScheme.onSecondaryFixedVariant,
-    tertiary: legacyScheme.tertiary,
-    onTertiary: legacyScheme.onTertiary,
-    tertiaryContainer: legacyScheme.tertiaryContainer,
-    onTertiaryContainer: legacyScheme.onTertiaryContainer,
-    tertiaryFixed: legacyScheme.tertiaryFixed,
-    tertiaryFixedDim: legacyScheme.tertiaryFixedDim,
-    onTertiaryFixed: legacyScheme.onTertiaryFixed,
-    onTertiaryFixedVariant: legacyScheme.onTertiaryFixedVariant,
-    error: legacyScheme.error,
-    onError: legacyScheme.onError,
-    errorContainer: legacyScheme.errorContainer,
-    onErrorContainer: legacyScheme.onErrorContainer,
-    surface: legacyScheme.surface,
-    onSurface: legacyScheme.onSurface,
-    surfaceDim: legacyScheme.surfaceDim,
-    surfaceBright: legacyScheme.surfaceBright,
-    surfaceContainerLowest: legacyScheme.surfaceContainerLowest,
-    surfaceContainerLow: legacyScheme.surfaceContainerLow,
-    surfaceContainer: legacyScheme.surfaceContainer,
-    surfaceContainerHigh: legacyScheme.surfaceContainerHigh,
-    surfaceContainerHighest: legacyScheme.surfaceContainerHighest,
-    onSurfaceVariant: legacyScheme.onSurfaceVariant,
-    outline: legacyScheme.outline,
-    outlineVariant: legacyScheme.outlineVariant,
-    shadow: legacyScheme.shadow,
-    scrim: legacyScheme.scrim,
-    inverseSurface: legacyScheme.inverseSurface,
-    onInverseSurface: legacyScheme.onInverseSurface,
-    inversePrimary: legacyScheme.inversePrimary,
-    surfaceTint: legacyScheme.surfaceTint,
-  );
-}
 
 /// Theme Data configuration for Etherly application.
 class AppTheme {

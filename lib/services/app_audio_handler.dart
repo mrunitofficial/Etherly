@@ -298,19 +298,20 @@ class AppAudioHandler extends BaseAudioHandler {
     final playing = player.playing;
     final processingState = player.processingState;
     final isIdle = processingState == ProcessingState.idle;
+    final controls = [
+      if (!isIdle) ...[
+        if (kIsWeb) MediaControl.skipToPrevious,
+        if (playing)
+          MediaControl.pause
+        else
+          MediaControl.play,
+        if (kIsWeb) MediaControl.skipToNext,
+        if (kIsWeb) MediaControl.stop,
+      ],
+    ];
 
     return PlaybackState(
-      controls: [
-        if (!isIdle) ...[
-          if (kIsWeb) MediaControl.skipToPrevious,
-          if (playing)
-            MediaControl.pause
-          else
-            MediaControl.play,
-          if (kIsWeb) MediaControl.skipToNext,
-          if (kIsWeb) MediaControl.stop,
-        ],
-      ],
+      controls: controls,
       systemActions: {
         if (!isIdle) ...{
           MediaAction.skipToNext,
@@ -318,7 +319,7 @@ class AppAudioHandler extends BaseAudioHandler {
           if (kIsWeb) MediaAction.stop,
         },
       },
-      androidCompactActionIndices: const [0],
+      androidCompactActionIndices: controls.isEmpty ? const [] : const [0],
       processingState: _getProcessingState(processingState),
       playing: playing,
       updatePosition: player.position,
