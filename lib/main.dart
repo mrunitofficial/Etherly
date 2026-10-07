@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dynamic_system_colors/dynamic_system_colors.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -168,8 +168,8 @@ class _MyAppState extends State<MyApp> {
             if (lightDynamic != null &&
                 darkDynamic != null &&
                 useDynamicColor) {
-              lightColorScheme = toModernColorScheme(lightDynamic);
-              darkColorScheme = toModernColorScheme(darkDynamic);
+              lightColorScheme = lightDynamic;
+              darkColorScheme = darkDynamic;
             } else {
               lightColorScheme = ColorScheme.fromSeed(
                 seedColor: brandColor,
