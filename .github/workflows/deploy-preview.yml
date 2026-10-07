@@ -97,8 +97,8 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
-      - name: Build Android APK (Debug)
-        run: flutter build apk --debug
+      - name: Build Android APK (Release)
+        run: flutter build apk --release
         env:
           KEYSTORE_PATH: upload-keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
