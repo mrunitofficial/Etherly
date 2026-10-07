@@ -183,6 +183,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      issues: write
     steps:
       - name: Print Preview Info
         run: |
@@ -193,18 +194,29 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "All preview deployment actions completed successfully."
 
-      - name: Comment Preview Link on PR
+      - name: Comment Preview Link on Merged PR
         uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
         with:
           script: |
+            const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha
+            });
+
+            const pr = prs.data.find(p => p.base.ref === 'preview');
+            if (!pr) {
+              console.log('No PR targeting preview found for commit ' + context.sha);
+              return;
+            }
+
             const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}/artifacts/${{ needs.build_apk.outputs.artifact_id }}`;
             const previewUrl = "${{ needs.deploy_web.outputs.details_url }}";
             const body = `### Preview Deployment Successful\n\n- **Web Preview Link:** [Visit Preview Website](${previewUrl})\n- **Android APK Artifact:** [Download Preview APK](${artifactUrl})\n\nAll preview deployment actions completed successfully.`;
-            
+
             await github.rest.issues.createComment({
-              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
+              issue_number: pr.number,
               body: body
             });
